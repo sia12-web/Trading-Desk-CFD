@@ -14,19 +14,23 @@ export const maxDuration = 300 // 5 minutes
  */
 export async function GET(req: NextRequest) {
     // Verify cron secret (Bearer header or ?key= param)
-    const secret = (process.env.CRON_SECRET || '').trim()
+    const rawSecret = process.env.CRON_SECRET || ''
+    const secret = rawSecret.trim()
     const authHeader = req.headers.get('authorization')
     const queryKey = req.nextUrl.searchParams.get('key')
     const expectedSecret = `Bearer ${secret}`
 
     if (!secret) {
-        console.error('Agents cron: CRON_SECRET is not configured')
+        console.error('[Agents Cron Debug] CRON_SECRET is NOT SET')
         return NextResponse.json({ error: 'Config missing' }, { status: 500 })
     }
 
+    // Resilience: URL params often turn '+' into ' ' (space)
+    const normalizedQueryKey = queryKey?.trim().replace(/ /g, '+')
+
     const isAuthorized = 
         (authHeader && authHeader.trim() === expectedSecret) || 
-        (queryKey && queryKey.trim() === secret)
+        (normalizedQueryKey === secret)
 
     if (!isAuthorized) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

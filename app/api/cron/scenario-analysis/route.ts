@@ -16,21 +16,31 @@ export const maxDuration = 300 // 5 minutes
  * Auth: Bearer CRON_SECRET
  */
 export async function GET(req: NextRequest) {
-    const secret = (process.env.CRON_SECRET || '').trim()
+    const rawSecret = process.env.CRON_SECRET || ''
+    const secret = rawSecret.trim()
     const authHeader = req.headers.get('authorization')
     const queryKey = req.nextUrl.searchParams.get('key')
     const expectedSecret = `Bearer ${secret}`
 
+    // Debugging (Masked Logs)
+    const headerStatus = authHeader ? 'Present' : 'Missing'
+    const queryStatus = queryKey ? 'Present' : 'Missing'
+    console.log(`[Cron Debug] Auth Attempt: Header=${headerStatus}, Query=${queryStatus}`)
+    
     if (!secret) {
-        console.error('[Cron:ScenarioAnalysis] CRON_SECRET is not configured in environment')
+        console.error('[Cron Debug] CRON_SECRET is NOT SET in Railway environment variables.')
         return NextResponse.json({ error: 'Config missing' }, { status: 500 })
     }
 
+    // Resilience: URL params often turn '+' into ' ' (space)
+    const normalizedQueryKey = queryKey?.trim().replace(/ /g, '+')
+    
     const isAuthorized = 
         (authHeader && authHeader.trim() === expectedSecret) || 
-        (queryKey && queryKey.trim() === secret)
+        (normalizedQueryKey === secret)
 
     if (!isAuthorized) {
+        console.warn(`[Cron Debug] Unauthorized: Secret Lengths differ (S:${secret.length} Q:${queryKey?.length || 0})`)
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
