@@ -35,11 +35,36 @@ export async function subscribeToPair(userId: string, pair: string, notes?: stri
     return data
 }
 
+/**
+ * Unsubscribe and SCRUB all memory for a pair.
+ * This is a hard delete of episodes, bibles, scenarios, and positions.
+ */
 export async function unsubscribePair(userId: string, pair: string) {
     const supabase = await getDefaultClient()
+    
+    // 1. Delete scenarios first (they link to episodes)
+    await supabase.from('story_scenarios').delete().eq('user_id', userId).eq('pair', pair)
+    
+    // 2. Delete position adjustments (they link to positions)
+    const { data: positions } = await supabase.from('story_positions').select('id').eq('user_id', userId).eq('pair', pair)
+    if (positions?.length) {
+        const pIds = positions.map(p => p.id)
+        await supabase.from('story_position_adjustments').delete().in('position_id', pIds)
+    }
+
+    // 3. Delete positions
+    await supabase.from('story_positions').delete().eq('user_id', userId).eq('pair', pair)
+
+    // 4. Delete bibles
+    await supabase.from('story_bibles').delete().eq('user_id', userId).eq('pair', pair)
+
+    // 5. Delete episodes
+    await supabase.from('story_episodes').delete().eq('user_id', userId).eq('pair', pair)
+
+    // 6. Finally, delete the subscription itself
     const { error } = await supabase
         .from('pair_subscriptions')
-        .update({ is_active: false })
+        .delete()
         .eq('user_id', userId)
         .eq('pair', pair)
 
