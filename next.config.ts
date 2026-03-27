@@ -3,9 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   skipTrailingSlashRedirect: true,
+  outputFileTracingRoot: __dirname,
   /*
   turbopack: {
-    root: process.cwd(),
+    root: __dirname,
   },
   */
   async redirects() {
