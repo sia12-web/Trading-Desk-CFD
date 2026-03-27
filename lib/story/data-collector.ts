@@ -21,16 +21,35 @@ function getPipLocation(pair: string): number {
     return jpyPairs.includes(pair) ? -2 : -4
 }
 
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
+
 /**
  * Collect multi-timeframe data for Story analysis.
  * Fetches OANDA candles, calculates indicators, detects patterns + AMD phases.
+ * ALSO fetches the user's recent trades for narrative context.
  */
-export async function collectStoryData(pair: string): Promise<StoryDataPayload> {
+export async function collectStoryData(
+    userId: string,
+    pair: string,
+    client?: SupabaseClient
+): Promise<StoryDataPayload> {
     const instrument = pair.replace('/', '_')
     const pipLocation = getPipLocation(pair)
+    const supabase = client || await createClient()
 
-    // Fetch current price
-    const { data: prices } = await getCurrentPrices([instrument])
+    // Fetch current price + trades and candles in parallel
+    const [{ data: prices }, { data: trades }] = await Promise.all([
+        getCurrentPrices([instrument]),
+        supabase
+            .from('trades')
+            .select('direction, status, entry_price, exit_price, stop_loss, take_profit, closed_at')
+            .eq('user_id', userId)
+            .eq('pair', pair)
+            .order('created_at', { ascending: false })
+            .limit(10) // last 10 activities
+    ])
+
     const currentPrice = prices?.[0]
         ? (parseFloat(prices[0].asks[0].price) + parseFloat(prices[0].bids[0].price)) / 2
         : 0
@@ -85,6 +104,7 @@ export async function collectStoryData(pair: string): Promise<StoryDataPayload> 
         liquidityZones,
         volatilityStatus,
         atr14,
+        recent_trades: trades || [],
         collectedAt: new Date().toISOString(),
     }
 }

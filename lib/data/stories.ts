@@ -121,6 +121,7 @@ export async function createEpisode(
         next_episode_preview?: string
         agent_reports?: Record<string, unknown>
         generation_source?: 'manual' | 'cron' | 'bot'
+        is_season_finale?: boolean
     },
     client?: SupabaseClient
 ) {

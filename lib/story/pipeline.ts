@@ -45,7 +45,7 @@ export async function generateStory(
     try {
         // ── Step 1: Collect OANDA data ──
         await updateProgress(taskId, 10, 'Fetching market data across 5 timeframes...', client)
-        const data = await collectStoryData(pair)
+        const data = await collectStoryData(userId, pair, client)
 
         // ── Step 2: Get news context ──
         await updateProgress(taskId, 20, 'Gathering news and economic calendar...', client)
@@ -140,7 +140,6 @@ export async function generateStory(
             console.warn(`[Story] ${pair} price level warnings (${levelWarnings.length}):`,
                 levelWarnings.map(w => `${w.context}: ${w.level} outside [${w.observedRange.min.toFixed(5)}, ${w.observedRange.max.toFixed(5)}]`))
         }
-        const episodeNumber = await getNextEpisodeNumber(userId, pair, client)
 
         // Build agent reports snapshot for episode
         const agentReportsSnapshot: Record<string, unknown> = {}
@@ -148,7 +147,11 @@ export async function generateStory(
         if (agentIntelligence.news) agentReportsSnapshot.news = { summary: agentIntelligence.news.summary, sentiment: agentIntelligence.news.sentiment_indicators?.overall }
         if (agentIntelligence.crossMarket) agentReportsSnapshot.crossMarket = { summary: agentIntelligence.crossMarket.summary, risk_appetite: agentIntelligence.crossMarket.risk_appetite }
 
-        const seasonNumber = getSeasonNumber(episodeNumber)
+        const episodeNumber = await getNextEpisodeNumber(userId, pair, client)
+        const seasonNumber = lastEpisodeRaw?.is_season_finale 
+            ? (lastEpisodeRaw.season_number || 1) + 1 
+            : (lastEpisodeRaw?.season_number || 1)
+
         const episode = await createEpisode(userId, pair, {
             episode_number: episodeNumber,
             season_number: seasonNumber,
@@ -165,6 +168,7 @@ export async function generateStory(
             next_episode_preview: result.next_episode_preview,
             agent_reports: Object.keys(agentReportsSnapshot).length > 0 ? agentReportsSnapshot : undefined,
             generation_source: options?.generationSource || 'manual',
+            is_season_finale: result.is_season_finale,
         }, client)
 
         // Create scenarios linked to this episode
@@ -198,6 +202,7 @@ export async function generateStory(
         await checkAndCloseSeason(
             userId, pair, episodeNumber,
             result.bible_update?.arc_summary || '',
+            result.is_season_finale,
             client
         )
 

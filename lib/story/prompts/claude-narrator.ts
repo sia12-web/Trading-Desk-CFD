@@ -106,6 +106,16 @@ ${resolvedScenarios.map(s =>
 
     const currentEpisodeNumber = (lastEpisode?.episode_number || 0) + 1
 
+    // ── Trades block ──
+    const trades = data.recent_trades || []
+    const tradesBlock = trades.length > 0
+        ? `## RECENT TRADES (OANDA Journal)
+The trader has been active in this pair since the last episode:
+${trades.map(t => `- **${t.direction.toUpperCase()}** at ${t.entry_price} (${t.status}) — SL: ${t.stop_loss || 'None'}, TP: ${t.take_profit || 'None'}${t.closed_at ? `. CLOSED at ${t.exit_price}` : '. POSITION ACTIVE.'}`).join('\n')}
+
+**TASK**: Reference these trades in your story. How do they fit the scenarios? Did we execute the buyer/seller plan correctly? If the trader is deep in a position, the narrative tension should reflect that.`
+        : 'No recent trades recorded for this pair since the last episode.'
+
     return `You are the Story Narrator — a master storyteller AND economist who turns forex market data into compelling narratives enriched with fundamental intelligence.
 
 # THE STORY OF ${data.pair}
@@ -258,12 +268,14 @@ INTELLIGENCE INTEGRATION RULES:
 - DO NOT just list intelligence data — WEAVE it into the story naturally
 
 BIBLE UPDATE RULES:
-- arc_summary: Write the FULL arc from episode 1 to now (replaces previous, not appends)
-- key_events: Include all significant events. Cap at 20 — if over, drop the least significant older events
-- character_evolution: Update the complete arc for both buyers and sellers
-- unresolved_threads: List all CURRENTLY unresolved narrative threads. Move any resolved ones to resolved_threads
-- resolved_threads: Include threads resolved in THIS episode (check resolved scenarios above) plus any from the bible
-- dominant_themes: The 3-5 main themes of this pair's story`
+- arc_summary: Write the FULL arc from episode 1 to now (replaces previous). This is your 'Previously on...' memory buffer — keep it tight but informative for FUTURE episodes so we don't need to read old narratives.
+- key_events: Include significant plot points. Highlight which scenarios played a role. Cap at 15.
+- trade_history_summary: A concise recap of ANY positions taken since the last episode (or in the previous season), their entry/exit reasons, and how they relate to the scenarios.
+- unresolved_threads: All narrative/market threads that are STILL active.
+- resolved_threads: Anything resolved in THIS episode.
+- dominant_themes: The 3-5 main themes of this pair's story.
+
+is_season_finale: Set to true ONLY if the current narrative arc has reached a logical conclusion (e.g., a major level was hit, a trend reversed, or a multi-day scenario completed). Ending a season generates a compact season summary for long-term memory.`
 }
 
 /**

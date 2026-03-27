@@ -80,6 +80,20 @@ export default function StoryPage() {
         }
     }
 
+    const handleDelete = async (pair: string) => {
+        try {
+            const res = await fetch('/api/story/subscriptions', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pair }),
+            })
+            if (!res.ok) throw new Error(await res.text())
+            loadData()
+        } catch (err) {
+            console.error('Failed to delete pair:', err)
+        }
+    }
+
     return (
         <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
@@ -93,7 +107,7 @@ export default function StoryPage() {
                 </div>
                 <button
                     onClick={() => setShowSelector(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition-colors shadow-lg shadow-blue-600/20"
                 >
                     <Plus size={16} />
                     Add Pair
@@ -106,7 +120,7 @@ export default function StoryPage() {
                     <Loader2 size={24} className="animate-spin text-neutral-600" />
                 </div>
             ) : pairInfos.length === 0 ? (
-                <div className="text-center py-20 border border-dashed border-neutral-800 rounded-2xl">
+                <div className="text-center py-20 border border-dashed border-neutral-800 rounded-3xl bg-neutral-900/20">
                     <ScrollText size={40} className="mx-auto text-neutral-700 mb-4" />
                     <h2 className="text-lg font-bold text-neutral-400 mb-2">No pairs yet</h2>
                     <p className="text-sm text-neutral-600 mb-6 max-w-md mx-auto">
@@ -128,6 +142,7 @@ export default function StoryPage() {
                             pair={info.pair}
                             latestEpisode={info.latestEpisode}
                             activeScenarios={info.activeScenarios}
+                            onDelete={handleDelete}
                         />
                     ))}
                 </div>

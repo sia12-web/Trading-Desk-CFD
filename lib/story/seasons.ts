@@ -26,9 +26,10 @@ export async function checkAndCloseSeason(
     pair: string,
     episodeNumber: number,
     arcSummary: string,
+    isSeasonFinale: boolean,
     client: SupabaseClient
 ): Promise<void> {
-    if (!isSeasonFinale(episodeNumber)) return
+    if (!isSeasonFinale) return
 
     const seasonNumber = getSeasonNumber(episodeNumber)
 

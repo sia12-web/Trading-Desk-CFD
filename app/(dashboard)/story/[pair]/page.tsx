@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, Target } from 'lucide-react'
+import { ArrowLeft, Loader2, Target, ScrollText } from 'lucide-react'
 import Link from 'next/link'
 import { AMDPhaseBadge } from '../_components/AMDPhaseBadge'
 import { StoryNarrative } from '../_components/StoryNarrative'
@@ -15,6 +15,7 @@ interface Episode {
     id: string
     pair: string
     episode_number: number
+    season_number?: number | null
     title: string
     narrative: string
     characters: { buyers: any; sellers: any }
@@ -55,13 +56,20 @@ export default function PairStoryPage() {
     const [episode, setEpisode] = useState<Episode | null>(null)
     const [scenarios, setScenarios] = useState<Scenario[]>([])
     const [episodes, setEpisodes] = useState<EpisodeListItem[]>([])
+    const [bible, setBible] = useState<any>(null)
     const [loading, setLoading] = useState(true)
 
     const loadEpisodes = useCallback(async () => {
-        const res = await fetch(`/api/story/episodes?pair=${encodeURIComponent(pair)}&limit=20`)
+        const res = await fetch(`/api/story/episodes?pair=${encodeURIComponent(pair)}&limit=50`)
         const data = await res.json()
         setEpisodes(data.episodes || [])
         return data.episodes || []
+    }, [pair])
+
+    const loadBible = useCallback(async () => {
+        const res = await fetch(`/api/story/bible?pair=${encodeURIComponent(pair)}`)
+        const data = await res.json()
+        setBible(data.bible)
     }, [pair])
 
     const loadEpisode = useCallback(async (episodeId: string) => {
@@ -74,7 +82,10 @@ export default function PairStoryPage() {
     const loadData = useCallback(async () => {
         setLoading(true)
         try {
-            const eps = await loadEpisodes()
+            const [eps] = await Promise.all([
+                loadEpisodes(),
+                loadBible()
+            ])
             if (eps.length > 0) {
                 await loadEpisode(eps[0].id)
             }
@@ -83,7 +94,7 @@ export default function PairStoryPage() {
         } finally {
             setLoading(false)
         }
-    }, [loadEpisodes, loadEpisode])
+    }, [loadEpisodes, loadBible, loadEpisode])
 
     useEffect(() => { loadData() }, [loadData])
 
@@ -132,9 +143,17 @@ export default function PairStoryPage() {
                             {episode && <AMDPhaseBadge phase={episode.current_phase} />}
                         </div>
                         {episode && (
-                            <p className="text-xs text-neutral-500 mt-0.5">
-                                Episode {episode.episode_number}: {episode.title}
-                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] font-bold text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded leading-none">
+                                    S{episode.season_number || 1}
+                                </span>
+                                <span className="text-[10px] font-bold text-neutral-500 bg-neutral-500/10 px-1.5 py-0.5 rounded leading-none">
+                                    EP {episode.episode_number}
+                                </span>
+                                <p className="text-xs text-neutral-500 font-medium">
+                                    {episode.title}
+                                </p>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -145,6 +164,38 @@ export default function PairStoryPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Main Content (2/3) */}
                     <div className="lg:col-span-2 space-y-6">
+                        {/* Story Bible Summary */}
+                        {bible && (
+                            <section className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 border-l-4 border-l-blue-500/50">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <ScrollText size={16} className="text-blue-400" />
+                                    <h2 className="text-sm font-bold text-neutral-400 uppercase tracking-widest">Story Bible (Full Arc Summary)</h2>
+                                </div>
+                                <div className="space-y-4">
+                                    <p className="text-sm text-neutral-300 leading-relaxed font-medium">
+                                        {bible.arc_summary}
+                                    </p>
+                                    
+                                    {bible.trade_history_summary && (
+                                        <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4">
+                                            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">Trader Account Activity</h3>
+                                            <p className="text-xs text-neutral-400 italic">
+                                                {bible.trade_history_summary}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-800">
+                                        {bible.dominant_themes?.map((t: string) => (
+                                            <span key={t} className="text-[10px] text-neutral-500 bg-neutral-800/50 px-2 py-1 rounded-md">
+                                                #{t.replace(' ', '_')}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+                        )}
+
                         {/* Narrative */}
                         <section className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-6">
                             <h2 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4">Story</h2>

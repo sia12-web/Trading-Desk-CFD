@@ -50,6 +50,7 @@ export interface BibleUpdate {
     unresolved_threads: NarrativeThread[]
     resolved_threads: ResolvedThread[]
     dominant_themes: string[]
+    trade_history_summary?: string
 }
 
 // ── CRUD ──
@@ -100,6 +101,7 @@ export async function upsertBible(
                 unresolved_threads: update.unresolved_threads,
                 resolved_threads: prunedResolvedThreads,
                 dominant_themes: update.dominant_themes,
+                trade_history_summary: update.trade_history_summary,
                 episode_count: episodeNumber,
                 last_episode_number: episodeNumber,
                 updated_at: new Date().toISOString(),
