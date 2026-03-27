@@ -35,12 +35,15 @@ export async function subscribeToPair(userId: string, pair: string, notes?: stri
     return data
 }
 
+import { createServiceClient } from '@/lib/supabase/service'
+
 /**
  * Unsubscribe and SCRUB all memory for a pair.
  * This is a hard delete of episodes, bibles, scenarios, and positions.
  */
 export async function unsubscribePair(userId: string, pair: string) {
-    const supabase = await getDefaultClient()
+    // USE SERVICE ROLE (God Mode) to ensure full scrub regardless of RLS
+    const supabase = createServiceClient()
     
     // 1. Delete scenarios first (they link to episodes)
     await supabase.from('story_scenarios').delete().eq('user_id', userId).eq('pair', pair)
