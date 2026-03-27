@@ -197,7 +197,12 @@ export default function PairStoryPage() {
                         )}
                     </div>
                 </div>
-                <GenerateStoryButton pair={pair} episodeCount={episodes.length} onComplete={handleGenerateComplete} autoGenerate={autoGenerate} />
+                <GenerateStoryButton 
+                    pair={pair} 
+                    episodeCount={episodes.length} 
+                    onComplete={handleGenerateComplete} 
+                    autoGenerate={autoGenerate && episodes.length === 0} 
+                />
             </div>
 
             {episode ? (

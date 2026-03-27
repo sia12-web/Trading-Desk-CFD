@@ -27,9 +27,17 @@ export function GenerateStoryButton({ pair, episodeCount, onComplete, autoGenera
     useEffect(() => {
         if (autoGenerate && !autoFired && task.status === 'idle') {
             setAutoFired(true)
+            
+            // Critical: Remove the autoGenerate flag from URL to prevent loop on re-mount
+            if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href)
+                url.searchParams.delete('autoGenerate')
+                window.history.replaceState({}, '', url.toString())
+            }
+
             task.startTask('/api/story/generate', { pair })
         }
-    }, [autoGenerate, autoFired, task, pair])
+    }, [autoGenerate, autoFired, task.status, pair, task])
 
     // When completed, notify parent
     if (task.status === 'completed') {
