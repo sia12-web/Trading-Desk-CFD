@@ -459,6 +459,184 @@ Claude can then recommend:
 
 ---
 
+### Profitable Trader Psychology: Let Winners Run, Cut Losers Fast
+
+**Core Philosophy**: The system is designed around the psychology of consistently profitable traders — asymmetric risk/reward through position management, not prediction accuracy.
+
+#### The Winning Formula
+
+```
+Profitable Trading = (Win Rate × Avg Win) - (Loss Rate × Avg Loss) > 0
+
+Example A (Typical Retail - LOSING):
+  40% win rate × $200 avg win = $80
+  60% loss rate × $150 avg loss = $90
+  Net: -$10 per trade (NEGATIVE)
+
+Example B (Profitable Trader - WINNING):
+  40% win rate × $500 avg win = $200  ← Winners run
+  60% loss rate × $50 avg loss = $30   ← Losers cut fast
+  Net: +$170 per trade (POSITIVE)
+```
+
+The AI is calibrated for **Example B psychology** — not chasing high win rates, but maximizing the W/L ratio through disciplined management.
+
+#### Principle 1: Cut Losers Immediately
+
+**AI's stop-loss discipline**:
+- Initial SL is placed at technical invalidation (not arbitrary % loss)
+- If price moves against entry by 50% of the stop distance within 4 hours → recommend immediate exit
+- **No hope, no prayer, no "it will come back"** — invalidation = close
+- Better to take 10 small losses than 1 catastrophic loss
+
+**Hardcoded rule**: If SL is hit, Claude will recommend `close` in the next episode. No suggestions to "widen the stop" or "average down." The trade thesis broke — accept it and move on.
+
+#### Principle 2: Let Winners Run (Trail Aggressively)
+
+**AI's profit management**:
+- TP1 (first target): Take 30-40% off to lock in profit (removes emotional attachment)
+- Move SL to breakeven immediately after TP1 hit (trade is now "risk-free")
+- TP2: Take another 30-40% (now 60-80% of position is secured)
+- TP3 (runner): Let the final 20-40% run with **trailing stop**
+  - Trail SL by 50% of the move (if price moves +100 pips, trail SL +50 pips)
+  - Let momentum exhaust naturally — don't exit early out of fear
+
+**Key insight**: The "runner" (20-40% left after TP1/TP2) is where big profits come from. In trending markets, this runner can capture 3-5x the initial risk. This is how profitable traders achieve asymmetric outcomes.
+
+#### Principle 3: Scaling In When Structure Confirms
+
+**The "add to winners" strategy**:
+
+When the market is "calling out loud" (strong directional move with clear structure), the AI can suggest **adding to the winning position** — but ONLY if:
+
+1. **Original position is already in profit** (at least +50% of TP1 distance)
+2. **Stop loss is at breakeven or better** (downside is protected)
+3. **New entry has valid technical structure** (pullback to support in uptrend, or bounce off resistance in downtrend)
+4. **Total position size still within risk limits** (combined lots don't exceed max_position_size)
+5. **Volatility is normal or cooling** (not spiking — spikes = trap)
+6. **No major news event in next 8 hours** (avoid gap risk)
+
+**Example scenario**:
+```
+Episode 1: "Enter LONG at 1.0850, SL 1.0820, TP1 1.0890"
+  → User enters 0.1 lots
+
+Episode 2: Price now at 1.0880 (+30 pips)
+  → AI: "The bullish structure is confirmed. Buyers are dominant.
+         Recommendation: Add 0.05 lots at 1.0875 (pullback entry),
+         SL 1.0850 (original entry = breakeven for position 1).
+         Move original position's SL to 1.0850 (breakeven)."
+  → Now: 0.1 lots from 1.0850 + 0.05 lots from 1.0875 = 0.15 lots total
+
+Episode 3: Price at 1.0920 (TP1 hit)
+  → AI: "TP1 reached. Take 50% off (0.075 lots) = lock $225 profit.
+         Remaining: 0.075 lots. Trail SL to 1.0885 (+35 pips from breakeven).
+         Let the runner capture the full trend."
+```
+
+**Why this works**:
+- By the time you add the 2nd position, the 1st is already secured (SL at breakeven)
+- You're risking the SAME absolute $ (because SL on position 2 is at the entry of position 1)
+- You're increasing exposure to a **proven winning trade**, not averaging into a loser
+- If the trade reverses, you still exit at breakeven (no loss)
+- If the trade continues, you capture the trend with a larger position
+
+#### Principle 4: Never Average Down (No "Doubling Down" on Losers)
+
+**Explicitly forbidden**:
+- If position 1 is in drawdown, the AI will **NEVER** suggest adding to it
+- "Averaging down" = hope-based trading, not edge-based trading
+- Only scale into **confirmed winners**, never into losing positions
+
+**The AI knows**:
+```
+Adding to a loser = Turning a small loss into a potential account blowup
+Adding to a winner = Maximizing edge when the market confirms your thesis
+```
+
+#### Principle 5: Pyramid Sizing (Smaller Adds as Price Extends)
+
+When scaling in, each additional position should be **smaller** than the previous:
+
+```
+Position 1: 0.10 lots (initial risk: $100)
+Position 2: 0.05 lots (half size — risk: $50)
+Position 3: 0.03 lots (30% of original — risk: $30)
+```
+
+**Why**: Price is further from the original entry. Even though the structure is bullish, the probability of a pullback increases as price extends. Smaller adds = protection against getting caught in a reversal.
+
+Claude is instructed to **automatically reduce position size by 50%** for each additional entry in a scaling sequence.
+
+#### Principle 6: Risk Management for Multi-Position Scaling
+
+**Hard limits when scaling**:
+- Max 3 entries per trend (original + 2 adds)
+- Each add must have its own technical justification (not just "price is going up")
+- Combined position size cannot exceed user's `max_position_size` from risk rules
+- Combined **margin used** across all open positions cannot exceed 60% of account balance
+- If any add fails to move into profit within 8 hours, close it (don't let adds become deadweight)
+
+**Total risk protection**:
+```
+Position 1: Risk $100, now at breakeven (risk = $0)
+Position 2: Risk $50 (SL at position 1 entry), now in profit
+Position 3: Risk $30 (SL at position 2 entry)
+
+Total risk on the trade = $30 (only the last add is at risk)
+Total exposure = 0.18 lots (captures the full trend if it continues)
+```
+
+This is how profitable traders achieve **10:1 or 20:1 R:R ratios** — not by predicting, but by managing.
+
+#### AI's Role: Psychological Alignment
+
+Each episode, Claude's narrator assesses:
+1. **Is the current position winning or losing?**
+   - Winning: Consider trail stops, partial profits, or scaling in
+   - Losing: Respect the stop, no hope, no averaging down
+2. **Is the structure getting stronger or weaker?**
+   - Stronger: Suggest scale-in if criteria met
+   - Weaker: Tighten stops, take profits early
+3. **Is the user emotionally aligned?**
+   - If recent losses: Recommend smaller sizing or wait (avoid revenge trading)
+   - If recent wins: Suggest letting the winner run (don't exit early out of fear)
+4. **Is the market "calling out loud"?**
+   - Clear trend + momentum + institutional buying/selling = scale-in opportunity
+   - Choppy/ranging/unclear = single position only, conservative exits
+
+#### Example Episode Narratives
+
+**Scaling in (bullish confirmation)**:
+> "The Buyers have seized control. The 1.0850 support held like a fortress, and they're now marching toward 1.0920. Your current position from 1.0865 is secured (SL at breakeven, +35 pips unrealized). The structure is screaming: this is not a fakeout.
+>
+> **Position Guidance**: Consider adding 0.05 lots at 1.0880 (pullback to the breakeven cluster). New SL: 1.0865 (your original entry). This scales your exposure into a confirmed winner while keeping total risk at $50. If the Buyers continue, you'll ride the full trend with 0.15 lots. If they fail here, you exit near breakeven."
+
+**Cutting a loser (invalidation)**:
+> "The structure has broken. Sellers reclaimed 1.0820, which was the line in the sand. Your thesis was that Buyers would hold this level — they didn't. The market has spoken.
+>
+> **Position Guidance**: Close the position at market. Loss: ~30 pips ($30 on 0.1 lots). Accept it and move on. This is not a reflection on your analysis — it's part of the game. The edge comes from taking many small losses and a few big wins. This is a small loss."
+
+**Letting a winner run (trail stop)**:
+> "TP1 hit. You've locked $120 profit (40% of position closed). The remaining 0.06 lots is your runner. The Buyers are not done — momentum is still strong, and the Daily timeframe is wide open to 1.0980.
+>
+> **Position Guidance**: Trail your stop to 1.0890 (now +40 pips above breakeven). Let this runner breathe. Don't exit early out of fear. The goal is not to 'lock in profits' on the runner — the goal is to **capture the full move**. If it reverses, you'll still bank +40 pips on the runner (+$120 on TP1 portion = $240 total). If it continues to 1.0980, you'll bank +130 pips on the runner = $780 total profit."
+
+---
+
+### Summary: AI as Your Disciplined Partner
+
+The system doesn't try to **predict** — it tries to **manage**. The AI knows:
+- Small losses are tuition, not failure
+- Big wins come from letting runners ride
+- Scaling into winners amplifies edge
+- Averaging into losers destroys accounts
+- Discipline > prediction
+
+**You and the AI are aligned on one goal**: Survive long enough to catch the big trends, cut the noise fast, and compound asymmetric outcomes.
+
+---
+
 ## 7. Anti-Hallucination System
 
 Five layers of protection against AI price fabrication:
