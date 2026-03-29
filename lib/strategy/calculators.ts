@@ -11,7 +11,7 @@ import {
     calculateBollingerBands,
     calculateParabolicSAR
 } from "@/lib/utils/indicators"
-import { calculatePivotPoints } from "./strategies/pipo"
+import { calculatePivotPoints } from "@/lib/utils/indicators"
 
 export function calculateAllIndicators(
     candles: OandaCandle[],

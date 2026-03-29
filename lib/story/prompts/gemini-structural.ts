@@ -27,6 +27,8 @@ export function buildStoryStructuralPrompt(
 - **Patterns**: ${tf.patterns.length > 0 ? tf.patterns.join(', ') : 'none'}
 - **Swing Highs**: ${tf.swingHighs.slice(-3).map(s => s.price.toFixed(5)).join(', ') || 'none'}
 - **Swing Lows**: ${tf.swingLows.slice(-3).map(s => s.price.toFixed(5)).join(', ') || 'none'}
+- **Gann Levels** (low of swing high bars): ${tf.swingHighs.slice(-3).filter(s => s.oppositeExtreme).map(s => s.oppositeExtreme!.toFixed(5)).join(', ') || 'none'}
+- **Gann Levels** (high of swing low bars): ${tf.swingLows.slice(-3).filter(s => s.oppositeExtreme).map(s => s.oppositeExtreme!.toFixed(5)).join(', ') || 'none'}
 - **Volume trend**: ${describeVolume(tf.indicators.volume, tf.indicators.volumeSma)}
 - **EMA alignment**: ${describeEMAs(tf.indicators.ema)}
 - **Last 5 candles**: ${last5.map(c => `${parseFloat(c.mid.o).toFixed(5)}->${parseFloat(c.mid.c).toFixed(5)} (H:${parseFloat(c.mid.h).toFixed(5)} L:${parseFloat(c.mid.l).toFixed(5)})`).join(' | ')}`
@@ -48,6 +50,12 @@ Your job is to dig through multi-timeframe data and find the structural story.
 - NEVER fabricate or estimate price levels. Every level you cite must be traceable to a specific candle or swing point.
 - If data is insufficient for a particular timeframe, explicitly state "insufficient data" rather than guessing.
 - All key_levels must come from actual swing highs/lows or candle boundaries provided below.
+
+## GANN LEVELS (W.D. Gann Methodology)
+In addition to standard swing highs/lows, you are provided with Gann-based key levels:
+- **Low of swing high bars**: When a bar makes a swing high, its LOW often becomes resistance on pullbacks (marks the extreme volatility at the peak)
+- **High of swing low bars**: When a bar makes a swing low, its HIGH often becomes support on rallies (marks the extreme volatility at the bottom)
+These are REAL levels from actual candle data, not projections. Use them as additional confluence points for support/resistance.
 
 ## PAIR: ${data.pair}
 **Current Price**: ${data.currentPrice.toFixed(5)}

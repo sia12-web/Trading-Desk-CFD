@@ -14,9 +14,7 @@ export async function GET() {
     return NextResponse.json({
         preferences: prefs || {
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            morning_briefing: true,
             session_transitions: true,
-            task_reminders: true,
             market_alerts: true,
             morning_time: '07:00',
             quiet_start: '22:00',
@@ -25,10 +23,7 @@ export async function GET() {
             telegram_enabled: false,
             wake_up_time: '06:00',
             trading_start_time: '07:00',
-            trading_end_time: '21:00',
-            enable_hourly_checkins: true,
-            enable_mental_coaching: true,
-            enable_break_reminders: true
+            trading_end_time: '21:00'
         }
     })
 }
@@ -46,9 +41,7 @@ export async function PUT(req: Request) {
 
         const saved = await upsertNotificationPreferences(user.id, {
             timezone: body.timezone,
-            morning_briefing: body.morning_briefing,
             session_transitions: body.session_transitions,
-            task_reminders: body.task_reminders,
             market_alerts: body.market_alerts,
             morning_time: body.morning_time,
             quiet_start: body.quiet_start,
@@ -57,10 +50,7 @@ export async function PUT(req: Request) {
             telegram_enabled: body.telegram_enabled,
             wake_up_time: body.wake_up_time,
             trading_start_time: body.trading_start_time,
-            trading_end_time: body.trading_end_time,
-            enable_hourly_checkins: body.enable_hourly_checkins,
-            enable_mental_coaching: body.enable_mental_coaching,
-            enable_break_reminders: body.enable_break_reminders
+            trading_end_time: body.trading_end_time
         })
 
         if (!saved) {

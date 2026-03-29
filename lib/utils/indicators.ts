@@ -227,3 +227,35 @@ export function calculateADX(highs: number[], lows: number[], closes: number[], 
 
     return { adx: fullADX, diPlus, diMinus }
 }
+
+export interface PivotPointLevels {
+    pp: number;
+    r1: number;
+    r2: number;
+    r3: number;
+    s1: number;
+    s2: number;
+    s3: number;
+    m1: number;
+    m2: number;
+    m3: number;
+    m4: number;
+}
+
+export function calculatePivotPoints(prevHigh: number, prevLow: number, prevClose: number): PivotPointLevels {
+    const pp = (prevHigh + prevLow + prevClose) / 3;
+    const r1 = (2 * pp) - prevLow;
+    const r2 = pp + (prevHigh - prevLow);
+    const r3 = prevHigh + 2 * (pp - prevLow);
+    const s1 = (2 * pp) - prevHigh;
+    const s2 = pp - (prevHigh - prevLow);
+    const s3 = prevLow - 2 * (prevHigh - pp);
+
+    return {
+        pp, r1, r2, r3, s1, s2, s3,
+        m1: (s1 + pp) / 2,
+        m2: (pp + r1) / 2,
+        m3: (r1 + r2) / 2,
+        m4: (s1 + s2) / 2
+    };
+}

@@ -196,13 +196,19 @@ function findSwingHighs(candles: OandaCandle[], lookback: number = 5): PriceLeve
     const levels: PriceLevel[] = []
     for (let i = lookback; i < candles.length - lookback; i++) {
         const high = parseFloat(candles[i].mid.h)
+        const low = parseFloat(candles[i].mid.l)  // Gann: capture low of the swing high bar
         let isSwing = true
         for (let j = i - lookback; j <= i + lookback; j++) {
             if (j === i) continue
             if (parseFloat(candles[j].mid.h) >= high) { isSwing = false; break }
         }
         if (isSwing) {
-            levels.push({ price: high, time: candles[i].time, strength: 1 })
+            levels.push({
+                price: high,
+                time: candles[i].time,
+                strength: 1,
+                oppositeExtreme: low  // The low of the highest bar (Gann support level)
+            })
         }
     }
     return consolidateLevels(levels)
@@ -212,13 +218,19 @@ function findSwingLows(candles: OandaCandle[], lookback: number = 5): PriceLevel
     const levels: PriceLevel[] = []
     for (let i = lookback; i < candles.length - lookback; i++) {
         const low = parseFloat(candles[i].mid.l)
+        const high = parseFloat(candles[i].mid.h)  // Gann: capture high of the swing low bar
         let isSwing = true
         for (let j = i - lookback; j <= i + lookback; j++) {
             if (j === i) continue
             if (parseFloat(candles[j].mid.l) <= low) { isSwing = false; break }
         }
         if (isSwing) {
-            levels.push({ price: low, time: candles[i].time, strength: 1 })
+            levels.push({
+                price: low,
+                time: candles[i].time,
+                strength: 1,
+                oppositeExtreme: high  // The high of the lowest bar (Gann resistance level)
+            })
         }
     }
     return consolidateLevels(levels)
@@ -235,7 +247,13 @@ function consolidateLevels(levels: PriceLevel[]): PriceLevel[] {
         const threshold = last.price * 0.001
         if (Math.abs(sorted[i].price - last.price) < threshold) {
             last.strength++
-            last.price = (last.price + sorted[i].price) / 2 // average
+            last.price = (last.price + sorted[i].price) / 2 // average price
+            // Average the opposite extreme as well (Gann levels)
+            const lastOpp = last.oppositeExtreme
+            const currOpp = sorted[i].oppositeExtreme
+            if (lastOpp !== undefined && currOpp !== undefined) {
+                last.oppositeExtreme = (lastOpp + currOpp) / 2
+            }
         } else {
             consolidated.push(sorted[i])
         }

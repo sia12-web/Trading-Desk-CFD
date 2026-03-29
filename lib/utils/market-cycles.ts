@@ -25,7 +25,7 @@ export interface CycleSnapshot {
     currentMonth: SeasonalPattern
     nextMonth: SeasonalPattern
     overallBias: string     // combined reading from all cycles
-    summary: string         // compact string for Manouk (~100 tokens)
+    summary: string         // compact string for the daily cycle summary (~100 tokens)
 }
 
 export function getTenYearCycle(currentDate: Date): CyclePhase {
@@ -263,7 +263,7 @@ export function getCycleSnapshot(currentDate: Date): CycleSnapshot {
     const currentMonth = getSeasonalPattern(currentDate.getMonth() + 1);
     const nextMonth = getSeasonalPattern((currentDate.getMonth() + 1) % 12 + 1);
 
-    // Generate compact summary for Manouk (~100 tokens)
+    // Generate compact summary for the cycle snapshot (~100 tokens)
     const summary = `CYCLES: 10yr=${tenYear.currentPhase} (${tenYear.historicalBias}). Presidential=${presidential.currentPhase} (${presidential.historicalBias}). Season=${currentMonth.monthName}: ${currentMonth.historicalBias}. ${currentMonth.forexNotes.split('.')[0]}.`;
 
     return {

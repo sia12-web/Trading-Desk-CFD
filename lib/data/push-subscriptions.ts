@@ -17,9 +17,7 @@ export interface NotificationPreferences {
     id: string
     user_id: string
     timezone: string
-    morning_briefing: boolean
     session_transitions: boolean
-    task_reminders: boolean
     market_alerts: boolean
     morning_time: string
     quiet_start: string
@@ -29,9 +27,6 @@ export interface NotificationPreferences {
     wake_up_time: string
     trading_start_time: string
     trading_end_time: string
-    enable_hourly_checkins: boolean
-    enable_mental_coaching: boolean
-    enable_break_reminders: boolean
 }
 
 export async function saveSubscription(

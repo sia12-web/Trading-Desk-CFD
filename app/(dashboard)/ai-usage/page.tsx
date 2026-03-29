@@ -132,7 +132,7 @@ export default function AIUsagePage() {
                     <Brain size={40} className="mx-auto text-neutral-700 mb-4" />
                     <h2 className="text-lg font-bold text-neutral-400 mb-2">No AI usage yet</h2>
                     <p className="text-sm text-neutral-600 max-w-md mx-auto">
-                        Usage tracking starts when you generate stories, scenario analyses, or use the AI coach.
+                        Usage tracking starts when you generate stories, scenario analyses, or run technical market analyses.
                         Previous calls before this feature was enabled are not tracked.
                     </p>
                 </div>

@@ -15,15 +15,13 @@
 7. [How AI Handles Major News & Geopolitical Events](#7-how-ai-handles-major-news--geopolitical-events)
 8. [Anti-Hallucination System](#8-anti-hallucination-system)
 9. [CMS Engine (Conditional Market Shaping)](#9-cms-engine)
-10. [Daily Plan](#10-daily-plan)
-11. [Unified Analysis](#11-unified-analysis)
-12. [OANDA Integration](#12-oanda-integration)
-13. [Dashboard](#13-dashboard)
-14. [Background Tasks](#14-background-tasks)
-15. [Notification System](#15-notification-system)
-16. [Cron Schedule](#16-cron-schedule)
-17. [Database Tables](#17-database-tables)
-18. [Security Model](#18-security-model)
+10. [OANDA Integration](#10-oanda-integration)
+11. [Dashboard](#11-dashboard)
+12. [Background Tasks](#12-background-tasks)
+13. [Notification System](#13-notification-system)
+14. [Cron Schedule](#14-cron-schedule)
+15. [Database Tables](#15-database-tables)
+16. [Security Model](#16-security-model)
 
 ---
 
@@ -45,7 +43,7 @@
 
 Only 5: **Monthly (M), Weekly (W), Daily (D), 4-Hour (H4), 1-Hour (H1)**.
 
-Lower timeframes (M15, M5, M1) were deliberately removed — AI cannot reliably predict them. The only execution strategy (PIPO) operates on H1.
+Lower timeframes (M15, M5, M1) were deliberately removed — AI cannot reliably predict them. The system focuses on H1 and above for all execution and analysis.
 
 ### Supported Pairs
 
@@ -62,7 +60,7 @@ Three specialized AI models work in sequence — **all must succeed or the opera
 |-------|-----|------|---------|
 | **Gemini** `gemini-3-flash-preview` | `@google/genai` | Pattern Archaeologist — structural analysis, cycle detection, Fibonacci clusters, S/R mapping | 90s |
 | **DeepSeek** `deepseek-chat` V3.2 | `openai` SDK | Quantitative Engine — zone validation, divergences, precise levels, risk model, flags suspicious data | 90s |
-| **Claude** `claude-opus-4-6` | `@anthropic-ai/sdk` | Decision Architect — Elliott Wave, narrative synthesis, strategy gate, trade plan, coaching | 60-180s |
+| Claude claude-opus-4-6 | @anthropic-ai/sdk | Decision Architect — Elliott Wave, narrative synthesis, strategy gate, trade plan | 60-180s |
 
 **Pipeline order**: Gemini (processes raw data) → DeepSeek (validates Gemini) → Claude (synthesizes both).
 
@@ -864,33 +862,9 @@ The CMS page (`/cms`) is not visible in navigation — it's an internal AI data 
 
 ---
 
-## 10. Daily Plan
-
-`lib/ai/prompts-daily-plan.ts`
-
-AI coach "Manouk" generates a personalized morning briefing with 8-12 focused tasks. Characteristics:
-- **ONE generation per day** — no regeneration allowed
-- Knows all platform features by name and path
-- Fetches volatility scanner data for pair recommendations
-- Respects wake-up time + trading hours from notification preferences
-- Background task tracking — generation continues if user navigates away
-- References specific platform features in tasks (e.g., "Check the Story for EUR/USD at /story")
-
 ---
 
-## 11. Unified Analysis
-
-`lib/ai/prompts-unified-analysis.ts` + `lib/analysis/data-aggregator.ts`
-
-Two modes:
-- **Auto Mode**: OANDA data → optimize indicators → Fibonacci/patterns → tri-model AI analysis
-- **Manual Mode**: Upload 5 timeframe screenshots (M, W, D, H4, H1) → AI analyzes images
-
-Single AI call produces: Elliott Wave counting, strategy gate recommendation, trade plan, zones, TradingView drawings.
-
----
-
-## 12. OANDA Integration
+## 10. OANDA Integration
 
 `lib/oanda/client.ts`
 
@@ -920,7 +894,7 @@ Account mode stored in `oanda-mode` cookie. Candle data always fetched from demo
 
 ---
 
-## 13. Dashboard
+## 11. Dashboard
 
 `app/(dashboard)/page.tsx`
 
@@ -958,7 +932,7 @@ Account mode stored in `oanda-mode` cookie. Candle data always fetched from demo
 
 ---
 
-## 14. Background Tasks
+## 12. Background Tasks
 
 Long-running operations (story generation, CMS analysis) persist across page navigation.
 
@@ -988,7 +962,7 @@ pollTask(taskId, onProgress, onComplete, onError)
 
 ---
 
-## 15. Notification System
+## 13. Notification System
 
 | Channel | Tech | Used By |
 |---------|------|---------|
@@ -999,7 +973,7 @@ Dispatcher: `lib/notifications/notifier.ts` routes based on user's preferences.
 
 ---
 
-## 16. Cron Schedule
+## 14. Cron Schedule
 
 All scheduled via Supabase `pg_cron` + `pg_net`. Authenticated with `Bearer CRON_SECRET`.
 
@@ -1012,7 +986,7 @@ All scheduled via Supabase `pg_cron` + `pg_net`. Authenticated with `Bearer CRON
 
 ---
 
-## 17. Database Tables
+## 15. Database Tables
 
 ### Core (User Data — PRESERVED on AI reset)
 `trader_profile`, `risk_rules`, `trades`, `trade_pnl`, `trade_screenshots`, `trade_strategies`, `trade_sync_log`, `execution_log`, `calendar_events`, `user_pair_notes`, `trading_guru_notes`
@@ -1023,18 +997,12 @@ All scheduled via Supabase `pg_cron` + `pg_net`. Authenticated with `Bearer CRON
 ### Analysis & AI (DELETED on AI reset)
 `wave_analysis`, `big_picture_analysis`, `structural_analysis_cache`, `indicator_optimizations`, `technical_analyses`, `cms_analyses`, `scenario_analyses`
 
-### Coaching & Plans (DELETED on AI reset)
-`ai_coaching_sessions`, `coaching_memory`, `behavioral_analysis`, `daily_plans`, `daily_tasks`
-
-### Strategy Lab (DELETED on AI reset)
-`strategy_discoveries`, `lab_signals`, `lab_settings`, `lab_scan_history`, `lab_performance_snapshots`, `strategy_engines`, `strategy_signals`
-
 ### Infrastructure (PRESERVED)
 `background_tasks`, `notification_preferences`, `push_subscriptions`, `ai_usage_logs`
 
 ---
 
-## 18. Security Model
+## 16. Security Model
 
 | Control | Implementation |
 |---------|---------------|

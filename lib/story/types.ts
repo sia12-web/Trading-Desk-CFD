@@ -15,9 +15,10 @@ export interface TimeframeData {
 }
 
 export interface PriceLevel {
-    price: number
+    price: number       // The primary level (high for swing highs, low for swing lows)
     time: string
-    strength: number  // how many times tested
+    strength: number    // how many times tested
+    oppositeExtreme?: number  // Gann concept: high of swing low bar, or low of swing high bar
 }
 
 export interface StoryDataPayload {

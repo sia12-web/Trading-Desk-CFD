@@ -808,10 +808,9 @@ export default function SettingsPage() {
                                     <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Story episodes, scenarios, bibles, seasons, positions</li>
                                     <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Pair subscriptions &amp; intelligence agent reports</li>
                                     <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Internal analysis caches &amp; scenario analyses</li>
-                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> AI coaching sessions &amp; behavioral analysis</li>
-                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Daily plans &amp; tasks</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Internal analysis caches &amp; scenario analyses</li>
                                     <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Analysis caches &amp; indicator optimizations</li>
-                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-amber-500 flex-shrink-0" /> Strategy Lab discoveries, signals &amp; engines</li>
+
                                 </ul>
                             </div>
                             <div className="p-5 rounded-2xl bg-green-950/20 border border-green-900/30">
@@ -832,7 +831,7 @@ export default function SettingsPage() {
                             <div className="flex-1">
                                 <h4 className="text-lg font-bold text-white mb-2">Reset AI Memory</h4>
                                 <p className="text-sm text-neutral-400 leading-relaxed">
-                                    Wipe all AI-generated data — Story arcs, coaching history, analysis caches, strategy lab — and start completely fresh. Your personal notes and trading history are untouched.
+                                    Wipe all AI-generated data — Story arcs, coaching history, analysis caches — and start completely fresh. Your personal notes and trading history are untouched.
                                 </p>
                                 <div className="mt-3 text-xs text-amber-400/80 font-medium">
                                     This action cannot be undone
@@ -905,10 +904,8 @@ export default function SettingsPage() {
                             </p>
                             <ul className="text-sm text-neutral-400 space-y-2 list-disc list-inside">
                                 <li>Story episodes, scenarios, bibles, seasons &amp; positions</li>
-                                <li>AI coaching sessions &amp; behavioral analysis</li>
                                 <li>Internal analysis caches &amp; scenario analyses</li>
-                                <li>Daily plans &amp; analysis caches</li>
-                                <li>Strategy Lab discoveries, signals &amp; engines</li>
+
                             </ul>
                             <p className="text-xs text-green-400 font-medium pt-2">
                                 Your trading journal, gurus, personal notes, and settings are safe.

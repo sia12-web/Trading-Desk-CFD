@@ -37,7 +37,6 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 | `/journal/[id]/edit` | Journal Edit | Edit trade notes/screenshots |
 | `/pnl` | P&L Dashboard | Profit/loss analytics with charts |
 | `/risk-rules` | Risk Rules | Max position, daily loss, drawdown limits |
-| `/strategies` | Strategies | Strategy Lab + PIPO config |
 | `/calendar` | Calendar | Trading calendar with recurring events |
 | `/cms` | CMS Engine | Conditional Market Shaping — programmatic pattern analysis |
 | `/news` | News | Forex Factory + economic calendar |
@@ -183,10 +182,6 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 - **Role**: Elliott Wave counting, strategy gate, contradiction resolution, trade plan
 - **Prompt**: `lib/ai/prompts-unified-analysis.ts` → `getUnifiedAuditorPromptV2()`
 - **Client**: `lib/ai/clients/claude.ts`
-
-### Coach/Counselor/Daily Plan
-- **Model**: `claude-sonnet-4-6` (efficient, with fallback chain)
-- **Client**: `lib/ai/client.ts` → `chatWithCoach()`
 
 ### Infrastructure
 - **JSON Parsing**: `lib/ai/parse-response.ts` → `parseAIJson<T>()` (uses JSON5)
@@ -391,29 +386,18 @@ CMS runs as a Story agent at **4AM UTC** (alongside Optimizer, News, Cross-Marke
 
 ---
 
-## Strategy & Signals
+## Signals Hub
 
-### PIPO (Price In Price Out)
-- **Only active strategy** — all others removed
-- **Timeframe**: H1 (was M15)
-- **Registry**: `lib/strategy/registry.ts`
-- **Implementation**: `lib/strategy/strategies/pipo.ts`
-- **Calculators**: `lib/strategy/calculators.ts` (indicators, BB Width)
+### Strategy Signals
+Strategy signals from optimized indicator rules are stored in the `strategy_signals` table. Lifecycle: pending → approved → executed.
 
-### Strategy Lab (Autonomous AI Trading Brain)
-- **Flow**: Discovery → Backtest → Validate → Activate → Monitor → Signal → Execute
-- **Discovery**: `lib/strategy-lab/discovery-pipeline.ts`
-- **Evaluator**: `lib/strategy-lab/evaluator.ts` — purely programmatic, no AI per check
-- **Backtester**: `lib/strategy-lab/backtester.ts`
-- **Types**: `lib/strategy-lab/types.ts` — StrategyRuleSet (executable JSON schema)
-- **Data**: `lib/strategy-lab/data.ts` — CRUD for lab tables
-- **Pine Script**: DISABLED — built-in evaluator used instead
+### Indicator Alerts
+Individual indicator alerts from the optimizer.
 
-### Signal Hub (`/signals`)
-- **Strategy Signals**: From Strategy Lab (`lab_signals` table), lifecycle: pending → approved → executed
-- **Indicator Alerts**: From optimizer (`strategy_signals` table), single-condition alerts
+### Generator
 - **Generator**: `lib/signals/indicator-generator.ts`
 - **Compression Signal**: `lib/signals/compression-signal-generator.ts`
+
 
 ---
 
@@ -470,25 +454,8 @@ CMS runs as a Story agent at **4AM UTC** (alongside Optimizer, News, Cross-Marke
 |-------|---------|
 | `ai_usage_logs` | Per-call token usage, cost estimates, latency, success/failure (RLS) |
 
-### Coaching & Daily Plan Tables
-| Table | Purpose |
-|-------|---------|
-| `daily_plans` | Daily plan metadata |
-| `daily_tasks` | Checkable tasks within plans |
-| `ai_coaching_sessions` | Coach chat history |
-| `coaching_memory` | Coach context persistence |
-| `behavioral_analysis` | AI coach behavioral context |
 
-### Strategy Lab Tables
-| Table | Purpose |
-|-------|---------|
-| `strategy_discoveries` | Discovered strategies |
-| `lab_signals` | Multi-condition signals |
-| `lab_settings` | Lab configuration |
-| `lab_scan_history` | Discovery scan history |
-| `lab_performance_snapshots` | Backtest results |
-| `strategy_engines` | Rule evaluators |
-| `strategy_signals` | Individual indicator alerts |
+
 
 ### Notification Tables
 | Table | Purpose |
@@ -655,8 +622,7 @@ Centralized in `lib/ai/chart-style.ts` → `CHART_STYLE_PROMPT_BLOCK`. Injected 
 | Trades | `lib/data/trades.ts` | Trade journal CRUD |
 | Trader Profile | `lib/data/trader-profile.ts` | Profile management |
 | Push Subs | `lib/data/push-subscriptions.ts` | Push subscription management |
-| Strategy Templates | `lib/data/strategy-templates.ts` | Strategy template CRUD |
-| Default Strategies | `lib/data/default-strategies.ts` | Seed data |
+
 
 ---
 

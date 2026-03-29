@@ -16,9 +16,6 @@ export async function POST() {
         const phase1Tables = [
             'story_position_adjustments',
             'story_scenarios',
-            'daily_tasks',
-            'lab_signals',
-            'lab_performance_snapshots',
         ]
 
         // Phase 2 — Everything else
@@ -31,20 +28,11 @@ export async function POST() {
             'pair_subscriptions',
             'cms_analyses',
             'scenario_analyses',
-            'ai_coaching_sessions',
-            'coaching_memory',
-            'behavioral_analysis',
-            'daily_plans',
             'indicator_optimizations',
             'structural_analysis_cache',
             'wave_analysis',
             'big_picture_analysis',
             'technical_analyses',
-            'strategy_discoveries',
-            'lab_settings',
-            'lab_scan_history',
-            'strategy_engines',
-            'strategy_signals',
         ]
 
         const deleteFromTable = async (table: string) => {
@@ -73,10 +61,7 @@ export async function POST() {
         const categories = {
             story: ['story_position_adjustments', 'story_scenarios', 'story_positions', 'story_episodes', 'story_bibles', 'story_seasons', 'story_agent_reports', 'pair_subscriptions'],
             cms: ['cms_analyses', 'scenario_analyses'],
-            coaching: ['ai_coaching_sessions', 'coaching_memory', 'behavioral_analysis'],
-            daily_plans: ['daily_tasks', 'daily_plans'],
             analysis_cache: ['indicator_optimizations', 'structural_analysis_cache', 'wave_analysis', 'big_picture_analysis', 'technical_analyses'],
-            strategy_lab: ['lab_signals', 'lab_performance_snapshots', 'strategy_discoveries', 'lab_settings', 'lab_scan_history', 'strategy_engines', 'strategy_signals'],
         }
 
         const categorySummary: Record<string, number> = {}
