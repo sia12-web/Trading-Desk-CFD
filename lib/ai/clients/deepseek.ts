@@ -39,63 +39,89 @@ export async function callDeepSeek(
     console.log(`[AI] DEEPSEEK (Quant Engine) | model=${model} | maxTokens=${maxTokens} | timeout=${timeout}ms | prompt="${promptPreview}..."`)
 
     const start = Date.now()
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeout)
+    const maxRetries = 5
+    let attempt = 0
 
-    try {
-        const response = await getClient().chat.completions.create(
-            {
-                model,
-                max_tokens: maxTokens,
-                messages: [{ role: 'user', content: prompt }],
-            },
-            { signal: controller.signal }
-        )
+    while (attempt <= maxRetries) {
+        attempt++
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), timeout)
 
-        const elapsed = Date.now() - start
-        const content = response.choices[0]?.message?.content
-        if (!content) {
-            throw new Error('DeepSeek returned empty response')
+        try {
+            const response = await getClient().chat.completions.create(
+                {
+                    model,
+                    max_tokens: maxTokens,
+                    messages: [{ role: 'user', content: prompt }],
+                },
+                { signal: controller.signal }
+            )
+
+            const elapsed = Date.now() - start
+            const content = response.choices[0]?.message?.content
+            if (!content) {
+                throw new Error('DeepSeek returned empty response')
+            }
+            const tokens = response.usage
+            const inputTokens = tokens?.prompt_tokens ?? 0
+            const outputTokens = tokens?.completion_tokens ?? 0
+            console.log(`[AI] DEEPSEEK DONE | ${elapsed}ms | attempt=${attempt} | input=${inputTokens} output=${outputTokens} tokens | ${content.length} chars`)
+
+            if (usage) {
+                logAIUsage({
+                    userId: usage.userId,
+                    provider: 'deepseek',
+                    model,
+                    feature: usage.feature,
+                    inputTokens,
+                    outputTokens,
+                    durationMs: elapsed,
+                    success: true,
+                })
+            }
+
+            clearTimeout(timer)
+            return content
+        } catch (error: any) {
+            clearTimeout(timer)
+            const elapsed = Date.now() - start
+            
+            // Extract error info from SDK or response
+            const status = error?.status || error?.error?.status || 0
+            const messageStr = error?.message || error?.error?.message || ''
+            
+            // 502 (Bad Gateway), 503 (Service Unavailable), 429 (Rate Limit)
+            const isRetryable = status === 502 || status === 503 || status === 429 || 
+                               messageStr.toLowerCase().includes('overloaded') ||
+                               messageStr.toLowerCase().includes('bad gateway') ||
+                               messageStr.toLowerCase().includes('service unavailable')
+
+            if (isRetryable && attempt <= maxRetries) {
+                const delay = Math.pow(2, attempt) * 1000 // 2s, 4s, 8s, 16s, 32s
+                console.warn(`[AI] DEEPSEEK ${status} RECOVERABLE ERROR (attempt ${attempt}/${maxRetries+1}) | retrying in ${delay}ms... | ${messageStr.slice(0, 50)}`)
+                await new Promise(resolve => setTimeout(resolve, delay))
+                continue
+            }
+
+            console.error(`[AI] DEEPSEEK FAILED after ${attempt} attempts | ${elapsed}ms | ${messageStr}`)
+
+            if (usage) {
+                logAIUsage({
+                    userId: usage.userId,
+                    provider: 'deepseek',
+                    model,
+                    feature: usage.feature,
+                    inputTokens: 0,
+                    outputTokens: 0,
+                    durationMs: elapsed,
+                    success: false,
+                    errorMessage: messageStr,
+                })
+            }
+
+            throw error
         }
-        const tokens = response.usage
-        const inputTokens = tokens?.prompt_tokens ?? 0
-        const outputTokens = tokens?.completion_tokens ?? 0
-        console.log(`[AI] DEEPSEEK DONE | ${elapsed}ms | input=${inputTokens} output=${outputTokens} tokens | ${content.length} chars`)
-
-        if (usage) {
-            logAIUsage({
-                userId: usage.userId,
-                provider: 'deepseek',
-                model,
-                feature: usage.feature,
-                inputTokens,
-                outputTokens,
-                durationMs: elapsed,
-                success: true,
-            })
-        }
-
-        return content
-    } catch (error) {
-        const elapsed = Date.now() - start
-        console.error(`[AI] DEEPSEEK FAILED | ${elapsed}ms | ${error instanceof Error ? error.message : 'Unknown error'}`)
-
-        if (usage) {
-            logAIUsage({
-                userId: usage.userId,
-                provider: 'deepseek',
-                model,
-                feature: usage.feature,
-                inputTokens: 0,
-                outputTokens: 0,
-                durationMs: elapsed,
-                success: false,
-                errorMessage: error instanceof Error ? error.message : 'Unknown error',
-            })
-        }
-
-        throw error
-    } finally {
-        clearTimeout(timer)
     }
+
+    throw new Error('DeepSeek call failed after maximum retries')
 }
