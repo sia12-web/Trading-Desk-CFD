@@ -34,14 +34,14 @@ interface NewsSentiment {
 }
 
 const FOREX_PAIRS = [
-    'EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF',
+    'GLOBAL', 'EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF',
     'AUD/USD', 'USD/CAD', 'NZD/USD'
 ]
 
 export default function NewsPage() {
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
-    const [selectedPair, setSelectedPair] = useState('EUR/USD')
+    const [selectedPair, setSelectedPair] = useState('GLOBAL')
     const [hoursAhead, setHoursAhead] = useState(48)
     const [impactFilter, setImpactFilter] = useState<string | null>(null)
 
@@ -211,7 +211,9 @@ export default function NewsPage() {
                         <div className="border border-neutral-800 rounded-xl bg-neutral-950/50">
                             <div className="px-4 py-3 border-b border-neutral-800 flex items-center gap-2">
                                 <Calendar className="text-blue-400" size={18} />
-                                <h3 className="font-bold text-sm uppercase tracking-wider">Economic Calendar</h3>
+                                <h3 className="font-bold text-sm uppercase tracking-wider">
+                                    Economic Calendar {selectedPair !== 'GLOBAL' ? `(${selectedPair})` : '(GLOBAL)'}
+                                </h3>
                                 <span className="text-xs text-neutral-500">({filteredEvents.length} events)</span>
                             </div>
 

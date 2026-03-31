@@ -42,10 +42,20 @@ export async function GET(req: NextRequest) {
         const cutoffTime = new Date(now.getTime() + hoursAhead * 60 * 60 * 1000)
 
         // Filter events for the time window
-        const upcomingEvents = allEvents.filter(event => {
+        let upcomingEvents = allEvents.filter(event => {
             const eventTime = new Date(event.date)
             return eventTime >= now && eventTime <= cutoffTime
-        }).map(event => {
+        })
+
+        // ── NEW: Filter by pair currencies ──
+        if (pair !== 'GLOBAL') {
+            const currencies = pair.split('/').map(c => c.trim())
+            upcomingEvents = upcomingEvents.filter(event => 
+                currencies.includes(event.currency)
+            )
+        }
+
+        const formattedEvents = upcomingEvents.map(event => {
             const eventTime = new Date(event.date)
             const minutesUntil = Math.floor((eventTime.getTime() - now.getTime()) / 60000)
 
@@ -64,23 +74,23 @@ export async function GET(req: NextRequest) {
         })
 
         // Get events specific to the selected pair
-        const pairEvents = await getUpcomingEventsForPair(pair, hoursAhead)
+        const pairEvents = pair === 'GLOBAL' ? [] : await getUpcomingEventsForPair(pair, hoursAhead)
 
         // Fetch recent news headlines
         const headlines = await fetchForexNews(20)
 
-        console.log(`✅ News fetched: ${upcomingEvents.length} events, ${headlines.length} headlines`)
+        console.log(`✅ News fetched: ${formattedEvents.length} events, ${headlines.length} headlines (Pair: ${pair})`)
 
         const finalResult = {
             success: true,
             pair,
             timestamp: new Date().toISOString(),
             calendar: {
-                allEvents: upcomingEvents,
+                allEvents: formattedEvents,
                 pairEvents,
-                totalEvents: upcomingEvents.length,
-                highImpact: upcomingEvents.filter(e => e.impact === 'High').length,
-                mediumImpact: upcomingEvents.filter(e => e.impact === 'Medium').length
+                totalEvents: formattedEvents.length,
+                highImpact: formattedEvents.filter(e => e.impact === 'High').length,
+                mediumImpact: formattedEvents.filter(e => e.impact === 'Medium').length
             },
             news: {
                 headlines,

@@ -105,7 +105,7 @@ export default function StoryPage() {
                     <ScrollText size={24} className="text-blue-400" />
                     <div>
                         <h1 className="text-xl font-bold text-neutral-100">Story</h1>
-                        <p className="text-xs text-neutral-500">Follow your pairs like a TV show. Understand the narrative.</p>
+                        <p className="text-xs text-neutral-500">Follow your instruments like a TV show. Understand the narrative.</p>
                     </div>
                 </div>
                 <button
@@ -113,7 +113,7 @@ export default function StoryPage() {
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition-colors shadow-lg shadow-blue-600/20"
                 >
                     <Plus size={16} />
-                    Add Pair
+                    Add Instrument
                 </button>
             </div>
 
@@ -125,16 +125,16 @@ export default function StoryPage() {
             ) : pairInfos.length === 0 ? (
                 <div className="text-center py-20 border border-dashed border-neutral-800 rounded-3xl bg-neutral-900/20">
                     <ScrollText size={40} className="mx-auto text-neutral-700 mb-4" />
-                    <h2 className="text-lg font-bold text-neutral-400 mb-2">No pairs yet</h2>
+                    <h2 className="text-lg font-bold text-neutral-400 mb-2">No instruments yet</h2>
                     <p className="text-sm text-neutral-600 mb-6 max-w-md mx-auto">
-                        Start following a currency pair to get AI-powered narrative analysis.
-                        Each pair becomes an ongoing story with characters, scenarios, and episodes.
+                        Start following a forex pair or index to get AI-powered narrative analysis.
+                        Each instrument becomes an ongoing story with characters, scenarios, and episodes.
                     </p>
                     <button
                         onClick={() => setShowSelector(true)}
                         className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors"
                     >
-                        Follow Your First Pair
+                        Follow Your First Instrument
                     </button>
                 </div>
             ) : (
