@@ -44,9 +44,8 @@ export async function callClaude(
     console.log(`[AI] CLAUDE (Decision Architect) | model=${model} | maxTokens=${maxTokens} | timeout=${timeout}ms | prompt="${promptPreview}..."`)
 
     const start = Date.now()
-    const maxRetries = 3
+    const maxRetries = 5
     let attempt = 0
-
     while (attempt <= maxRetries) {
         attempt++
         const controller = new AbortController()
@@ -67,7 +66,7 @@ export async function callClaude(
             const block = message.content[0]
             if (block.type === 'text') {
                 const tokens = message.usage
-                console.log(`[AI] CLAUDE DONE | ${elapsed}ms | attempt=${attempt} | input=${tokens?.input_tokens ?? '?'} output=${tokens?.output_tokens ?? '?'} tokens | ${block.text.length} chars`)
+                console.log(`[AI] CLAUDE DONE | ${elapsed}ms | attempt=${attempt} | model=${model} | input=${tokens?.input_tokens ?? '?'} output=${tokens?.output_tokens ?? '?'} tokens | ${block.text.length} chars`)
 
                 if (usage) {
                     logAIUsage({
@@ -89,17 +88,23 @@ export async function callClaude(
         } catch (error: any) {
             clearTimeout(timer)
             const elapsed = Date.now() - start
-            const isOverloaded = error?.status === 529 || error?.message?.includes('overloaded') || error?.type === 'overloaded_error'
-            const isRateLimit = error?.status === 429 || error?.message?.includes('rate_limit')
+            
+            // Extract error info from SDK error or response body
+            const status = error?.status || error?.error?.status
+            const type = error?.type || error?.error?.type
+            const messageStr = error?.message || error?.error?.message || ''
+
+            const isOverloaded = status === 529 || messageStr.toLowerCase().includes('overloaded') || type === 'overloaded_error'
+            const isRateLimit = status === 429 || messageStr.toLowerCase().includes('rate_limit')
 
             if ((isOverloaded || isRateLimit) && attempt <= maxRetries) {
-                const delay = Math.pow(2, attempt) * 1000 // 2s, 4s, 8s
-                console.warn(`[AI] CLAUDE ${isOverloaded ? 'OVERLOADED' : 'RATE_LIMITED'} (attempt ${attempt}/${maxRetries+1}) | retrying in ${delay}ms...`)
+                const delay = Math.pow(2, attempt) * 1000 // 2s, 4s, 8s, 16s, 32s
+                console.warn(`[AI] CLAUDE ${isOverloaded ? 'OVERLOADED' : 'RATE_LIMITED'} (attempt ${attempt}/${maxRetries+1}) | retrying with ${model} in ${delay}ms...`)
                 await new Promise(resolve => setTimeout(resolve, delay))
                 continue
             }
 
-            console.error(`[AI] CLAUDE FAILED after ${attempt} attempts | ${elapsed}ms | ${error instanceof Error ? error.message : 'Unknown error'}`)
+            console.error(`[AI] CLAUDE FAILED after ${attempt} attempts | ${elapsed}ms | ${messageStr}`)
 
             if (usage) {
                 logAIUsage({
@@ -111,7 +116,7 @@ export async function callClaude(
                     outputTokens: 0,
                     durationMs: elapsed,
                     success: false,
-                    errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                    errorMessage: messageStr,
                 })
             }
 
@@ -151,9 +156,8 @@ export async function callClaudeWithCaching(
     console.log(`[AI] CLAUDE CACHED | model=${model} | maxTokens=${maxTokens} | prefix=${cacheablePrefix.length} chars | dynamic=${dynamicPrompt.length} chars`)
 
     const start = Date.now()
-    const maxRetries = 3
+    const maxRetries = 5
     let attempt = 0
-
     while (attempt <= maxRetries) {
         attempt++
         const controller = new AbortController()
@@ -190,7 +194,7 @@ export async function callClaudeWithCaching(
                 const tokens = message.usage
                 const cacheRead = (tokens as unknown as Record<string, unknown>)?.cache_read_input_tokens ?? 0
                 const cacheCreation = (tokens as unknown as Record<string, unknown>)?.cache_creation_input_tokens ?? 0
-                console.log(`[AI] CLAUDE CACHED DONE | ${elapsed}ms | attempt=${attempt} | input=${tokens?.input_tokens ?? '?'} output=${tokens?.output_tokens ?? '?'} | cache_read=${cacheRead} cache_creation=${cacheCreation} | ${block.text.length} chars`)
+                console.log(`[AI] CLAUDE CACHED DONE | ${elapsed}ms | attempt=${attempt} | model=${model} | input=${tokens?.input_tokens ?? '?'} output=${tokens?.output_tokens ?? '?'} | cache_read=${cacheRead} cache_creation=${cacheCreation} | ${block.text.length} chars`)
 
                 if (usage) {
                     logAIUsage({
@@ -214,17 +218,23 @@ export async function callClaudeWithCaching(
         } catch (error: any) {
             clearTimeout(timer)
             const elapsed = Date.now() - start
-            const isOverloaded = error?.status === 529 || error?.message?.includes('overloaded') || error?.type === 'overloaded_error'
-            const isRateLimit = error?.status === 429 || error?.message?.includes('rate_limit')
+            
+            // Extract error info from SDK error or response body
+            const status = error?.status || error?.error?.status
+            const type = error?.type || error?.error?.type
+            const messageStr = error?.message || error?.error?.message || ''
+
+            const isOverloaded = status === 529 || messageStr.toLowerCase().includes('overloaded') || type === 'overloaded_error'
+            const isRateLimit = status === 429 || messageStr.toLowerCase().includes('rate_limit')
 
             if ((isOverloaded || isRateLimit) && attempt <= maxRetries) {
-                const delay = Math.pow(2, attempt) * 1000 // 2s, 4s, 8s
-                console.warn(`[AI] CLAUDE CACHED ${isOverloaded ? 'OVERLOADED' : 'RATE_LIMITED'} (attempt ${attempt}/${maxRetries+1}) | retrying in ${delay}ms...`)
+                const delay = Math.pow(2, attempt) * 1000 // 2s, 4s, 8s, 16s, 32s
+                console.warn(`[AI] CLAUDE CACHED ${isOverloaded ? 'OVERLOADED' : 'RATE_LIMITED'} (attempt ${attempt}/${maxRetries+1}) | retrying with ${model} in ${delay}ms...`)
                 await new Promise(resolve => setTimeout(resolve, delay))
                 continue
             }
 
-            console.error(`[AI] CLAUDE CACHED FAILED after ${attempt} attempts | ${elapsed}ms | ${error instanceof Error ? error.message : 'Unknown error'}`)
+            console.error(`[AI] CLAUDE CACHED FAILED after ${attempt} attempts | ${elapsed}ms | ${messageStr}`)
 
             if (usage) {
                 logAIUsage({
@@ -236,7 +246,7 @@ export async function callClaudeWithCaching(
                     outputTokens: 0,
                     durationMs: elapsed,
                     success: false,
-                    errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                    errorMessage: messageStr,
                 })
             }
 
