@@ -29,7 +29,8 @@ import { getActivePosition, createPosition, updatePosition, addAdjustment, getAd
 import { getOandaDemoConfig } from '@/lib/oanda/account'
 import type { OandaAccountSummary } from '@/lib/types/oanda'
 import type { ActivePositionContext } from './prompts/claude-narrator'
-import { triggerAutoProcessScore, getMinimalPsychologyContext } from '@/lib/desk/story-reactions'
+import { triggerAutoProcessScore, getMinimalPsychologyContext, generatePositionEntryReaction, generatePositionManagementReaction } from '@/lib/desk/story-reactions'
+import type { StoryReactionContext } from '@/lib/desk/story-reactions'
 import type { StoryResult, PositionGuidance, EpisodeType } from './types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -373,26 +374,25 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
             )
         }
 
-        // ── Step 7c-bis: Store unified desk reaction (from Claude output) ──
-        if (result.desk_messages && result.desk_messages.length > 0) {
-            console.log(`${TAG} [Desk] Storing ${result.desk_messages.length} unified messages...`)
-            const contextData = {
-                episode_id: episode.id,
-                episode_number: episodeNumber,
-                season_number: seasonNumber,
-                pair: pair,
-                reaction_type: episodeType === 'position_entry' ? 'position_entry' : 'position_management',
+        // ── Step 7c-bis: Fire-and-forget Gemini desk reaction for position episodes ──
+        // Claude generates baseline desk_messages for narrative coherence, but we
+        // use a dedicated Gemini Flash pass for deeper, focused character reactions.
+        if (episodeType !== 'analysis' && result.position_guidance) {
+            const reactionCtx: StoryReactionContext = {
+                userId, pair, episodeId: episode.id,
+                episodeNumber, seasonNumber, episodeType,
+                currentPrice: data.currentPrice, atr14: data.atr14,
             }
 
-            await client.from('desk_messages').insert(
-                result.desk_messages.map(m => ({
-                    user_id: userId,
-                    speaker: m.speaker,
-                    message: m.message,
-                    message_type: m.message_type || 'comment',
-                    context_data: contextData,
-                }))
-            )
+            if (episodeType === 'position_entry') {
+                console.log(`${TAG} [Desk] Firing Gemini entry reaction (fire-and-forget)...`)
+                generatePositionEntryReaction(reactionCtx, result.position_guidance, result.story_title, client)
+                    .catch(err => console.error(`${TAG} [Desk] Entry reaction failed:`, err instanceof Error ? err.message : err))
+            } else {
+                console.log(`${TAG} [Desk] Firing Gemini management reaction (fire-and-forget)...`)
+                generatePositionManagementReaction(reactionCtx, result.position_guidance, result.story_title, client)
+                    .catch(err => console.error(`${TAG} [Desk] Mgmt reaction failed:`, err instanceof Error ? err.message : err))
+            }
         }
 
         // ── Step 7d: Update Story Bible ──
