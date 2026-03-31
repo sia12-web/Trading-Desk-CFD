@@ -257,7 +257,7 @@ export async function getCandles(params: {
     count: number,
     price?: string
 }): Promise<{ data?: OandaCandle[], error?: any }> {
-    const cfg = await getOandaDemoConfig()
+    const cfg = await getOandaConfig()
     const { instrument, granularity, count, price = 'M' } = params
     const result = await oandaFetch<{ candles: OandaCandle[] }>(
         `/v3/instruments/${instrument}/candles?granularity=${granularity}&count=${count}&price=${price}`,
@@ -275,7 +275,7 @@ export async function fetchHistoricalCandles(params: {
     to: string,
     price?: string
 }): Promise<OandaCandle[]> {
-    const cfg = await getOandaDemoConfig()
+    const cfg = await getOandaConfig()
     const { instrument, granularity, from, to, price = 'M' } = params
 
     // Retry logic for transient errors (502, 503, 504, network errors)
