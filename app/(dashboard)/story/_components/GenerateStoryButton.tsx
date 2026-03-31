@@ -9,15 +9,17 @@ interface GenerateStoryButtonProps {
     episodeCount: number
     onComplete: () => void
     autoGenerate?: boolean
+    canStartNewSeason?: boolean
 }
 
-export function GenerateStoryButton({ pair, episodeCount, onComplete, autoGenerate }: GenerateStoryButtonProps) {
+export function GenerateStoryButton({ pair, episodeCount, onComplete, autoGenerate, canStartNewSeason }: GenerateStoryButtonProps) {
     const task = useBackgroundTask('story_generation')
     const [autoFired, setAutoFired] = useState(false)
 
     const isFirstEpisode = episodeCount === 0
-    const buttonLabel = isFirstEpisode ? 'Begin the Story' : 'Write Next Episode'
-    const ButtonIcon = isFirstEpisode ? BookOpen : Sparkles
+    const isNewSeason = !isFirstEpisode && canStartNewSeason
+    const buttonLabel = isFirstEpisode ? 'Begin the Story' : isNewSeason ? 'Begin New Season' : 'Write Next Episode'
+    const ButtonIcon = isFirstEpisode || isNewSeason ? BookOpen : Sparkles
 
     const handleGenerate = () => {
         task.startTask('/api/story/generate', { pair })
@@ -95,9 +97,9 @@ export function GenerateStoryButton({ pair, episodeCount, onComplete, autoGenera
         )
     }
 
-    // Only show button if it's the first episode (Begin the Story)
-    // Subsequent episodes are generated automatically by the system
-    if (!isFirstEpisode) {
+    // Show button for: first episode OR new season start
+    // Subsequent episodes within a season are generated automatically by the scenario monitor
+    if (!isFirstEpisode && !isNewSeason) {
         return null
     }
 

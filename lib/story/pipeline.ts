@@ -9,7 +9,7 @@ import { buildStoryStructuralPrompt } from './prompts/gemini-structural'
 import { buildStoryQuantPrompt } from './prompts/deepseek-quant'
 import { buildStoryNarratorPromptCached } from './prompts/claude-narrator'
 import { getBible, upsertBible } from './bible'
-import { getSeasonNumber, checkAndCloseSeason, getSeasonArchive, shouldForceSeasonFinale } from './seasons'
+import { getSeasonNumber, getSeasonArchive, endSeason } from './seasons'
 import { getAgentReportsForPair } from './agents/data'
 import {
     createEpisode,
@@ -18,6 +18,7 @@ import {
     getNextEpisodeNumber,
     getScenariosForEpisode,
     getRecentlyResolvedScenarios,
+    deactivateAllActiveScenariosForPair,
 } from '@/lib/data/stories'
 import { validateStoryLevels, validateScenarioLevels, parseFlaggedLevels } from './validators'
 import { getLatestScenarioAnalysisForPrompt } from '@/lib/scenario-analysis/context'
@@ -28,7 +29,9 @@ import { getActivePosition, createPosition, updatePosition, addAdjustment, getAd
 import { getOandaDemoConfig } from '@/lib/oanda/account'
 import type { OandaAccountSummary } from '@/lib/types/oanda'
 import type { ActivePositionContext } from './prompts/claude-narrator'
-import type { StoryResult, PositionGuidance } from './types'
+import { generatePositionEntryReaction, generatePositionManagementReaction, triggerAutoProcessScore } from '@/lib/desk/story-reactions'
+import type { StoryReactionContext } from '@/lib/desk/story-reactions'
+import type { StoryResult, PositionGuidance, EpisodeType } from './types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 const TAG = '[Story]'
@@ -39,13 +42,20 @@ const TAG = '[Story]'
  *
  * All 3 models must succeed — no fallbacks (Promise.all, not Promise.allSettled).
  *
- * @param options.useServiceRole - When true (cron), uses service-role client to bypass RLS
+ * @param options.useServiceRole - When true (cron/bot), uses service-role client to bypass RLS
+ * @param options.triggeredScenarioId - Which scenario triggered this generation (from monitor)
+ * @param options.triggeredEpisodeId - Which episode the triggered scenario belonged to
  */
 export async function generateStory(
     userId: string,
     pair: string,
     taskId: string,
-    options?: { useServiceRole?: boolean; generationSource?: 'manual' | 'cron' | 'bot' }
+    options?: {
+        useServiceRole?: boolean
+        generationSource?: 'manual' | 'cron' | 'bot'
+        triggeredScenarioId?: string
+        triggeredEpisodeId?: string
+    }
 ): Promise<void> {
     const client: SupabaseClient = options?.useServiceRole
         ? createServiceClient()
@@ -124,6 +134,37 @@ export async function generateStory(
             ? ((scenarioAnalysisRaw.market_context as MarketContext)?.key_levels || [])
             : null
 
+        // ── Determine episode type based on lifecycle ──
+        let episodeType: EpisodeType = 'analysis'
+        if (options?.triggeredScenarioId && lastEpisodeRaw) {
+            const lastType = (lastEpisodeRaw.episode_type as EpisodeType) || 'analysis'
+            if (lastType === 'analysis') {
+                episodeType = 'position_entry'
+            } else {
+                episodeType = 'position_management'
+            }
+        }
+
+        // Load triggered scenario details for prompt context
+        let triggeredScenario: {
+            title: string
+            direction: string
+            trigger_level: number
+            trigger_direction: string
+            trigger_timeframe: string
+            description: string
+        } | null = null
+        if (options?.triggeredScenarioId) {
+            const { data: scenarioData } = await client
+                .from('story_scenarios')
+                .select('title, direction, trigger_level, trigger_direction, trigger_timeframe, description')
+                .eq('id', options.triggeredScenarioId)
+                .single()
+            triggeredScenario = scenarioData
+        }
+
+        console.log(`${TAG} [Lifecycle] Episode type: ${episodeType}${triggeredScenario ? ` (triggered: "${triggeredScenario.title}")` : ''}`)
+
         // Build last episode with full narrative + scenarios
         let lastEpisode: {
             episode_number: number
@@ -183,17 +224,13 @@ export async function generateStory(
         console.log(`${TAG} [Context] Bible: ${bible ? 'yes' : 'no'}, lastEp: ${lastEpisode?.episode_number || 'none'}, resolved: ${resolvedScenarios.length}, scenarioAnalysis: ${scenarioAnalysisContext ? 'yes' : 'no'}, activePosition: ${activePositionCtx ? activePositionCtx.position.direction : 'none'}`)
         const claudeStart = Date.now()
         await updateProgress(taskId, 75, 'Claude crafting the story narrative...', client)
-        // Check if AI should be nudged to end the season (safety cap)
+
+        // Season number computation
         const currentSeasonNumber = lastEpisodeRaw?.season_number || 1
         const currentSeasonIsFinale = lastEpisodeRaw?.is_season_finale || false
         const episodeNumber = await getNextEpisodeNumber(userId, pair, client)
         const nextSeasonNumber = getSeasonNumber(currentSeasonNumber, currentSeasonIsFinale)
-
-        // Count episodes in the current season for safety cap
-        const episodesInCurrentSeason = lastEpisodeRaw
-            ? (lastEpisodeRaw.season_number === nextSeasonNumber ? episodeNumber - 1 : 0)
-            : 0
-        const forceFinale = shouldForceSeasonFinale(episodesInCurrentSeason + 1)
+        const seasonNumber = nextSeasonNumber
 
         // Build risk context for narrator
         const riskContextBlock = buildRiskContextBlock(riskRules, accountSummary)
@@ -209,10 +246,11 @@ export async function generateStory(
             agentIntelligence,
             flaggedLevels,
             seasonArchive,
-            forceFinale,
             scenarioAnalysisContext,
             activePositionCtx,
-            riskContextBlock
+            riskContextBlock,
+            episodeType,
+            triggeredScenario
         )
         const claudeOutput = await callClaudeWithCaching(cacheablePrefix, dynamicPrompt, {
             timeout: 180_000,
@@ -270,8 +308,13 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
         if (agentIntelligence.crossMarket) agentReportsSnapshot.crossMarket = { summary: agentIntelligence.crossMarket.summary, risk_appetite: agentIntelligence.crossMarket.risk_appetite }
         if (agentIntelligence.cms) agentReportsSnapshot.cms = { total_conditions: agentIntelligence.cms.total_conditions, market_personality: agentIntelligence.cms.market_personality }
 
-        // Season number already computed above before narrator call
-        const seasonNumber = nextSeasonNumber
+        // ── Deactivate all old active scenarios before creating new ones ──
+        const deactivated = await deactivateAllActiveScenariosForPair(
+            userId, pair, `Superseded by S${seasonNumber}E${episodeNumber}`, client
+        )
+        if (deactivated > 0) {
+            console.log(`${TAG} [Lifecycle] Deactivated ${deactivated} old scenarios`)
+        }
 
         const episode = await createEpisode(userId, pair, {
             episode_number: episodeNumber,
@@ -289,7 +332,9 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
             next_episode_preview: result.next_episode_preview,
             agent_reports: Object.keys(agentReportsSnapshot).length > 0 ? agentReportsSnapshot : undefined,
             generation_source: options?.generationSource || 'manual',
-            is_season_finale: result.is_season_finale || forceFinale,
+            is_season_finale: false, // System-controlled, not AI-controlled
+            episode_type: episodeType,
+            triggered_scenario_id: options?.triggeredScenarioId || null,
         }, client)
 
         // Create scenarios linked to this episode
@@ -307,6 +352,7 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
                     invalidation: s.invalidation,
                     ...(s.trigger_level != null ? { trigger_level: s.trigger_level } : {}),
                     ...(s.trigger_direction ? { trigger_direction: s.trigger_direction } : {}),
+                    ...(s.trigger_timeframe ? { trigger_timeframe: s.trigger_timeframe } : {}),
                     ...(s.invalidation_level != null ? { invalidation_level: s.invalidation_level } : {}),
                     ...(s.invalidation_direction ? { invalidation_direction: s.invalidation_direction } : {}),
                 })),
@@ -314,7 +360,7 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
             )
         }
 
-        // ── Step 7b: Process position guidance ──
+        // ── Step 7c: Process position guidance ──
         if (result.position_guidance) {
             console.log(`${TAG} [Position] Guidance: ${result.position_guidance.action} (confidence: ${result.position_guidance.confidence})`)
             await processPositionGuidance(
@@ -324,33 +370,43 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
             )
         }
 
-        // ── Step 7c: Update Story Bible ──
+        // ── Step 7c-bis: Fire desk reaction (non-blocking) ──
+        if (result.position_guidance && (episodeType === 'position_entry' || episodeType === 'position_management')) {
+            const reactionCtx: StoryReactionContext = {
+                userId, pair, episodeId: episode.id, episodeNumber, seasonNumber,
+                episodeType, currentPrice: data.currentPrice, atr14: data.atr14,
+            }
+            if (episodeType === 'position_entry') {
+                generatePositionEntryReaction(reactionCtx, result.position_guidance, result.story_title, client)
+                    .catch(err => console.error(`${TAG} [DeskReaction] Entry reaction failed:`, err instanceof Error ? err.message : err))
+            } else {
+                generatePositionManagementReaction(reactionCtx, result.position_guidance, result.story_title, client)
+                    .catch(err => console.error(`${TAG} [DeskReaction] Mgmt reaction failed:`, err instanceof Error ? err.message : err))
+            }
+        }
+
+        // ── Step 7d: Update Story Bible ──
         if (result.bible_update) {
             await upsertBible(userId, pair, result.bible_update, episodeNumber, client)
         }
 
-        // ── Step 7d: Check season finale (AI-driven or safety cap forced) ──
-        const isFinale = result.is_season_finale || forceFinale
-        await checkAndCloseSeason(
-            userId, pair, episodeNumber, seasonNumber,
-            result.bible_update?.arc_summary || '',
-            isFinale,
-            episodesInCurrentSeason + 1,
-            client
-        )
+        // Season ending is now trade-cycle-driven (handled in processPositionGuidance on 'close')
+        // No AI-driven season finale logic here
 
         const totalTime = ((Date.now() - startTime) / 1000).toFixed(1)
-        console.log(`${TAG} ════════ DONE ${pair} S${seasonNumber}E${episodeNumber} "${result.story_title}" in ${totalTime}s ════════`)
+        console.log(`${TAG} ════════ DONE ${pair} S${seasonNumber}E${episodeNumber} "${result.story_title}" (${episodeType}) in ${totalTime}s ════════`)
 
         await completeTask(taskId, {
             episodeId: episode.id,
             episodeNumber,
             title: result.story_title,
+            episodeType,
         }, client)
 
         // ── Step 7e: Notify User ──
+        const typeLabel = episodeType === 'analysis' ? 'Analysis' : episodeType === 'position_entry' ? 'Entry Signal' : 'Position Update'
         await notifyUser(userId, {
-            title: `📖 New Story: ${pair}`,
+            title: `${typeLabel}: ${pair}`,
             body: result.story_title || `Episode ${episodeNumber} is now live.`,
             url: `/story/${pair.replace('/', '-')}`
         }, client)
@@ -405,6 +461,7 @@ function buildRiskContextBlock(
 /**
  * Process position guidance from AI output.
  * Creates, adjusts, or closes story positions based on the AI's recommendation.
+ * When a position is closed, the season ends (trade-cycle-driven seasons).
  */
 async function processPositionGuidance(
     userId: string,
@@ -496,7 +553,7 @@ async function processPositionGuidance(
             return
         }
 
-        // ── Close position ──
+        // ── Close position → end season ──
         if (action === 'close' && existingPosition) {
             await updatePosition(existingPosition.id, {
                 status: 'closed',
@@ -515,6 +572,25 @@ async function processPositionGuidance(
             }, client)
 
             console.log(`[Story Position] Closed position for ${pair}: ${guidance.close_reason}`)
+
+            // Trade closed = season ends (trade-cycle-driven seasons)
+            await endSeason(userId, pair, seasonNumber, guidance.close_reason || 'Trade closed', client)
+            console.log(`[Story Position] Season ${seasonNumber} ended for ${pair} (trade closed)`)
+
+            // Auto-trigger process scoring if position was linked to a real OANDA trade
+            if (existingPosition.oanda_trade_id) {
+                const { data: linkedTrade } = await client
+                    .from('trades')
+                    .select('id')
+                    .eq('oanda_trade_id', existingPosition.oanda_trade_id)
+                    .limit(1)
+                    .maybeSingle()
+
+                if (linkedTrade) {
+                    triggerAutoProcessScore(userId, pair, linkedTrade.id, client)
+                        .catch(err => console.error(`[Story Position] Auto process score failed:`, err instanceof Error ? err.message : err))
+                }
+            }
             return
         }
 

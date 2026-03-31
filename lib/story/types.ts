@@ -68,6 +68,10 @@ export interface LiquidityZone {
     swept: boolean
 }
 
+// ── Episode Types (trade-cycle lifecycle) ──
+
+export type EpisodeType = 'analysis' | 'position_entry' | 'position_management'
+
 // ── Position Guidance (AI-guided trading across episodes) ──
 
 export interface PositionGuidance {
@@ -112,6 +116,7 @@ export interface Scenario {
     direction: 'bullish' | 'bearish'
     trigger_level?: number
     trigger_direction?: 'above' | 'below'
+    trigger_timeframe?: 'H1' | 'H4' | 'D'
     invalidation_level?: number
     invalidation_direction?: 'above' | 'below'
 }

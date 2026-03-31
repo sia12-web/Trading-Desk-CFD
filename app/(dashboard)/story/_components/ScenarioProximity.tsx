@@ -1,5 +1,8 @@
 'use client'
 
+import { useState, useEffect, useCallback } from 'react'
+import { RefreshCw } from 'lucide-react'
+
 interface Scenario {
     id: string
     title: string
@@ -7,6 +10,7 @@ interface Scenario {
     trigger_level?: number | null
     invalidation_level?: number | null
     trigger_direction?: string | null
+    trigger_timeframe?: string | null
     invalidation_direction?: string | null
     probability: number
 }
@@ -14,10 +18,68 @@ interface Scenario {
 interface Props {
     scenarios: Scenario[]
     currentPrice: number
+    pair: string
     positionEntry?: number | null
 }
 
-export function ScenarioProximity({ scenarios, currentPrice, positionEntry }: Props) {
+const REFRESH_INTERVAL = 60_000 // 60 seconds
+
+export function ScenarioProximity({ scenarios, currentPrice: initialPrice, pair, positionEntry }: Props) {
+    const [livePrice, setLivePrice] = useState<number>(initialPrice)
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+    const [loading, setLoading] = useState(false)
+    const [relativeTime, setRelativeTime] = useState<string>('')
+
+    const fetchLivePrice = useCallback(async () => {
+        try {
+            setLoading(true)
+            const instrument = pair.replace('/', '_')
+            const res = await fetch(`/api/oanda/prices?instruments=${instrument}`)
+            if (!res.ok) return
+
+            const data = await res.json()
+            if (data.prices && data.prices.length > 0) {
+                const p = data.prices[0]
+                const mid = (parseFloat(p.asks[0].price) + parseFloat(p.bids[0].price)) / 2
+                setLivePrice(mid)
+                setLastUpdated(new Date())
+            }
+        } catch {
+            // Silently fall back to initial price
+        } finally {
+            setLoading(false)
+        }
+    }, [pair])
+
+    // Fetch on mount + interval
+    useEffect(() => {
+        fetchLivePrice()
+        const interval = setInterval(fetchLivePrice, REFRESH_INTERVAL)
+        return () => clearInterval(interval)
+    }, [fetchLivePrice])
+
+    // Update relative time every 10 seconds
+    useEffect(() => {
+        function updateRelative() {
+            if (!lastUpdated) {
+                setRelativeTime('')
+                return
+            }
+            const seconds = Math.floor((Date.now() - lastUpdated.getTime()) / 1000)
+            if (seconds < 5) setRelativeTime('just now')
+            else if (seconds < 60) setRelativeTime(`${seconds}s ago`)
+            else {
+                const mins = Math.floor(seconds / 60)
+                setRelativeTime(`${mins}m ago`)
+            }
+        }
+        updateRelative()
+        const timer = setInterval(updateRelative, 10_000)
+        return () => clearInterval(timer)
+    }, [lastUpdated])
+
+    const currentPrice = livePrice || initialPrice
+
     // Need at least 1 scenario with structured levels
     const scenariosWithLevels = scenarios.filter(
         s => s.trigger_level != null && s.invalidation_level != null
@@ -50,7 +112,24 @@ export function ScenarioProximity({ scenarios, currentPrice, positionEntry }: Pr
 
     return (
         <section className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-4">
-            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-4">Scenario Proximity</h3>
+            <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Scenario Proximity</h3>
+                <div className="flex items-center gap-2">
+                    {lastUpdated && (
+                        <span className="text-[9px] text-neutral-600">
+                            Updated {relativeTime}
+                        </span>
+                    )}
+                    <button
+                        onClick={fetchLivePrice}
+                        disabled={loading}
+                        className="p-1 rounded hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                        title="Refresh price"
+                    >
+                        <RefreshCw size={12} className={`text-neutral-500 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                </div>
+            </div>
 
             <div className="space-y-4">
                 {scenariosWithLevels.map(scenario => {
@@ -67,9 +146,16 @@ export function ScenarioProximity({ scenarios, currentPrice, positionEntry }: Pr
                     return (
                         <div key={scenario.id} className="space-y-2">
                             <div className="flex items-center justify-between text-[11px]">
-                                <span className={`font-semibold ${isBullish ? 'text-green-400' : 'text-red-400'}`}>
-                                    {scenario.title}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className={`font-semibold ${isBullish ? 'text-green-400' : 'text-red-400'}`}>
+                                        {scenario.title}
+                                    </span>
+                                    {scenario.trigger_timeframe && (
+                                        <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
+                                            {scenario.trigger_timeframe} close
+                                        </span>
+                                    )}
+                                </div>
                                 <span className="text-neutral-500">{Math.round(scenario.probability * 100)}%</span>
                             </div>
 

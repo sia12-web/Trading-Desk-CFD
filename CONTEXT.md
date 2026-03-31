@@ -23,7 +23,7 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 
 | Route | Page | Purpose |
 |-------|------|---------|
-| `/` | Dashboard | DailyPlanWidget + Market Indices + Account overview |
+| `/` | The Desk | JP Morgan-style AI trading floor — morning meetings, desk feed, process metrics |
 | `/story` | Story Hub | Pair subscriptions, My Story tab, episode list |
 | `/story/[pair]` | Story Detail | Episodes + scenarios + private notes per pair |
 | `/trading-gurus` | Trading Gurus | Private library of trading mentors & wisdom |
@@ -386,6 +386,62 @@ CMS runs as a Story agent at **4AM UTC** (alongside Optimizer, News, Cross-Marke
 
 ---
 
+## Trading Desk (JP Morgan-Style AI Trading Floor)
+
+The dashboard home page (`/`) IS the Trading Desk. 4 AI characters interact daily with the trader: morning meetings, trade reviews, process scoring.
+
+### Characters
+
+| Seat | Name | Role | Personality |
+|------|------|------|-------------|
+| PM | **Marcus** | Portfolio Manager | Calm, strategic, demanding but fair. Sets desk direction. |
+| Risk | **Sarah** | Risk Desk | Blunt, zero-tolerance. Can block trades. Authority is absolute. |
+| Quant | **Ray** | Quantitative Analyst | Probabilistic. Never says "bullish" — says "67% probability." |
+| Macro | **Alex** | Macro Strategist | Big-picture. Central banks, geopolitics, flows. |
+
+### Modules
+
+| Module | Path | Purpose |
+|--------|------|---------|
+| Types | `lib/desk/types.ts` | TypeScript definitions for all desk entities |
+| Data Collector | `lib/desk/data-collector.ts` | Gathers all context for AI generation |
+| Generator | `lib/desk/generator.ts` | Orchestrates AI calls + storage |
+| Morning Meeting Prompt | `lib/desk/prompts/morning-meeting.ts` | All 4 characters in one Gemini call |
+| Trade Review Prompt | `lib/desk/prompts/trade-review.ts` | Desk reviews proposed trades |
+| Process Scoring Prompt | `lib/desk/prompts/process-scoring.ts` | Grade trades on 5 process criteria |
+
+### API Routes
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/desk/meeting` | Generate morning meeting (background task) |
+| GET | `/api/desk/meeting` | Get today's latest meeting |
+| POST | `/api/desk/review` | Desk reviews a trade proposal (synchronous) |
+| GET | `/api/desk/messages` | Paginated message history |
+| GET | `/api/desk/state` | Desk state + recent process scores |
+| POST | `/api/desk/score` | Trigger process scoring for a trade |
+| GET | `/api/desk/score` | Get existing score for a trade |
+
+### UI Components (`app/(dashboard)/_components/desk/`)
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| `DeskFeed.tsx` | Client | Scrollable message feed + "Generate Meeting" button |
+| `DeskMembers.tsx` | Server | Character cards with status indicators |
+| `DeskStats.tsx` | Server | Process score, streak, violations, P&L |
+| `DeskBook.tsx` | Server | Open positions from desk perspective |
+| `MessageBubble.tsx` | Client | Individual message styling per character |
+
+### Key Design Principles
+
+1. **Single Gemini Call** — all 4 characters generated in one shot (~$0.01-0.03 per session)
+2. **Data-Grounded** — every character statement backed by real data from `DeskContext`
+3. **Anti-Hallucination** — prompt explicitly forbids fabricating prices/events
+4. **Persistent Memory** — `desk_state` stores character memory across sessions
+5. **Process > Outcome** — scoring evaluates discipline, not P&L
+
+---
+
 ## Signals Hub
 
 ### Strategy Signals
@@ -438,6 +494,14 @@ Individual indicator alerts from the optimizer.
 | `story_agent_reports` | Intelligence reports (optimizer, news, cross-market, cms) |
 | `story_positions` | AI-guided positions across episodes (suggested→active→closed) |
 | `story_position_adjustments` | Journey log of SL/TP moves, partial closes per episode |
+
+### Desk Tables
+| Table | Purpose |
+|-------|---------|
+| `desk_meetings` | Morning meetings, trade reviews, ad-hoc sessions (4 character JSONB briefs) |
+| `desk_messages` | Individual messages in desk chat feed |
+| `process_scores` | Trade-level process grading (5 criteria, 1-10 scale) |
+| `desk_state` | Persistent per-user state: character memory, streak, violations |
 
 ### CMS Tables
 | Table | Purpose |

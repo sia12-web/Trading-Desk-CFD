@@ -1,10 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-
-/**
- * Safety cap: if the AI never ends a season, force a finale after this many episodes.
- * The AI normally decides when to end a season based on narrative arc completion.
- */
-const MAX_EPISODES_PER_SEASON = 50
+import { deactivateAllActiveScenariosForPair } from '@/lib/data/stories'
 
 /**
  * Compute season number from the last episode's season_number.
@@ -16,28 +11,25 @@ export function getSeasonNumber(lastSeasonNumber: number, lastWasFinale: boolean
 }
 
 /**
- * Check if the AI should be nudged to end the season (safety cap reached).
- * Returns true if episodesInCurrentSeason >= MAX_EPISODES_PER_SEASON.
+ * End a season: trade-cycle driven (trade closed, trade skipped, etc.)
+ * Seasons = trade cycles. The system decides when seasons end, not the AI.
  */
-export function shouldForceSeasonFinale(episodesInCurrentSeason: number): boolean {
-    return episodesInCurrentSeason >= MAX_EPISODES_PER_SEASON
-}
-
-/**
- * After a season finale episode, create/update the season summary and archive old episodes.
- * The AI sets is_season_finale — we trust it, with the safety cap as a backstop.
- */
-export async function checkAndCloseSeason(
+export async function endSeason(
     userId: string,
     pair: string,
-    episodeNumber: number,
     seasonNumber: number,
-    arcSummary: string,
-    isSeasonFinale: boolean,
-    episodesInSeason: number,
+    summary: string,
     client: SupabaseClient
 ): Promise<void> {
-    if (!isSeasonFinale) return
+    // 1. Upsert season summary
+    const { data: episodes } = await client
+        .from('story_episodes')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('pair', pair)
+        .eq('season_number', seasonNumber)
+
+    const episodeCount = episodes?.length || 0
 
     const { error } = await client
         .from('story_seasons')
@@ -46,8 +38,8 @@ export async function checkAndCloseSeason(
                 user_id: userId,
                 pair,
                 season_number: seasonNumber,
-                summary: arcSummary,
-                episode_count: episodesInSeason,
+                summary,
+                episode_count: episodeCount,
                 updated_at: new Date().toISOString(),
             },
             { onConflict: 'user_id,pair,season_number' }
@@ -56,10 +48,32 @@ export async function checkAndCloseSeason(
     if (error) {
         console.error(`[Seasons] Failed to close season ${seasonNumber} for ${pair}:`, error.message)
     } else {
-        console.log(`[Seasons] Season ${seasonNumber} closed for ${pair} (${episodesInSeason} episodes, last ep #${episodeNumber})`)
+        console.log(`[Seasons] Season ${seasonNumber} closed for ${pair} (${episodeCount} episodes)`)
     }
 
-    // Archive episodes from seasons older than the previous one (keep current + previous unarchived)
+    // 2. Deactivate all remaining active scenarios
+    const deactivated = await deactivateAllActiveScenariosForPair(
+        userId, pair, `Season ${seasonNumber} ended`, client
+    )
+    if (deactivated > 0) {
+        console.log(`[Seasons] Deactivated ${deactivated} remaining scenarios for ${pair}`)
+    }
+
+    // 3. Mark the last episode as season finale
+    const { error: finaleError } = await client
+        .from('story_episodes')
+        .update({ is_season_finale: true })
+        .eq('user_id', userId)
+        .eq('pair', pair)
+        .eq('season_number', seasonNumber)
+        .order('episode_number', { ascending: false })
+        .limit(1)
+
+    if (finaleError) {
+        console.error(`[Seasons] Failed to mark finale episode for ${pair}:`, finaleError.message)
+    }
+
+    // 4. Archive episodes from old seasons (keep current + previous unarchived)
     if (seasonNumber >= 2) {
         const { error: archiveError } = await client
             .from('story_episodes')

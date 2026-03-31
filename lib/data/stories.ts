@@ -150,6 +150,8 @@ export async function createEpisode(
         agent_reports?: Record<string, unknown>
         generation_source?: 'manual' | 'cron' | 'bot'
         is_season_finale?: boolean
+        episode_type?: 'analysis' | 'position_entry' | 'position_management'
+        triggered_scenario_id?: string | null
     },
     client?: SupabaseClient
 ) {
@@ -234,6 +236,7 @@ export async function createScenarios(
         invalidation: string
         trigger_level?: number
         trigger_direction?: 'above' | 'below'
+        trigger_timeframe?: 'H1' | 'H4' | 'D'
         invalidation_level?: number
         invalidation_direction?: 'above' | 'below'
     }>,
@@ -295,4 +298,67 @@ export async function getRecentlyResolvedScenarios(
 
     if (error) throw error
     return data || []
+}
+
+// ── Scenario Lifecycle ──
+
+/**
+ * When one scenario triggers, auto-invalidate its sibling from the same episode.
+ * Binary pair logic: only one of the two scenarios can "win."
+ */
+export async function deactivateSiblingScenarios(
+    triggeredScenarioId: string,
+    episodeId: string,
+    client: SupabaseClient
+): Promise<number> {
+    const { data, error } = await client
+        .from('story_scenarios')
+        .update({
+            status: 'invalidated',
+            outcome_notes: 'Auto-invalidated: sibling scenario triggered',
+            resolved_at: new Date().toISOString(),
+            resolved_by: 'bot',
+            monitor_active: false,
+        })
+        .eq('episode_id', episodeId)
+        .neq('id', triggeredScenarioId)
+        .eq('status', 'active')
+        .select('id')
+
+    if (error) {
+        console.error('[Stories] Failed to deactivate sibling scenarios:', error.message)
+        return 0
+    }
+    return data?.length || 0
+}
+
+/**
+ * Deactivate ALL active scenarios for a user+pair.
+ * Called before creating new episode scenarios to prevent accumulation.
+ */
+export async function deactivateAllActiveScenariosForPair(
+    userId: string,
+    pair: string,
+    reason: string,
+    client: SupabaseClient
+): Promise<number> {
+    const { data, error } = await client
+        .from('story_scenarios')
+        .update({
+            status: 'expired',
+            outcome_notes: reason,
+            resolved_at: new Date().toISOString(),
+            resolved_by: 'bot',
+            monitor_active: false,
+        })
+        .eq('user_id', userId)
+        .eq('pair', pair)
+        .eq('status', 'active')
+        .select('id')
+
+    if (error) {
+        console.error('[Stories] Failed to deactivate scenarios for pair:', error.message)
+        return 0
+    }
+    return data?.length || 0
 }

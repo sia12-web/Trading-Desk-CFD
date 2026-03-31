@@ -14,6 +14,7 @@ interface Scenario {
     status: string
     trigger_level?: number | null
     trigger_direction?: string | null
+    trigger_timeframe?: string | null
     invalidation_level?: number | null
     invalidation_direction?: string | null
     resolved_by?: string | null
@@ -74,6 +75,9 @@ export function ScenarioCard({ scenario, onResolve }: ScenarioCardProps) {
                     {scenario.trigger_level != null && (
                         <span className="ml-1.5 text-blue-400 font-mono">
                             Price {scenario.trigger_direction} {scenario.trigger_level}
+                            {scenario.trigger_timeframe && (
+                                <span className="ml-1 text-neutral-500 text-[9px]">({scenario.trigger_timeframe} close)</span>
+                            )}
                         </span>
                     )}
                 </div>

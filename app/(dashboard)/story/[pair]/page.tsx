@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Loader2, Target, ScrollText } from 'lucide-react'
+import { ArrowLeft, Loader2, Target, ScrollText, SkipForward } from 'lucide-react'
 import Link from 'next/link'
 import { AMDPhaseBadge } from '../_components/AMDPhaseBadge'
 import { StoryNarrative } from '../_components/StoryNarrative'
@@ -11,6 +11,7 @@ import { ScenarioCard } from '../_components/ScenarioCard'
 import { EpisodeTimeline } from '../_components/EpisodeTimeline'
 import { GenerateStoryButton } from '../_components/GenerateStoryButton'
 import { PositionGuidanceCard } from '../_components/PositionGuidanceCard'
+import { DeskReviewPanel } from '../_components/DeskReviewPanel'
 import { PositionJourney } from '../_components/PositionJourney'
 import { ScenarioProximity } from '../_components/ScenarioProximity'
 import { MyStoryEditor } from '../_components/MyStoryEditor'
@@ -30,6 +31,9 @@ interface Episode {
     next_episode_preview: string | null
     created_at: string
     raw_ai_output?: { position_guidance?: any } | null
+    episode_type?: string | null
+    is_season_finale?: boolean
+    triggered_scenario_id?: string | null
 }
 
 interface Scenario {
@@ -44,7 +48,9 @@ interface Scenario {
     trigger_level?: number | null
     invalidation_level?: number | null
     trigger_direction?: string | null
+    trigger_timeframe?: string | null
     invalidation_direction?: string | null
+    resolved_by?: string | null
 }
 
 interface EpisodeListItem {
@@ -157,9 +163,26 @@ export default function PairStoryPage() {
         await loadPositions()
     }
 
+    const handleSkipTrade = async () => {
+        if (!confirm('Skip this trade? This will end the current season.')) return
+        await fetch('/api/story/skip-trade', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pair }),
+        })
+        loadData()
+    }
+
     const handleGenerateComplete = () => {
         loadData()
     }
+
+    // Compute whether user can start a new season
+    const canStartNewSeason = episode?.is_season_finale === true && scenarios.every(s => s.status !== 'active')
+
+    // Compute whether skip trade button should show
+    const canSkipTrade = episode?.episode_type === 'position_entry' &&
+        (!positionData?.position || positionData.position.status === 'suggested')
 
     if (loading) {
         return (
@@ -193,6 +216,15 @@ export default function PairStoryPage() {
                                 <span className="text-[10px] font-bold text-neutral-500 bg-neutral-500/10 px-1.5 py-0.5 rounded leading-none">
                                     EP {episode.episode_number}
                                 </span>
+                                {episode.episode_type && episode.episode_type !== 'analysis' && (
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded leading-none ${
+                                        episode.episode_type === 'position_entry'
+                                            ? 'text-emerald-400 bg-emerald-400/10'
+                                            : 'text-amber-400 bg-amber-400/10'
+                                    }`}>
+                                        {episode.episode_type === 'position_entry' ? 'ENTRY' : 'MGMT'}
+                                    </span>
+                                )}
                                 <p className="text-xs text-neutral-500 font-medium">
                                     {episode.title}
                                 </p>
@@ -200,12 +232,24 @@ export default function PairStoryPage() {
                         )}
                     </div>
                 </div>
-                <GenerateStoryButton 
-                    pair={pair} 
-                    episodeCount={episodes.length} 
-                    onComplete={handleGenerateComplete} 
-                    autoGenerate={autoGenerate && episodes.length === 0} 
-                />
+                <div className="flex items-center gap-2">
+                    {canSkipTrade && (
+                        <button
+                            onClick={handleSkipTrade}
+                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-neutral-400 hover:text-neutral-200 bg-neutral-800/50 hover:bg-neutral-800 border border-neutral-700 rounded-xl transition-colors"
+                        >
+                            <SkipForward size={14} />
+                            Skip Trade
+                        </button>
+                    )}
+                    <GenerateStoryButton
+                        pair={pair}
+                        episodeCount={episodes.length}
+                        onComplete={handleGenerateComplete}
+                        autoGenerate={autoGenerate && episodes.length === 0}
+                        canStartNewSeason={canStartNewSeason}
+                    />
+                </div>
             </div>
 
             {/* Tab Switcher */}
@@ -275,6 +319,12 @@ export default function PairStoryPage() {
                             guidance={episode.raw_ai_output?.position_guidance || null}
                             activePosition={positionData?.position && ['suggested', 'active', 'partial_closed'].includes(positionData.position.status) ? positionData.position : null}
                             onActivate={handleActivatePosition}
+                        />
+
+                        {/* Desk Review — characters react to position episodes */}
+                        <DeskReviewPanel
+                            episodeId={episode.id}
+                            episodeType={episode.episode_type}
                         />
 
                         {/* Narrative */}
@@ -390,6 +440,7 @@ export default function PairStoryPage() {
                             <ScenarioProximity
                                 scenarios={scenarios}
                                 currentPrice={episode.key_levels.entries[0]}
+                                pair={pair}
                                 positionEntry={positionData?.position?.entry_price ?? positionData?.position?.suggested_entry}
                             />
                         )}

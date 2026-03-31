@@ -1,4 +1,4 @@
-import type { StoryDataPayload, StoryNewsContext } from '../types'
+import type { StoryDataPayload, StoryNewsContext, EpisodeType } from '../types'
 import type { StoryBible } from '../bible'
 import type { AgentIntelligence } from '../agents/types'
 import type { StoryPosition, PositionAdjustment } from '@/lib/data/story-positions'
@@ -56,10 +56,11 @@ export function buildStoryNarratorPrompt(
     agentIntelligence?: AgentIntelligence,
     flaggedLevels?: Array<{ level: number; source: string; reason: string }>,
     seasonArchive?: SeasonSummary[],
-    forceSeasonFinale?: boolean,
     latestScenarioAnalysis?: string | null,
     activePosition?: ActivePositionContext | null,
-    riskContext?: string | null
+    riskContext?: string | null,
+    episodeType?: EpisodeType,
+    triggeredScenario?: { title: string; direction: string; trigger_level: number; trigger_direction: string; trigger_timeframe: string } | null,
 ): string {
     // ── Season Archive block (deep cross-season memory) ──
     const archiveBlock = seasonArchive && seasonArchive.length > 0
@@ -173,10 +174,43 @@ ${trades.map(t => {
 
 The trader is currently FLAT (no open position on OANDA). Any planned trades are in the journal (see above), but nothing is currently live.`
 
-    // ── Force finale nudge ──
-    const forceFinaleBlock = forceSeasonFinale
-        ? `\n\n⚠️ SEASON FINALE REQUIRED: This season has reached the maximum episode limit. You MUST set is_season_finale to true and write this as a season-ending episode. Tie up loose threads and provide a comprehensive season summary.`
-        : ''
+    // ── Episode type context block ──
+    const effectiveEpisodeType = episodeType || 'analysis'
+    let episodeTypeBlock = ''
+
+    if (effectiveEpisodeType === 'analysis') {
+        episodeTypeBlock = `## EPISODE TYPE: ANALYSIS
+This is the OPENING episode of a new season (or the first-ever episode). Analyze the market and provide 2 directional scenarios.
+- Scenario A = the primary directional thesis (e.g., "bullish breakout above X")
+- Scenario B = the alternative (e.g., "bearish rejection below Y")
+- Position guidance action MUST be 'wait' — no entries in analysis episodes. Describe what to watch for.`
+    } else if (effectiveEpisodeType === 'position_entry') {
+        const triggerDetail = triggeredScenario
+            ? `\nThe triggered scenario was: "${triggeredScenario.title}" (${triggeredScenario.direction}). The ${triggeredScenario.trigger_timeframe} candle closed ${triggeredScenario.trigger_direction} ${triggeredScenario.trigger_level}.`
+            : ''
+        episodeTypeBlock = `## EPISODE TYPE: POSITION ENTRY
+A scenario from the previous episode was CONFIRMED by the market.${triggerDetail}
+
+Your job: provide a detailed ENTRY recommendation.
+- Position guidance MUST be 'enter_long' or 'enter_short' with full details (entry_price, stop_loss, take_profit_1/2/3, suggested_lots, risk_percent, risk_amount)
+- Scenarios must be POSITION MANAGEMENT scenarios for AFTER the trade is opened. Examples:
+  - "Move SL to breakeven if price reaches TP1 zone" vs "Close if H4 closes below entry structure"
+  - "Add to position if pullback holds at X" vs "Take partial profit if momentum stalls at Y"
+- These management scenarios will be monitored — when one triggers, a POSITION_MANAGEMENT episode is generated`
+    } else {
+        const triggerDetail = triggeredScenario
+            ? `\nThe triggered management scenario was: "${triggeredScenario.title}" (${triggeredScenario.direction}). The ${triggeredScenario.trigger_timeframe} candle closed ${triggeredScenario.trigger_direction} ${triggeredScenario.trigger_level}.`
+            : ''
+        episodeTypeBlock = `## EPISODE TYPE: POSITION MANAGEMENT
+A position management scenario was triggered while the trader has an active position.${triggerDetail}
+
+Your job: assess the current position and recommend the next action.
+- If the trade is going well: 'hold' (keep SL/TP) or 'adjust' (move SL to breakeven, trail SL, partial close, move TP)
+- If the trade thesis is dead or target hit: 'close' with clear close_reason
+- If recommending 'hold' or 'adjust': provide 2 new management scenarios for the next phase of the trade
+- If recommending 'close': provide 0 scenarios (the season will end when the trade closes)
+- NEVER recommend 'enter_long' or 'enter_short' during position management — the trader already has a position`
+    }
 
     return `You are the Story Narrator — a master storyteller AND economist who turns forex market data into compelling narratives enriched with fundamental intelligence.
 
@@ -207,6 +241,8 @@ ${tradesBlock}
 ${activePositionBlock}
 
 ${riskContext || ''}
+
+${episodeTypeBlock}
 
 ## CURRENT DATA (Episode ${currentEpisodeNumber})
 
@@ -263,6 +299,7 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story. Respond with th
       "direction": "bullish" | "bearish",
       "trigger_level": 1.2345,
       "trigger_direction": "above" | "below",
+      "trigger_timeframe": "H1" | "H4" | "D",
       "invalidation_level": 1.1900,
       "invalidation_direction": "above" | "below"
     },
@@ -276,6 +313,7 @@ Write Episode ${currentEpisodeNumber} of the ${data.pair} story. Respond with th
       "direction": "bullish" | "bearish",
       "trigger_level": 1.1900,
       "trigger_direction": "above" | "below",
+      "trigger_timeframe": "H1" | "H4" | "D",
       "invalidation_level": 1.2345,
       "invalidation_direction": "above" | "below"
     }
@@ -393,7 +431,7 @@ IMPORTANT RULES:
 - If previous episodes exist, maintain continuity (reference what happened before)
 - If scenarios were recently resolved, acknowledge the outcomes in your narrative
 - If season archive exists, reference past seasons when relevant (callbacks enrich the story)
-- The story should help the trader UNDERSTAND the market, not just give signals${forceFinaleBlock}
+- The story should help the trader UNDERSTAND the market, not just give signals
 
 ANTI-HALLUCINATION RULES (MANDATORY):
 - Every price level you cite MUST come from Gemini's structural analysis or DeepSeek's quantitative validation. NEVER invent levels.
@@ -405,8 +443,13 @@ ANTI-HALLUCINATION RULES (MANDATORY):
 SCENARIO LEVEL RULES (STRICT — for monitoring bot):
 - Each scenario MUST include trigger_level (number) + trigger_direction ("above" or "below")
 - Each scenario MUST include invalidation_level (number) + invalidation_direction ("above" or "below")
+- Each scenario MUST include trigger_timeframe: "H1", "H4", or "D" — this is the candle timeframe whose CLOSE confirms the trigger
 - trigger_level is the KEY price that confirms the scenario (e.g., a breakout above resistance)
 - invalidation_level is the KEY price that kills the scenario (e.g., a break below support)
+- The monitor bot checks CANDLE CLOSES on the specified timeframe, NOT spot prices. Choose the timeframe that matches the significance of the level:
+  - "D" (Daily): Major structural levels, weekly S/R breaks, institutional zones
+  - "H4": Intraday swing levels, session highs/lows, 4H structure breaks
+  - "H1": Short-term triggers, intraday breakouts, quick setups
 - For a BULLISH scenario: trigger_direction MUST be "above" and invalidation_direction MUST be "below"
 - For a BEARISH scenario: trigger_direction MUST be "below" and invalidation_direction MUST be "above"
 - Trigger and invalidation levels must be on OPPOSITE sides of the current price (${data.currentPrice.toFixed(5)})
@@ -475,17 +518,13 @@ BIBLE UPDATE RULES:
 - resolved_threads: Anything resolved in THIS episode.
 - dominant_themes: The 3-5 main themes of this pair's story.
 
-SEASON FINALE RULES (AI-DRIVEN):
-- Set is_season_finale to true when the current narrative arc has reached a natural conclusion:
-  * A major support/resistance level that defined the season was decisively broken
-  * A multi-week trend reversed direction (e.g., from bullish to bearish)
-  * A fundamental shift occurred (central bank policy change, geopolitical event)
-  * All major unresolved threads from recent episodes have been resolved
-  * The buyer/seller power dynamic fundamentally shifted (e.g., from buyer dominance to seller dominance)
-- Do NOT end a season just because a certain number of episodes passed — end it when the STORY demands it
-- When ending a season, write a satisfying conclusion that ties up threads and sets the stage for the next season
-- Minimum 5 episodes per season (don't end too early)
-- If this is a season finale, the arc_summary in bible_update should serve as the complete season recap`
+SEASON RULES (TRADE-CYCLE DRIVEN):
+- Seasons = trade cycles. You do NOT decide when seasons end.
+- is_season_finale must ALWAYS be false. The system handles season endings (when a trade closes or the trader skips).
+- Focus on THIS episode's task based on the EPISODE TYPE section above.
+- For ANALYSIS episodes: provide 2 directional market scenarios
+- For POSITION_ENTRY episodes: provide entry details + 2 management scenarios
+- For POSITION_MANAGEMENT episodes: assess position + provide 2 new management scenarios (or 0 if closing)`
 }
 
 /**
@@ -504,20 +543,23 @@ export function buildStoryNarratorPromptCached(
     agentIntelligence?: AgentIntelligence,
     flaggedLevels?: Array<{ level: number; source: string; reason: string }>,
     seasonArchive?: SeasonSummary[],
-    forceSeasonFinale?: boolean,
     latestScenarioAnalysis?: string | null,
     activePosition?: ActivePositionContext | null,
-    riskContext?: string | null
+    riskContext?: string | null,
+    episodeType?: EpisodeType,
+    triggeredScenario?: { title: string; direction: string; trigger_level: number; trigger_direction: string; trigger_timeframe: string } | null,
 ): { cacheablePrefix: string; dynamicPrompt: string } {
     // Get the full prompt and split it
     const fullPrompt = buildStoryNarratorPrompt(
         data, geminiOutput, deepseekOutput, news,
         lastEpisode, bible, resolvedScenarios,
         agentIntelligence, flaggedLevels,
-        seasonArchive, forceSeasonFinale,
+        seasonArchive,
         latestScenarioAnalysis,
         activePosition,
-        riskContext
+        riskContext,
+        episodeType,
+        triggeredScenario
     )
 
     // Split at "## CURRENT DATA" — everything before is relatively stable (identity + Bible + rules)
