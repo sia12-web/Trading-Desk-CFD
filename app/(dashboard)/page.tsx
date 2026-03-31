@@ -1,14 +1,51 @@
-import { getAuthUser } from '@/lib/supabase/server'
+import { getAuthUser, createClient } from '@/lib/supabase/server'
+import { getDashboardStats } from '@/lib/data/analytics'
+import { getActiveAccountId } from '@/lib/oanda/account'
 import Link from 'next/link'
 import { Zap, ArrowRight } from 'lucide-react'
 import { OandaAccountWidget } from '@/components/dashboard/OandaAccountWidget'
 import { RiskStatusWidget } from '@/components/dashboard/RiskStatusWidget'
 import { VolatilePairsWidget } from '@/components/dashboard/VolatilePairsWidget'
 import { MarketSessionsWidget } from '@/components/dashboard/MarketSessionsWidget'
+import { DeskMembers } from './_components/desk/DeskMembers'
+import { DeskStats } from './_components/desk/DeskStats'
+import type { DeskMeeting, DeskState, ProcessScore, SarahReport } from '@/lib/desk/types'
 
 export default async function DashboardPage() {
     const user = await getAuthUser()
     if (!user) return null
+
+    const supabase = await createClient()
+    const stats = await getDashboardStats(user.id)
+
+    // Fetch desk data in parallel
+    const [todayMeetingResult, deskStateResult, scoresResult] = await Promise.all([
+        supabase
+            .from('desk_meetings')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('meeting_type', 'morning_meeting')
+            .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        supabase
+            .from('desk_state')
+            .select('*')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+        supabase
+            .from('process_scores')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('scored_at', { ascending: false })
+            .limit(5),
+    ])
+
+    const todayMeeting = (todayMeetingResult.data || null) as DeskMeeting | null
+    const deskState = (deskStateResult.data || null) as DeskState | null
+    const recentScores = (scoresResult.data || []) as ProcessScore[]
+    const sarahReport = (todayMeeting?.sarah_report || null) as SarahReport | null
 
     return (
         <div className="max-w-[1500px] mx-auto space-y-6 pb-20 px-4">
@@ -43,10 +80,25 @@ export default async function DashboardPage() {
                 <RiskStatusWidget />
             </div>
 
-            {/* Bottom Row: Volatility + Sessions */}
+            {/* Middle Row: Volatility + Sessions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <VolatilePairsWidget />
                 <MarketSessionsWidget />
+            </div>
+
+            {/* Bottom Row: Desk Characters + Metrics */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-7">
+                    <DeskMembers todayMeeting={todayMeeting} />
+                </div>
+                <div className="lg:col-span-5">
+                    <DeskStats
+                        deskState={deskState}
+                        todayPnL={stats.todayPnL}
+                        sarahReport={sarahReport}
+                        recentScores={recentScores}
+                    />
+                </div>
             </div>
         </div>
     )
