@@ -6,6 +6,7 @@ import { X, Plus, Search } from 'lucide-react'
 const FOREX_PAIRS = [
     'EUR/USD', 'GBP/USD', 'USD/JPY', 'EUR/GBP', 'AUD/USD',
     'USD/CAD', 'NZD/USD', 'EUR/JPY', 'USD/CHF', 'GBP/JPY',
+    'GBP/AUD', 'EUR/AUD', 'AUD/JPY', 'NZD/JPY', 'USD/TRY',
 ]
 
 const CFD_INDICES = [

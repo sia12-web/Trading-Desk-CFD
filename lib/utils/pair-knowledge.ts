@@ -391,5 +391,166 @@ export const PAIR_KNOWLEDGE: Record<string, PairKnowledge> = {
             "London session is when this pair comes alive — Tokyo is relatively calm",
             "Great for catching big moves but requires strict discipline — set SL and don't touch it"
         ]
+    },
+    "GBP/AUD": {
+        pair: "GBP/AUD",
+        displayName: "British Pound / Australian Dollar",
+        baseCurrency: "GBP",
+        quoteCurrency: "AUD",
+        nickname: "The Geordie",
+        bestSessions: ["London", "Tokyo-London overlap"],
+        worstSessions: ["Late New York"],
+        avgDailyRange: 150,
+        avgRangeBySession: { "Tokyo": 70, "London": 140, "New York": 90, "London-NY overlap": 130 },
+        intelligenceSummary: "Very high volatility. Combines GBP session-open volatility with AUD commodity sensitivity. Best during London open.",
+        drivers: [
+            "BoE vs RBA policy divergence",
+            "Commodity prices (Iron ore, gold)",
+            "UK vs Australian economic data",
+            "Chinese economic data"
+        ],
+        correlations: [
+            { pair: "GBP/USD", type: "positive", strength: "strong", explanation: "GBP strength lifts both." },
+            { pair: "AUD/USD", type: "negative", strength: "strong", explanation: "AUD strength causes GBP/AUD to fall." }
+        ],
+        warnings: [
+            "Extremely high daily range (150+ pips) — use smaller position sizes",
+            "Wide spreads — usually 3-7 pips depending on liquidity",
+            "AUD data drops (01:30 UTC) can cause massive moves during Tokyo"
+        ],
+        tips: [
+            "Strong commodity + risk-driven flows make this a favorite for swing traders",
+            "London open is the peak window for GBP/AUD",
+            "Watch this during Chinese PMI releases — it drives the AUD side hard"
+        ]
+    },
+    "EUR/AUD": {
+        pair: "EUR/AUD",
+        displayName: "Euro / Australian Dollar",
+        baseCurrency: "EUR",
+        quoteCurrency: "AUD",
+        nickname: null,
+        bestSessions: ["London", "Tokyo-London overlap"],
+        worstSessions: ["New York (after London close)"],
+        avgDailyRange: 120,
+        avgRangeBySession: { "Tokyo": 50, "London": 110, "New York": 70, "London-NY overlap": 100 },
+        intelligenceSummary: "Risk proxy cross. Driven by ECB macro and AUD commodity sensitivity. Moves well during London.",
+        drivers: [
+            "ECB vs RBA policy",
+            "Chinese economic data",
+            "Commodity prices",
+            "Eurozone macro sentiment"
+        ],
+        correlations: [
+            { pair: "EUR/USD", type: "positive", strength: "strong", explanation: "EUR strength lifts both." },
+            { pair: "AUD/USD", type: "negative", strength: "strong", explanation: "AUD strength causes EUR/AUD to fall." }
+        ],
+        warnings: [
+            "High volatility for a cross — can move 100+ pips without much effort",
+            "Spreads widen significantly outside peak London hours",
+            "Sensitive to Chinese data surprises"
+        ],
+        tips: [
+            "Great alternative for EUR/USD traders wanting more volatility",
+            "London open sets the tone for the day",
+            "Relies heavily on risk sentiment — falls when market is 'risk-on'"
+        ]
+    },
+    "AUD/JPY": {
+        pair: "AUD/JPY",
+        displayName: "Australian Dollar / Japanese Yen",
+        baseCurrency: "AUD",
+        quoteCurrency: "JPY",
+        nickname: null,
+        bestSessions: ["Tokyo", "London-New York overlap"],
+        worstSessions: ["Late New York"],
+        avgDailyRange: 95,
+        avgRangeBySession: { "Tokyo": 60, "London": 70, "New York": 65, "London-NY overlap": 85 },
+        intelligenceSummary: "The 'Risk Barometer'. Strong correlation with equities. Rises when S&P 500 rises.",
+        drivers: [
+            "Global risk sentiment (equities/commodities)",
+            "RBA vs BoJ policy",
+            "Metals and energy prices",
+            "Chinese economic growth"
+        ],
+        correlations: [
+            { pair: "USD/JPY", type: "positive", strength: "strong", explanation: "Both reflect JPY moves." },
+            { pair: "S&P 500", type: "positive", strength: "strong", explanation: "Highly correlated with US stock market." }
+        ],
+        warnings: [
+            "Sudden stock market selloffs will gap this pair lower instantly",
+            "JPY interventions by BoJ will affect AUD/JPY hard",
+            "Carry trade dynamics mean interest rate changes have oversized effects"
+        ],
+        tips: [
+            "Use as a confirmation of risk sentiment before trading majors",
+            "Excellent for catching 'risk-on' rallies",
+            "Tokyo session is very active for this pair"
+        ]
+    },
+    "NZD/JPY": {
+        pair: "NZD/JPY",
+        displayName: "New Zealand Dollar / Japanese Yen",
+        baseCurrency: "NZD",
+        quoteCurrency: "JPY",
+        nickname: null,
+        bestSessions: ["Tokyo", "London-New York overlap"],
+        worstSessions: ["Late New York"],
+        avgDailyRange: 105,
+        avgRangeBySession: { "Tokyo": 70, "London": 75, "New York": 70, "London-NY overlap": 90 },
+        intelligenceSummary: "High-flying risk cross. Even more 'jumpy' than AUD/JPY due to lower liquidity. Great for risk-sentiment catching.",
+        drivers: [
+            "Global risk appetite",
+            "RBNZ vs BoJ policy",
+            "New Zealand dairy export prices",
+            "Interest rate differentials"
+        ],
+        correlations: [
+            { pair: "AUD/JPY", type: "positive", strength: "strong", explanation: "Move almost identically but NZD/JPY is often more aggressive." },
+            { pair: "S&P 500", type: "positive", strength: "strong", explanation: "Risk-sensitive proxy." }
+        ],
+        warnings: [
+            "Low liquidity can lead to sharp slippage during data releases",
+            "Very 'jumpy' and prone to wicks — requires looser stop losses",
+            "Spreads can be high during the Tokyo open"
+        ],
+        tips: [
+            "If AUD/JPY looks bullish, NZD/JPY often provides the faster percentage gain",
+            "Watch dairy auctions (GDT) for NZD-specific drivers",
+            "Best traded during early Tokyo session"
+        ]
+    },
+    "USD/TRY": {
+        pair: "USD/TRY",
+        displayName: "US Dollar / Turkish Lira",
+        baseCurrency: "USD",
+        quoteCurrency: "TRY",
+        nickname: null,
+        bestSessions: ["London", "New York"],
+        worstSessions: ["Tokyo"],
+        avgDailyRange: 400,
+        avgRangeBySession: { "Tokyo": 50, "London": 300, "New York": 250, "London-NY overlap": 350 },
+        intelligenceSummary: "Exotic pair with extreme volatility. Driven by Turkish inflation and geopolitical news. High spreads and swap costs.",
+        drivers: [
+            "Central Bank of Turkey (CBRT) policy",
+            "Turkish inflation (CPI)",
+            "Geopolitical relations and political stability",
+            "US Dollar strength"
+        ],
+        correlations: [
+            { pair: "Emerging Market Index", type: "positive", strength: "strong", explanation: "Reflects overall EM sentiment." },
+            { pair: "USD/MXN", type: "positive", strength: "moderate", explanation: "Both are high-yield EM currencies." }
+        ],
+        warnings: [
+            "Extreme spreads (can be 50+ pips) — not suitable for scalping",
+            "Highly political — one news headline can move it 1000 pips",
+            "Very high overnight swap costs (triple swap on Wednesdays)",
+            "Limit your exposure — price can stay flat then move 5% in a day"
+        ],
+        tips: [
+            "Only for experienced traders who monitor geopolitical news 24/7",
+            "Avoid holding long-term unless you understand the swap costs",
+            "Treat more like a stock than a forex major"
+        ]
     }
 };
