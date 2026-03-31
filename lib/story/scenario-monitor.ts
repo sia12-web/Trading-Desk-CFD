@@ -234,8 +234,12 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
     const { data: spotPrices } = await getCurrentPrices(instruments)
     const spotPriceMap: Record<string, number> = {}
     for (const p of spotPrices || []) {
-        const mid = (parseFloat(p.asks[0].price) + parseFloat(p.bids[0].price)) / 2
-        spotPriceMap[p.instrument.replace('_', '/')] = mid
+        const ask = p.asks?.[0]?.price
+        const bid = p.bids?.[0]?.price
+        if (ask && bid) {
+            const mid = (parseFloat(ask) + parseFloat(bid)) / 2
+            spotPriceMap[p.instrument.replace('_', '/')] = mid
+        }
     }
 
     // Track which user+pair combos need new episodes (with triggered context)

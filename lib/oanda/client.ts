@@ -154,7 +154,18 @@ export async function getCurrentPrices(instruments: string[]) {
     const cfg = await getOandaConfig()
     const instrumentsParam = instruments.join(',')
     const result = await oandaFetch<{ prices: OandaPrice[] }>(`/v3/accounts/${cfg.accountId}/pricing?instruments=${instrumentsParam}`, {}, 1, cfg)
-    return { data: result.data?.prices || [], error: result.error }
+    
+    // Filter and sanitize price data to prevent downstream crashes on missing asks/bids
+    const sanitizedPrices = (result.data?.prices || []).map(p => {
+        const ask = p.asks?.[0]?.price
+        const bid = p.bids?.[0]?.price
+        if (!ask || !bid) {
+            console.warn(`[OANDA] Missing price components for ${p.instrument} (Live Mode: ${cfg.mode})`)
+        }
+        return p
+    })
+
+    return { data: sanitizedPrices, error: result.error }
 }
 
 export async function getRecentTransactions(count: number = 50) {
