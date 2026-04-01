@@ -62,11 +62,11 @@ ${context.activeRiskRules.map(r =>
 
 6. **Mindset Inversion (The 95% vs 5% Check) (1-10)**: This is the critical psychological evaluation.
    - **If the trade was a WINNER**: 
-     - 5% WINNER (Score 8-10): Confident, let it run, optimistic, stayed in for full target.
-     - 95% LOSER (Score 1-4): Scared, closed early despite no trend change, "took profits just in case."
+     - 5% WINNER (Score 8-10): Smart money patience. Stayed in the "Pretty Girl" story until the value was met. Ignored small pull-backs because the Value (RSI/Momentum) hadn't changed.
+     - 95% LOSER (Score 1-4): **Pussy Move**. Scared of a red candle or personal fear. Closed early despite no change in the underlying trend/value.
    - **If the trade was a LOSER**:
-     - 5% WINNER (Score 8-10): Strict, cut the loss at the stop-loss quickly, pessimistic in the losing position (realistic assessment).
-     - 95% LOSER (Score 1-4): Hopeful, held past SL, "convinced" it would turn around.
+     - 5% WINNER (Score 8-10): Strict loser. Cut the loss at the stop-loss immediately. No "hoping" for a reversal.
+     - 95% LOSER (Score 1-4): Hopeful. Held past SL or moved SL because of fear of being wrong.
 
 ## ANTI-HALLUCINATION DOCTRINE
 1. **ONLY reference data provided below.** Never fabricate prices, P&L, or exit reasons.

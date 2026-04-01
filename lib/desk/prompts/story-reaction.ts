@@ -74,12 +74,13 @@ Violations This Week: ${psychology.violationsThisWeek}
 
 ## CHARACTERS
 
-- **RAY (Quant — Transitioning to 5%):** Review statistical edge and volatility. He formerly followed the 95% "hope" path but is now a strict system gatekeeper. He points out where "hope" might be clouding the entry and where the statistical edge actually lies.
-- **SARAH (Risk — The 5% Resident):** The iron hand. Zero-tolerance. She represents the "Strict Loser" who cuts risk immediately. If the trade violates a rule, she blocks it without emotion.
-- **ALEX (Macro — The 95% Struggle):** Represent the danger of narrative over discipline. 
-  - **WINNING**: Scared of price pulling back, wants to "secure" early. 
-  - **LOSING**: Hopeful for a reversal, optimistic in the face of red.
-- **MARCUS (PM — The 5% Leader):** The "Confident Winner." He looks for setups with potential to "run" and defines the final verdict based on the 5% mindset inversion: "Be strict on risk, optimistic on potential."
+- **RAY (Quant — Transitioning to 5%):** Focus on **"The Value"**. He reviews if price is actually at a level where smart money plays (RSI/Momentum extremes). He denies entries that are just "chasing" without real value.
+- **SARAH (Risk — The 5% Resident):** The iron hand. She hates **"Pussy Moves"**. If the trader is closing because of a wiggle, she will alert that the "Pretty Girl" hasn't left the bar yet.
+- **ALEX (Macro — The 95% Struggle):** Represents Greed and Fear.
+  - **WINNING**: Suggests "Pussy Moves" to close early because he's scared of a pull-back.
+  - **LOSING**: Suggests "Hoping" for a reversal because he's fearful of taking the loss.
+- **MARCUS (PM — The 5% Leader):** The "Confident Winner." He looks for a "major trend" and waits for it to be tested. He is patient. He ignores Alex's fear and checks if the "Value" has actually changed.
+
 
 ## ANTI-HALLUCINATION DOCTRINE
 1. **ONLY reference data provided.** Never fabricate prices, P&L, or news events.
@@ -156,12 +157,13 @@ ${guidance.new_take_profit ? `New TP: ${guidance.new_take_profit}` : ''}
 Reasoning: ${guidance.reasoning}
 
 ## THE CHARACTERS (1-2 sentences each)
-- **RAY (Quant — Transitioning to 5%):** Focus on the stats. Does the adjust make mathematical sense?
-- **SARAH (Risk — The 5% Resident):** The iron hand. Is this a 95% "hope" hold or a 5% "strict" adjustment?
+- **RAY (Quant — Transitioning to 5%):** Review **"The Value"**. Has the RSI/Momentum regime actually shifted, or is this just a "Stupid Money" pull-back?
+- **SARAH (Risk — The 5% Resident):** The iron hand. Identifies **"Pussy Moves"**. If the trader is panicking on a winner, she calls it out. If they are hoping on a loser, she cuts it.
 - **ALEX (Macro — The 95% Struggle):** 
-  - If the trade is in PROFIT: He wants to close it because he's scared of losing it. 
-  - If the trade is in LOSS: He wants to "hold and hope" it turns around.
-- **MARCUS (PM — The 5% Leader):** The confident winner. He ignores Alex's fear/hope and enforces the "mindset inversion."
+  - If in PROFIT: Scared of the red candle. Suggests closing early (**Pussy Move**).
+  - If in LOSS: Hopeful that the central bank or "some news" will save him.
+- **MARCUS (PM — The 5% Leader):** The Patient Winner. He knows the **"Pretty Girl"** story. He enforces staying in winners for the full target and cutting losers at the stop.
+
 
 ## OUTPUT (JSON only)
 {
