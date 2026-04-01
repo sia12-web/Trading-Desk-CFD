@@ -372,8 +372,8 @@ export default function PairStoryPage() {
 
                     {/* Sidebar (1/3) */}
                     <div className="space-y-6">
-                        {/* Key Levels */}
-                        {episode.key_levels && (
+                        {/* Key Levels — only shown for position episodes */}
+                        {episode.key_levels && episode.episode_type !== 'analysis' && (
                             <section className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-4">
                                 <div className="flex items-center gap-2 mb-3">
                                     <Target size={14} className="text-blue-400" />
@@ -384,7 +384,7 @@ export default function PairStoryPage() {
                                         <div>
                                             <span className="text-blue-400 font-semibold">Entries</span>
                                             <div className="flex flex-wrap gap-1.5 mt-1">
-                                                {episode.key_levels.entries.map((p, i) => (
+                                                {episode.key_levels.entries.map((p: number, i: number) => (
                                                     <span key={i} className="px-2 py-0.5 bg-blue-500/10 text-blue-300 rounded font-mono">{p}</span>
                                                 ))}
                                             </div>
@@ -394,7 +394,7 @@ export default function PairStoryPage() {
                                         <div>
                                             <span className="text-red-400 font-semibold">Stop Loss</span>
                                             <div className="flex flex-wrap gap-1.5 mt-1">
-                                                {episode.key_levels.stop_losses.map((p, i) => (
+                                                {episode.key_levels.stop_losses.map((p: number, i: number) => (
                                                     <span key={i} className="px-2 py-0.5 bg-red-500/10 text-red-300 rounded font-mono">{p}</span>
                                                 ))}
                                             </div>
@@ -404,7 +404,7 @@ export default function PairStoryPage() {
                                         <div>
                                             <span className="text-green-400 font-semibold">Take Profit</span>
                                             <div className="flex flex-wrap gap-1.5 mt-1">
-                                                {episode.key_levels.take_profits.map((p, i) => (
+                                                {episode.key_levels.take_profits.map((p: number, i: number) => (
                                                     <span key={i} className="px-2 py-0.5 bg-green-500/10 text-green-300 rounded font-mono">{p}</span>
                                                 ))}
                                             </div>
@@ -413,6 +413,7 @@ export default function PairStoryPage() {
                                 </div>
                             </section>
                         )}
+
 
                         {/* Confidence */}
                         {episode.confidence != null && (
@@ -436,10 +437,10 @@ export default function PairStoryPage() {
                         )}
 
                         {/* Scenario Proximity Gauge */}
-                        {scenarios.length > 0 && episode.key_levels?.entries?.[0] && (
+                        {scenarios.length > 0 && (
                             <ScenarioProximity
                                 scenarios={scenarios}
-                                currentPrice={episode.key_levels.entries[0]}
+                                currentPrice={episode.key_levels?.entries?.[0] || 0}
                                 pair={pair}
                                 positionEntry={positionData?.position?.entry_price ?? positionData?.position?.suggested_entry}
                             />
