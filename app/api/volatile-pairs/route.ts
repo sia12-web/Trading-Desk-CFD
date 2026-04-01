@@ -17,7 +17,6 @@ const INSTRUMENTS = [
     { instrument: 'EUR_AUD', name: 'EUR/AUD', type: 'forex' as const },
     { instrument: 'GBP_AUD', name: 'GBP/AUD', type: 'forex' as const },
     { instrument: 'XAU_USD', name: 'Gold', type: 'forex' as const },
-    { instrument: 'USO_USD', name: 'WTI Oil', type: 'forex' as const },
     // CFD Indices
     { instrument: 'NAS100_USD', name: 'Nasdaq 100', type: 'index' as const },
     { instrument: 'SPX500_USD', name: 'S&P 500', type: 'index' as const },
