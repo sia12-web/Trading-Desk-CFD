@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import {
     ArrowUpRight, ArrowDownRight, Pause, Settings2, XCircle,
-    Clock, CheckCircle2, Loader2, Link2
+    Clock, CheckCircle2, Loader2, Link2, Zap
 } from 'lucide-react'
+import Link from 'next/link'
 
 interface PositionGuidance {
     action: 'enter_long' | 'enter_short' | 'hold' | 'adjust' | 'close' | 'wait'
@@ -36,6 +37,7 @@ interface ActivePosition {
 }
 
 interface Props {
+    pair: string
     guidance: PositionGuidance | null
     activePosition: ActivePosition | null
     onActivate?: (positionId: string) => void
@@ -50,7 +52,7 @@ const ACTION_CONFIG = {
     wait: { label: 'Wait — No Trade', icon: Clock, color: 'neutral', bg: 'bg-neutral-800 border-neutral-700' },
 } as const
 
-export function PositionGuidanceCard({ guidance, activePosition, onActivate }: Props) {
+export function PositionGuidanceCard({ pair, guidance, activePosition, onActivate }: Props) {
     const [activating, setActivating] = useState(false)
 
     if (!guidance) return null
@@ -68,6 +70,18 @@ export function PositionGuidanceCard({ guidance, activePosition, onActivate }: P
             setActivating(false)
         }
     }
+
+    const isEntry = guidance.action === 'enter_long' || guidance.action === 'enter_short'
+    const tradeUrl = isEntry ? `/trade?${new URLSearchParams({
+        instrument: pair.replace('/', '_'),
+        direction: guidance.action === 'enter_long' ? 'long' : 'short',
+        entry: guidance.entry_price?.toString() || '',
+        sl: guidance.stop_loss?.toString() || '',
+        tp: guidance.take_profit_1?.toString() || '',
+        lots: guidance.suggested_lots?.toString() || '',
+        description: `Story Season Position: ${guidance.reasoning}`,
+        storyPositionId: activePosition?.id || '',
+    }).toString()}` : null
 
     return (
         <section className={`border rounded-2xl p-5 ${config.bg}`}>
@@ -88,7 +102,7 @@ export function PositionGuidanceCard({ guidance, activePosition, onActivate }: P
             <p className="text-xs text-neutral-300 leading-relaxed mb-4">{guidance.reasoning}</p>
 
             {/* Entry details */}
-            {(guidance.action === 'enter_long' || guidance.action === 'enter_short') && (
+            {isEntry && (
                 <div className="grid grid-cols-2 gap-2 text-[11px] mb-4">
                     {guidance.entry_price != null && (
                         <div className="bg-neutral-900/50 rounded-lg px-3 py-2">
@@ -169,20 +183,33 @@ export function PositionGuidanceCard({ guidance, activePosition, onActivate }: P
                 </div>
             )}
 
-            {/* Activate button (for suggested positions) */}
-            {activePosition?.status === 'suggested' && onActivate && (
-                <button
-                    onClick={handleActivate}
-                    disabled={activating}
-                    className="flex items-center gap-2 w-full justify-center px-4 py-2 text-xs font-semibold bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 rounded-xl transition-colors border border-blue-500/30"
-                >
-                    {activating ? (
-                        <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                        <CheckCircle2 size={14} />
+            {/* Activate / Trade link (for suggested positions) */}
+            {activePosition?.status === 'suggested' && (
+                <div className="flex flex-col gap-2">
+                    {tradeUrl && (
+                        <Link
+                            href={tradeUrl}
+                            className="flex items-center gap-2 w-full justify-center px-4 py-2 text-xs font-black uppercase tracking-widest bg-blue-600 text-white hover:bg-blue-500 rounded-xl transition-all shadow-lg shadow-blue-600/20"
+                        >
+                            <Zap size={14} />
+                            Go to Trade Page
+                        </Link>
                     )}
-                    Activate This Position
-                </button>
+                    {onActivate && (
+                        <button
+                            onClick={handleActivate}
+                            disabled={activating}
+                            className="flex items-center gap-2 w-full justify-center px-4 py-2 text-xs font-semibold bg-neutral-800 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700 rounded-xl transition-colors border border-neutral-700"
+                        >
+                            {activating ? (
+                                <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                                <CheckCircle2 size={14} />
+                            )}
+                            Manually Activate (No Execution)
+                        </button>
+                    )}
+                </div>
             )}
 
             {/* Active position badge */}
@@ -195,6 +222,7 @@ export function PositionGuidanceCard({ guidance, activePosition, onActivate }: P
                     </span>
                 </div>
             )}
+
 
             {/* Favored scenario */}
             {guidance.favored_scenario_id && (

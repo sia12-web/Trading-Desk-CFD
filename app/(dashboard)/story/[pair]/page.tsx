@@ -316,6 +316,7 @@ export default function PairStoryPage() {
 
                         {/* Position Guidance */}
                         <PositionGuidanceCard
+                            pair={pair}
                             guidance={episode.raw_ai_output?.position_guidance || null}
                             activePosition={positionData?.position && ['suggested', 'active', 'partial_closed'].includes(positionData.position.status) ? positionData.position : null}
                             onActivate={handleActivatePosition}

@@ -580,11 +580,9 @@ async function processPositionGuidance(
 
             // If it's a market entry, we can mark it active immediately (or keep as suggested for manual approval)
             // Given the "Human in the loop" rule, we'll keep it as 'suggested' first, but log clearly.
-            if (!isLimit) {
-                await updatePosition(position.id, { status: 'active', entry_price: guidance.entry_price }, client)
-            } else {
-                await updatePosition(position.id, { status: 'suggested' }, client)
-            }
+            // Keep as 'suggested' for manual approval and execution through the Trade page
+            await updatePosition(position.id, { status: 'suggested' }, client)
+
 
             await addAdjustment({
                 position_id: position.id,

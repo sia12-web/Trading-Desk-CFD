@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import {
     TrendingUp,
     TrendingDown,
@@ -34,6 +35,9 @@ interface TradeFormProps {
 }
 
 export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
+    const searchParams = useSearchParams()
+    const router = useRouter()
+
     const [orderType, setOrderType] = useState<'MARKET' | 'LIMIT'>('MARKET')
     const [selectedInstrument, setSelectedInstrument] = useState<string>('EUR_USD')
     const [direction, setDirection] = useState<'long' | 'short'>('long')
@@ -61,26 +65,57 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
 
     const [deskReview, setDeskReview] = useState<DeskMeeting | null>(null)
     const [isReviewing, setIsReviewing] = useState(false)
+    const [storyPositionId, setStoryPositionId] = useState<string | null>(null)
 
-    // Load persisted state on mount
+    // Load persisted state or params on mount
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            try {
-                const saved = localStorage.getItem('tradeFormState')
-                if (saved) {
-                    const state = JSON.parse(saved)
-                    if (state.selectedInstrument) setSelectedInstrument(state.selectedInstrument)
-                    if (state.direction) setDirection(state.direction)
-                    if (state.units) setUnits(state.units)
-                    if (state.stopLoss) setStopLoss(state.stopLoss)
-                    if (state.takeProfit) setTakeProfit(state.takeProfit)
-                    if (state.orderType) setOrderType(state.orderType)
-                }
-            } catch (err) {
-                console.error('Failed to restore trade form state:', err)
+        if (typeof window === 'undefined') return
+
+        const paramInstrument = searchParams.get('instrument')
+        const paramDirection = searchParams.get('direction') as 'long' | 'short' | null
+        const paramEntry = searchParams.get('entry')
+        const paramSL = searchParams.get('sl')
+        const paramTP = searchParams.get('tp')
+        const paramLots = searchParams.get('lots')
+        const paramDescription = searchParams.get('description')
+        const paramStoryPosId = searchParams.get('storyPositionId')
+
+        if (paramInstrument) {
+            setSelectedInstrument(paramInstrument)
+            if (paramDirection) setDirection(paramDirection)
+            if (paramEntry) {
+                const ep = parseFloat(paramEntry)
+                setEntryPrice(ep)
+                setLimitPrice(ep)
+                // Use limit if it's different than current price, but for now default market or use params to decide
+                // Actually if entry price is provided we can default to limit to be safe
+                setOrderType('LIMIT')
             }
+            if (paramSL) setStopLoss(parseFloat(paramSL))
+            if (paramTP) setTakeProfit(parseFloat(paramTP))
+            if (paramLots) setUnits(Math.round(parseFloat(paramLots) * 100000))
+            if (paramDescription) setStrategyExplanation(paramDescription)
+            if (paramStoryPosId) setStoryPositionId(paramStoryPosId)
+            
+            // If they came from a story link, don't restore from local storage
+            return 
         }
-    }, [])
+
+        try {
+            const saved = localStorage.getItem('tradeFormState')
+            if (saved) {
+                const state = JSON.parse(saved)
+                if (state.selectedInstrument) setSelectedInstrument(state.selectedInstrument)
+                if (state.direction) setDirection(state.direction)
+                if (state.units) setUnits(state.units)
+                if (state.stopLoss) setStopLoss(state.stopLoss)
+                if (state.takeProfit) setTakeProfit(state.takeProfit)
+                if (state.orderType) setOrderType(state.orderType)
+            }
+        } catch (err) {
+            console.error('Failed to restore trade form state:', err)
+        }
+    }, [searchParams])
 
     // Persist state whenever it changes
     useEffect(() => {
@@ -222,6 +257,20 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
             const data = await res.json()
             setExecutionResult(data)
             setShowConfirm(false)
+
+            // Activate story position if this trade was suggested by AI
+            if (storyPositionId) {
+                try {
+                    await fetch(`/api/story/positions/${storyPositionId}/activate`, {
+                        method: 'POST',
+                        body: JSON.stringify({ entry_price: entryPrice }),
+                        headers: { 'Content-Type': 'application/json' },
+                    })
+                    console.log('Story position activated after trade execution')
+                } catch (err) {
+                    console.error('Failed to auto-activate story position:', err)
+                }
+            }
 
             // Clear persisted state after successful execution
             if (typeof window !== 'undefined') {
