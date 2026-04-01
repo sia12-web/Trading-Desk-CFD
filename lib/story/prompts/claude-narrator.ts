@@ -44,6 +44,7 @@ interface SeasonSummary {
 export interface ActivePositionContext {
     position: StoryPosition
     adjustments: PositionAdjustment[]
+    live_oanda_details?: StoryDataPayload['live_oanda_position']
 }
 
 export interface PsychologyContext {
@@ -761,6 +762,17 @@ function buildActivePositionBlock(
         ).join('\n')
         : 'No adjustments yet.'
 
+    const live = ctx.live_oanda_details
+    const oandaBlock = live 
+        ? `\n**OANDA Live Trade Info:**
+- Trade ID: ${live.id}
+- Units: ${live.units} (${live.units > 0 ? 'LONG' : 'SHORT'})
+- Entry: ${live.entryPrice} | Current: ${live.currentPrice}
+- Unrealized P/L: ${live.unrealizedPL.toFixed(2)}
+- Realized SL: ${live.stopLoss ?? 'None'}
+- Realized TP: ${live.takeProfit ?? 'None'}`
+        : '\n**OANDA Live Trade Info:** Not found or manually closed.'
+
     return `## ACTIVE STORY POSITION (OANDA Live Position)
 **CRITICAL**: This is the trader's ONLY active position on OANDA for ${position.pair}. Do NOT confuse this with journal entries.
 
@@ -771,6 +783,7 @@ Current SL: ${position.current_stop_loss ?? 'Not set'}${position.current_stop_lo
 Current TP1: ${position.current_take_profit_1 ?? 'Not set'}${position.current_take_profit_2 ? ` | TP2: ${position.current_take_profit_2}` : ''}${position.current_take_profit_3 ? ` | TP3: ${position.current_take_profit_3}` : ''}
 Unrealized P&L: ${Number(pnlDisplay) >= 0 ? '+' : ''}${pnlDisplay} pips
 Holding since: ${adjustments.length} episode(s)
+${oandaBlock}
 
 ### Adjustment History
 ${adjustmentLog}
@@ -780,6 +793,7 @@ ${adjustmentLog}
 - **Adjust** — move SL (trail or tighten) or adjust TP levels
 - **Scale** — add to the winner if criteria met (6 rules apply)
 - **Close** — exit entirely if invalidated or target hit
+- **ADOPTED NOTE**: If this trade was manually opened (Adopted from OANDA), establish the narrative entry reason now.
 
 This is real money at risk. Be precise and actionable.`
 }

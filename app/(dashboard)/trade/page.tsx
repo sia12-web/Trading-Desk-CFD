@@ -11,9 +11,14 @@ export default async function TradePage() {
     const { data: instruments = [] } = await getAccountInstruments()
     const { data: account } = await getAccountSummary()
 
-    // Filter for the 7 major currency pairs + EUR/GBP crossover
-    const POPULAR_PAIRS = ['EUR_USD', 'GBP_USD', 'USD_JPY', 'USD_CHF', 'AUD_USD', 'USD_CAD', 'NZD_USD', 'EUR_GBP']
-    const fxInstruments = instruments.filter(i => POPULAR_PAIRS.includes(i.name))
+    // Full list synced with Story section instruments
+    const ALLOWED_INSTRUMENTS = [
+        'EUR_USD', 'GBP_USD', 'USD_JPY', 'EUR_GBP', 'AUD_USD',
+        'USD_CAD', 'NZD_USD', 'EUR_JPY', 'USD_CHF', 'GBP_JPY',
+        'GBP_AUD', 'EUR_AUD', 'AUD_JPY', 'NZD_JPY', 'USD_TRY', 'XAU_USD',
+        'NAS100_USD', 'SPX500_USD', 'US30_USD', 'DE30_EUR'
+    ]
+    const filteredInstruments = instruments.filter(i => ALLOWED_INSTRUMENTS.includes(i.name))
 
     return (
         <div className="max-w-6xl mx-auto space-y-12 pb-20">
@@ -28,7 +33,7 @@ export default async function TradePage() {
                 </div>
             </div>
 
-            <TradeOrderForm instruments={fxInstruments} accountInfo={account} />
+            <TradeOrderForm instruments={filteredInstruments} accountInfo={account} />
         </div>
     )
 }

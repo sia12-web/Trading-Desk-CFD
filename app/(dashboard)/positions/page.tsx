@@ -35,14 +35,26 @@ export default async function PositionsPage() {
         return acc
     }, {} as Record<string, any[]>)
 
-    // Map local trades to OANDA trades to get local IDs
-    const { data: localTrades } = await supabase
-        .from('trades')
-        .select('id, oanda_trade_id')
-        .in('status', ['open', 'planned'])
+    // Map local trades and Story positions to OANDA trades
+    const [{ data: localTrades }, { data: storyPositions }] = await Promise.all([
+        supabase
+            .from('trades')
+            .select('id, oanda_trade_id')
+            .in('status', ['open', 'planned']),
+        supabase
+            .from('story_positions')
+            .select('id, oanda_trade_id, season_number')
+            .in('status', ['active', 'partial_closed'])
+    ])
 
     const findLocalId = (oandaId: string) => {
         return localTrades?.find(t => t.oanda_trade_id === oandaId)?.id
+    }
+    
+    const getStoryBadge = (oandaId: string) => {
+        const pos = storyPositions?.find(p => p.oanda_trade_id === oandaId)
+        if (!pos) return null
+        return `S${pos.season_number}`
     }
 
     return (
@@ -94,7 +106,14 @@ export default async function PositionsPage() {
                                         <tr key={trade.id} className="hover:bg-neutral-800/30 transition-colors">
                                             <td className="px-8 py-6">
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold text-premium-white">{trade.instrument.replace('_', '/')}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-bold text-premium-white">{trade.instrument.replace('_', '/')}</span>
+                                                        {getStoryBadge(trade.id) && (
+                                                            <span className="px-2 py-0.5 rounded-lg bg-orange-500/10 text-orange-500 text-[9px] font-bold border border-orange-500/20">
+                                                                STORY {getStoryBadge(trade.id)}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <span className="text-[10px] text-neutral-500 font-mono">ID: {trade.id}</span>
                                                 </div>
                                             </td>

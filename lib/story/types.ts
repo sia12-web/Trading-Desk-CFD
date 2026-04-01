@@ -45,6 +45,16 @@ export interface StoryDataPayload {
         episode_number?: number | null
         episode_title?: string | null
     }>
+    live_oanda_position?: {
+        id: string
+        units: number
+        entryPrice: number
+        currentPrice: number
+        unrealizedPL: number
+        stopLoss?: number
+        takeProfit?: number
+        marginUsed: number
+    }
     collectedAt: string
 }
 

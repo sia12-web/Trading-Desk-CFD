@@ -42,19 +42,22 @@ export async function collectStoryData(
     const pipLocation = getPipLocation(pair)
     const supabase = client || await createClient()
 
-    // Fetch current price + trades (with episode linkage) and candles in parallel
-    // NOTE: Only fetch PLANNED and CLOSED trades from journal — active positions come from Story Position Tracker
-    const [{ data: prices }, { data: tradesRaw }] = await Promise.all([
+    // Fetch current price, local trades, and LIVE OANDA trades in parallel
+    const [{ data: prices }, { data: tradesRaw }, { data: openTradesRaw }] = await Promise.all([
         getCurrentPrices([instrument]),
         supabase
             .from('trades')
             .select('direction, status, entry_price, exit_price, stop_loss, take_profit, closed_at, story_season_number, story_episode_id')
             .eq('user_id', userId)
             .eq('pair', pair)
-            .in('status', ['planned', 'closed']) // Exclude 'open' — active positions tracked separately
+            .in('status', ['planned', 'closed']) // Exclude local 'open' — active positions tracked separately
             .order('created_at', { ascending: false })
-            .limit(10) // last 10 activities
+            .limit(10),
+        import('@/lib/oanda/client').then(m => m.getOpenTrades())
     ])
+    
+    // Filter live trades for this instrument
+    const liveOandaTrade = (openTradesRaw || []).find((t: any) => t.instrument === instrument)
 
     // Enrich trades with episode numbers for linked trades
     const linkedEpisodeIds = (tradesRaw || [])
@@ -145,6 +148,16 @@ export async function collectStoryData(
         atr50,
         atrRatio: ratio,
         recent_trades: trades,
+        live_oanda_position: liveOandaTrade ? {
+            id: liveOandaTrade.id,
+            units: parseFloat(liveOandaTrade.initialUnits),
+            entryPrice: parseFloat(liveOandaTrade.price),
+            currentPrice: parseFloat(liveOandaTrade.currentUnits || '0') >= 0 ? parseFloat(prices?.[0]?.asks?.[0]?.price || '0') : parseFloat(prices?.[0]?.bids?.[0]?.price || '0'),
+            unrealizedPL: parseFloat(liveOandaTrade.unrealizedPL),
+            stopLoss: liveOandaTrade.stopLossOrder?.price ? parseFloat(liveOandaTrade.stopLossOrder.price) : undefined,
+            takeProfit: liveOandaTrade.takeProfitOrder?.price ? parseFloat(liveOandaTrade.takeProfitOrder.price) : undefined,
+            marginUsed: parseFloat(liveOandaTrade.marginUsed || '0'),
+        } : undefined,
         collectedAt: new Date().toISOString(),
     }
 }

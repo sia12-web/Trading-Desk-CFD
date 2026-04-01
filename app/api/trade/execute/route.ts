@@ -224,6 +224,31 @@ export async function POST(req: Request) {
             await incrementUsage(strategy_template_id)
         }
 
+        // 4. Synchronization — Link to Story Position if active
+        try {
+            const { getActivePosition, updatePosition, addAdjustment } = await import('@/lib/data/story-positions')
+            const storyPos = await getActivePosition(user.id, instrument.replace('_', '/'))
+            
+            if (storyPos && !storyPos.oanda_trade_id && storyPos.status !== 'closed') {
+                await updatePosition(storyPos.id, { 
+                    oanda_trade_id: oandaTradeId,
+                    status: 'active',
+                    entry_price: parseFloat(oandaResponse.data?.orderFillTransaction?.price || entryPrice.toString())
+                })
+                
+                await addAdjustment({
+                    position_id: storyPos.id,
+                    episode_id: storyPos.entry_episode_id || '',
+                    episode_number: storyPos.entry_episode_number || 0,
+                    action: 'open',
+                    details: { manual_execution: true, oanda_trade_id: oandaTradeId },
+                    ai_reasoning: "ADOPTED: Execution detected via Trade terminal. Linking OANDA trade to existing narrative position."
+                })
+            }
+        } catch (syncError) {
+            console.error('Story sync failed during execution:', syncError)
+        }
+
         await logExecution({
             user_id: user.id,
             action: 'place_order',

@@ -125,11 +125,64 @@ export async function generateStory(
 
         const psychology = psychologyRaw as Awaited<ReturnType<typeof getMinimalPsychologyContext>>
 
+        // ── Determine active position (Sync/Adopt OANDA live trade) ──
+        let activePosition = existingPosition
+        if (data.live_oanda_position) {
+            const live = data.live_oanda_position
+            if (!activePosition) {
+                // AUTO-ADOPT: Live OANDA trade exists but no Story position. Adopt it into the narrative.
+                console.log(`${TAG} [Adoption] Found unlinked live OANDA trade (${live.id}) — adopting into Story...`)
+                const season = lastEpisodeRaw?.season_number || 1
+                const epNum = lastEpisodeRaw?.episode_number || 0
+                
+                activePosition = await createPosition(userId, pair, {
+                    season_number: season,
+                    direction: live.units > 0 ? 'long' : 'short',
+                    entry_episode_id: lastEpisodeRaw?.id || '',
+                    entry_episode_number: epNum,
+                    suggested_entry: live.entryPrice,
+                    original_stop_loss: live.stopLoss || 0,
+                    current_stop_loss: live.stopLoss,
+                    current_take_profit_1: live.takeProfit,
+                }, client)
+                
+                await updatePosition(activePosition.id, { 
+                    status: 'active', 
+                    entry_price: live.entryPrice,
+                    oanda_trade_id: live.id
+                }, client)
+
+                await addAdjustment({
+                    position_id: activePosition.id,
+                    episode_id: lastEpisodeRaw?.id || '',
+                    episode_number: epNum,
+                    action: 'open',
+                    details: { adopted_from_oanda: true, oanda_trade_id: live.id },
+                    ai_reasoning: "ADOPTED: Live OANDA position detected on account without existing narrative guidance. Synchronizing story state."
+                }, client)
+            } else if (activePosition.oanda_trade_id !== live.id) {
+                // Link existing Story position to this OANDA trade if it was just opened
+                console.log(`${TAG} [Sync] Linking Story position ${activePosition.id} to OANDA trade ${live.id}`)
+                activePosition = await updatePosition(activePosition.id, { 
+                    oanda_trade_id: live.id,
+                    status: 'active' 
+                }, client)
+            }
+        } else if (activePosition && activePosition.status === 'active' && activePosition.oanda_trade_id) {
+            // TRADE GONE: Story thinks we have a position but OANDA says no.
+            console.warn(`${TAG} [Sync] Active Story position has no corresponding OANDA trade! Trade likely closed/liquidated manually.`)
+            // We'll let the AI decide how to narrate this (it will see 0 live positions)
+        }
+
         // Build active position context for narrator
         let activePositionCtx: ActivePositionContext | null = null
-        if (existingPosition) {
-            const adjustments = await getAdjustmentsForPosition(existingPosition.id, client)
-            activePositionCtx = { position: existingPosition, adjustments }
+        if (activePosition) {
+            const adjustments = await getAdjustmentsForPosition(activePosition.id, client)
+            activePositionCtx = { 
+                position: activePosition, 
+                adjustments,
+                live_oanda_details: data.live_oanda_position 
+            }
         }
 
         // Extract validated key levels for DeepSeek cross-referencing

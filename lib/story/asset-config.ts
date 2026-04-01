@@ -88,8 +88,8 @@ export function getAssetConfig(pair: string): AssetConfig {
         }
     }
 
-    // JPY pairs use 3 decimal places
-    if (pair.includes('JPY')) {
+    // JPY pairs and Gold (XAU) often use 3 decimal places
+    if (pair.includes('JPY') || pair.includes('XAU')) {
         return { ...FOREX_DEFAULT, decimalPlaces: 3 }
     }
 
