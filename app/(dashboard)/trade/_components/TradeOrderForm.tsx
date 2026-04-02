@@ -28,6 +28,7 @@ import Link from 'next/link'
 import { MarketSentiment } from '@/lib/utils/sentiment'
 import { getMarketSessions } from '@/lib/utils/market-sessions'
 import type { DeskMeeting, TradeReviewOutput } from '@/lib/desk/types'
+import { getAssetConfig } from '@/lib/story/asset-config'
 
 interface TradeFormProps {
     instruments: OandaInstrument[]
@@ -376,10 +377,11 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
         }
     }
 
+    const assetCfg = getAssetConfig(selectedInstrument)
     const activeEntryPrice = orderType === 'LIMIT' ? limitPrice : entryPrice
-    const riskPips = Math.abs(activeEntryPrice - stopLoss) * Math.pow(10, -pipLocation)
+    const riskPips = Math.abs(activeEntryPrice - stopLoss) * assetCfg.pointMultiplier
     const riskAmount = Math.abs(activeEntryPrice - stopLoss) * units * conversionRate
-    const rewardPips = takeProfit ? Math.abs(takeProfit - activeEntryPrice) * Math.pow(10, -pipLocation) : 0
+    const rewardPips = takeProfit ? Math.abs(takeProfit - activeEntryPrice) * assetCfg.pointMultiplier : 0
     const rewardAmount = takeProfit ? Math.abs(takeProfit - activeEntryPrice) * units * conversionRate : 0
     const rrRatio = riskPips > 0 ? (rewardPips / riskPips).toFixed(2) : '0'
     const accountBalance = parseFloat(accountInfo?.account?.balance || accountInfo?.balance || '1')
@@ -389,7 +391,8 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const marketSnapshot = getMarketSessions(new Date())
     const bidPrice = currentPrice ? parseFloat(currentPrice.bids[0].price) : 0
     const askPrice = currentPrice ? parseFloat(currentPrice.asks[0].price) : 0
-    const liveSpread = (askPrice - bidPrice) * Math.pow(10, -pipLocation)
+    const liveSpread = (askPrice - bidPrice) * assetCfg.pointMultiplier
+    const label = assetCfg.pointLabel
 
     const marginRate = instrumentDetails?.marginRate ? parseFloat(instrumentDetails.marginRate) : 0.05
     const marginRequired = units * activeEntryPrice * marginRate * (selectedInstrument.includes('USD') ? 1 : conversionRate)
@@ -475,8 +478,25 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 </div>
                             </div>
 
-                            <div className="space-y-4 pt-4 border-t border-neutral-800">
+                             <div className="space-y-4 pt-4 border-t border-neutral-800">
+                                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Strategy Execution Context</label>
                                 <textarea value={strategyExplanation} onChange={(e) => setStrategyExplanation(e.target.value)} placeholder="Reasoning..." className="w-full h-32 bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white text-sm outline-none resize-none" />
+                            </div>
+                        </div>
+
+                        {/* Market Snapshot Indicator */}
+                        <div className="bg-neutral-900 border border-neutral-800 rounded-[2rem] p-6 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-3 h-3 rounded-full animate-pulse ${currentPrice ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`} />
+                                <div>
+                                    <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em]">OANDA STREAM</p>
+                                    <p className="text-xs font-bold text-white tracking-tight">LIVE POLLING {currentPrice ? '@ ' + askPrice.toFixed(instrumentDetails?.displayPrecision || 5) : 'PENDING...'}</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                {marketSnapshot.activeSessions.map(s => (
+                                    <span key={s} className="px-3 py-1 bg-neutral-800 border border-neutral-700 rounded-lg text-[9px] font-bold text-premium-white uppercase tracking-wider">{s}</span>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -489,6 +509,19 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 Risk Analytics
                             </h4>
                             <div className="space-y-4">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-neutral-500">Live Spread</span>
+                                    <span className="text-blue-400 font-mono font-bold">{liveSpread.toFixed(1)} {label}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-neutral-500">Distance to SL</span>
+                                    <span className="text-red-400 font-mono font-bold">{riskPips.toFixed(1)} {label}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-neutral-500">Distance to TP</span>
+                                    <span className="text-green-400 font-mono font-bold">{rewardPips.toFixed(1)} {label}</span>
+                                </div>
+                                <div className="h-[1px] bg-neutral-800/50 my-2" />
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-neutral-500">Risk Amount</span>
                                     <span className="text-red-400 font-bold">{riskAmount.toFixed(2)} {accountCurrency}</span>
@@ -504,6 +537,15 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-neutral-500">Risk Pool %</span>
                                     <span className={`font-bold ${riskPercent > 2 ? 'text-red-400' : 'text-blue-400'}`}>{riskPercent.toFixed(2)}%</span>
+                                </div>
+                                <div className="h-[1px] bg-neutral-800/50 my-2" />
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-neutral-600">Margin Required</span>
+                                    <span className="text-neutral-400 font-mono italic">~{marginRequired.toFixed(2)} {accountCurrency}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px]">
+                                    <span className="text-neutral-700 uppercase tracking-tighter">Est. Account Power</span>
+                                    <span className="text-neutral-500 font-bold">{accountCurrency} {accountBalance.toLocaleString()}</span>
                                 </div>
                             </div>
                             <div className="flex gap-3 pt-4">
