@@ -12,6 +12,17 @@ export interface TimeframeData {
     patterns: string[]  // detected candlestick pattern names
     swingHighs: PriceLevel[]
     swingLows: PriceLevel[]
+    fractalAnalysis?: {
+        recentBullishFractals: Array<{ price: number; time: string; aboveTeeth: boolean }>
+        recentBearishFractals: Array<{ price: number; time: string; belowTeeth: boolean }>
+        alligatorState: 'sleeping' | 'awakening' | 'eating' | 'sated'
+        alligatorDirection: 'bullish' | 'bearish' | 'neutral'
+        aoStatus: { value: number; trend: 'rising' | 'falling' | 'flat'; signal: string }
+        acStatus: { value: number; consecutiveGreen: number; consecutiveRed: number }
+        setupScore: number
+        setupDirection: 'buy' | 'sell' | 'none'
+        signals: string[]
+    }
 }
 
 export interface PriceLevel {

@@ -14,7 +14,7 @@ export interface CMSCondition {
     time_to_play_out: string      // "Same day"
     implication: string           // "Bias short Monday until Friday's low tested"
     confidence: 'high' | 'medium' | 'low'
-    category: 'daily' | 'weekly' | 'session' | 'volatility' | 'cross_market'
+    category: 'daily' | 'weekly' | 'session' | 'volatility' | 'cross_market' | 'fractal'
     source: 'programmatic' | 'ai'
 }
 
@@ -22,7 +22,7 @@ export interface CMSCondition {
 
 export interface ProgrammaticCondition {
     id: string
-    category: 'daily' | 'weekly' | 'session' | 'volatility' | 'cross_market'
+    category: 'daily' | 'weekly' | 'session' | 'volatility' | 'cross_market' | 'fractal'
     condition: string
     outcome: string
     sample_size: number           // exact count of times condition occurred
@@ -42,6 +42,7 @@ export interface CMSResult {
         session: CMSCondition[]
         volatility: CMSCondition[]
         cross_market: CMSCondition[]
+        fractal: CMSCondition[]
     }
     summary: string               // Market personality paragraph
     data_stats: {

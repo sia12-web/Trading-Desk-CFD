@@ -28,4 +28,15 @@ export interface CalculatedIndicators {
     adx: number[]
     volume: number[]
     volumeSma: number[]
+    // Bill Williams indicators
+    alligator: {
+        jaw: number[]
+        teeth: number[]
+        lips: number[]
+        state: ('sleeping' | 'awakening' | 'eating' | 'sated')[]
+    }
+    awesomeOscillator: number[]
+    acceleratorOscillator: number[]
+    fractals: Array<{ index: number; price: number; type: 'bullish' | 'bearish'; time?: string }>
+    gatorOscillator: { upper: number[]; lower: number[] }
 }

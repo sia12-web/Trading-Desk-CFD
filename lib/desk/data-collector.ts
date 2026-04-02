@@ -13,6 +13,7 @@ import type {
     ClosedTrade,
     ActiveScenario,
     MarketContext,
+    FractalSetupSummary,
 } from './types'
 
 /**
@@ -118,6 +119,9 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
 
     const pairNames = subscribedPairs.map((p: Record<string, unknown>) => p.pair as string)
 
+    // Fractal setups populated from latest cached structural analyses if available
+    const fractalSetups: FractalSetupSummary[] = await getFractalSetups(supabase, userId, pairNames)
+
     // Fetch per-pair data in parallel
     const pairResults = await Promise.all(
         pairNames.map(async (pair: string) => {
@@ -198,6 +202,7 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         deskState,
         recentProcessScores: recentScores,
         marketContext,
+        fractalSetups,
     }
 }
 
@@ -293,4 +298,45 @@ function determineSentiment(scenarios: ActiveScenario[]): string {
     if (bullish > bearish) return 'leaning bullish'
     if (bearish > bullish) return 'leaning bearish'
     return 'mixed'
+}
+
+async function getFractalSetups(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    userId: string,
+    pairs: string[]
+): Promise<FractalSetupSummary[]> {
+    if (pairs.length === 0) return []
+    try {
+        // Pull latest structural analysis cache which contains BW data via Gemini output
+        const { data } = await supabase
+            .from('structural_analysis_cache')
+            .select('pair, result')
+            .eq('user_id', userId)
+            .in('pair', pairs)
+            .order('created_at', { ascending: false })
+            .limit(pairs.length)
+
+        if (!data || data.length === 0) return []
+
+        const setups: FractalSetupSummary[] = []
+        for (const row of data) {
+            const result = row.result as Record<string, unknown> | null
+            if (!result) continue
+            // Extract BW data from structural analysis if available
+            const bw = result.bill_williams as Record<string, unknown> | undefined
+            if (bw) {
+                setups.push({
+                    pair: row.pair,
+                    timeframe: (bw.timeframe as string) || 'D',
+                    alligatorState: (bw.alligator_state as string) || 'unknown',
+                    setupScore: (bw.setup_score as number) || 0,
+                    setupDirection: (bw.setup_direction as string) || 'none',
+                    signals: (bw.signals as string[]) || [],
+                })
+            }
+        }
+        return setups
+    } catch {
+        return []
+    }
 }

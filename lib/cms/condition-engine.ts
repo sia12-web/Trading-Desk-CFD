@@ -23,6 +23,7 @@ export function computeAllConditions(data: CMSDataPayload): ProgrammaticConditio
         ...computeSessionConditions(data.sessionAnnotated, data.volatilityProfile.atr14_daily),
         ...computeVolatilityConditions(data.dailyRelationships, data.weeklyRelationships, data.volatilityProfile.atr14_daily),
         ...computeCrossMarketConditions(data.dailyRelationships, data.crossMarketCorrelations, data.pipMultiplier),
+        ...computeFractalConditions(data.dailyRelationships, data.volatilityProfile.atr14_daily, data.pipMultiplier),
     ]
 
     return all.filter(c => c.sample_size >= MIN_SAMPLE && c.probability >= MIN_PROBABILITY)
@@ -943,6 +944,150 @@ function computeCrossMarketConditions(
                 probability: avgCorr,
                 avg_move_pips: 0,
                 time_to_play_out: 'Same day',
+            })
+        }
+    }
+
+    return conditions
+}
+
+// ── Fractal Conditions (Bill Williams-inspired patterns) ──
+
+function computeFractalConditions(
+    dr: DailyRelationship[],
+    atr: number,
+    pipMult: number,
+): ProgrammaticCondition[] {
+    const conditions: ProgrammaticCondition[] = []
+    if (dr.length < 30) return conditions
+
+    // f1: 3+ consecutive narrow-range days (<0.6x ATR, proxy for Alligator sleeping) → next day range > 1.3x ATR (breakout)
+    {
+        let sample = 0, hits = 0
+        const moves: number[] = []
+        for (let i = 3; i < dr.length - 1; i++) {
+            const isNarrow = dr[i].range_pips < atr * 0.6 &&
+                dr[i - 1].range_pips < atr * 0.6 &&
+                dr[i - 2].range_pips < atr * 0.6
+            if (isNarrow) {
+                sample++
+                const next = dr[i + 1]
+                if (next && next.range_pips > atr * 1.3) {
+                    hits++
+                    moves.push(next.range_pips)
+                }
+            }
+        }
+        if (sample >= 5) {
+            conditions.push({
+                id: 'f1', category: 'fractal',
+                condition: '3+ consecutive narrow-range days (< 0.6x ATR — Alligator sleeping)',
+                outcome: 'Next day range exceeds 1.3x ATR (Alligator awakening breakout)',
+                sample_size: sample, hits,
+                probability: pct(hits, sample),
+                avg_move_pips: avg(moves),
+                time_to_play_out: 'Next day',
+            })
+        }
+    }
+
+    // f2: Price breaks above highest high of last 5 bars (bearish fractal level break) → continuation for 2+ days
+    {
+        let sample = 0, hits = 0
+        const moves: number[] = []
+        for (let i = 5; i < dr.length - 2; i++) {
+            const prev5Highs = [dr[i - 1], dr[i - 2], dr[i - 3], dr[i - 4], dr[i - 5]].map(d => d.high)
+            const highest = Math.max(...prev5Highs)
+            if (dr[i].high > highest && dr[i].close > highest) {
+                sample++
+                const next1 = dr[i + 1]
+                const next2 = dr[i + 2]
+                if (next1 && next2 && next1.direction === 'bullish' && next2.close > dr[i].close) {
+                    hits++
+                    moves.push((next2.close - dr[i].close) * pipMult)
+                }
+            }
+        }
+        if (sample >= 5) {
+            conditions.push({
+                id: 'f2', category: 'fractal',
+                condition: 'Daily close breaks above highest high of previous 5 bars (fractal high break)',
+                outcome: 'Bullish continuation for 2+ days',
+                sample_size: sample, hits,
+                probability: pct(hits, sample),
+                avg_move_pips: avg(moves),
+                time_to_play_out: '2-3 days',
+            })
+        }
+    }
+
+    // f3: Price breaks below lowest low of last 5 bars (bullish fractal level break) → bearish continuation
+    {
+        let sample = 0, hits = 0
+        const moves: number[] = []
+        for (let i = 5; i < dr.length - 2; i++) {
+            const prev5Lows = [dr[i - 1], dr[i - 2], dr[i - 3], dr[i - 4], dr[i - 5]].map(d => d.low)
+            const lowest = Math.min(...prev5Lows)
+            if (dr[i].low < lowest && dr[i].close < lowest) {
+                sample++
+                const next1 = dr[i + 1]
+                const next2 = dr[i + 2]
+                if (next1 && next2 && next1.direction === 'bearish' && next2.close < dr[i].close) {
+                    hits++
+                    moves.push((dr[i].close - next2.close) * pipMult)
+                }
+            }
+        }
+        if (sample >= 5) {
+            conditions.push({
+                id: 'f3', category: 'fractal',
+                condition: 'Daily close breaks below lowest low of previous 5 bars (fractal low break)',
+                outcome: 'Bearish continuation for 2+ days',
+                sample_size: sample, hits,
+                probability: pct(hits, sample),
+                avg_move_pips: avg(moves),
+                time_to_play_out: '2-3 days',
+            })
+        }
+    }
+
+    // f4: 5-bar pattern where middle bar is range extreme + next 2 bars expand range → trend continuation
+    {
+        let sample = 0, hits = 0
+        const moves: number[] = []
+        for (let i = 2; i < dr.length - 4; i++) {
+            const mid = dr[i]
+            const isHighExtreme = mid.high > dr[i - 1].high && mid.high > dr[i - 2].high &&
+                mid.high > dr[i + 1].high && mid.high > dr[i + 2].high
+            const isLowExtreme = mid.low < dr[i - 1].low && mid.low < dr[i - 2].low &&
+                mid.low < dr[i + 1].low && mid.low < dr[i + 2].low
+
+            if (isHighExtreme || isLowExtreme) {
+                const avgNextRange = (dr[i + 1].range_pips + dr[i + 2].range_pips) / 2
+                if (avgNextRange > mid.range_pips * 1.1) {
+                    sample++
+                    const next3 = dr[i + 3]
+                    if (next3) {
+                        const sameDir = isHighExtreme
+                            ? next3.direction === 'bearish'
+                            : next3.direction === 'bullish'
+                        if (sameDir) {
+                            hits++
+                            moves.push(next3.range_pips)
+                        }
+                    }
+                }
+            }
+        }
+        if (sample >= 5) {
+            conditions.push({
+                id: 'f4', category: 'fractal',
+                condition: '5-bar fractal extreme with expanding range on next 2 bars',
+                outcome: 'Trend continuation within 3 days in direction of the fractal reversal',
+                sample_size: sample, hits,
+                probability: pct(hits, sample),
+                avg_move_pips: avg(moves),
+                time_to_play_out: '3 days',
             })
         }
     }

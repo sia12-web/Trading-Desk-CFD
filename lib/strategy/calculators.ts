@@ -9,9 +9,14 @@ import {
     calculateADX,
     calculateStochastic,
     calculateBollingerBands,
-    calculateParabolicSAR
+    calculateParabolicSAR,
+    calculatePivotPoints,
+    calculateAlligator,
+    calculateAwesomeOscillator,
+    calculateAcceleratorOscillator,
+    calculateFractals,
+    calculateGatorOscillator,
 } from "@/lib/utils/indicators"
-import { calculatePivotPoints } from "@/lib/utils/indicators"
 
 export function calculateAllIndicators(
     candles: OandaCandle[],
@@ -42,6 +47,13 @@ export function calculateAllIndicators(
     const smaFast = optimizedParams?.['SMA Crossover']?.fastPeriod ?? 20
     const smaSlow = optimizedParams?.['SMA Crossover']?.slowPeriod ?? 50
 
+    // Bill Williams params
+    const alligatorJawPeriod = optimizedParams?.Alligator?.jawPeriod ?? 13
+    const alligatorTeethPeriod = optimizedParams?.Alligator?.teethPeriod ?? 8
+    const alligatorLipsPeriod = optimizedParams?.Alligator?.lipsPeriod ?? 5
+    const aoFastPeriod = optimizedParams?.['Awesome Oscillator']?.fastPeriod ?? 5
+    const aoSlowPeriod = optimizedParams?.['Awesome Oscillator']?.slowPeriod ?? 34
+
     // Pivot points from daily candles if provided
     let pivotPoints: PivotPointLevels
     if (dailyCandles && dailyCandles.length >= 2) {
@@ -60,6 +72,13 @@ export function calculateAllIndicators(
     const stochResult = calculateStochastic(highs, lows, closes, stochK, stochD)
     const bbResult = calculateBollingerBands(closes, bbPeriod, bbStdDev)
     const sarResult = calculateParabolicSAR(highs, lows, sarStart, sarStep, sarMax)
+
+    // Bill Williams indicators
+    const alligatorResult = calculateAlligator(highs, lows, alligatorJawPeriod, 8, alligatorTeethPeriod, 5, alligatorLipsPeriod, 3)
+    const aoResult = calculateAwesomeOscillator(highs, lows, aoFastPeriod, aoSlowPeriod)
+    const acResult = calculateAcceleratorOscillator(highs, lows)
+    const fractalResult = calculateFractals(highs, lows, candles.map(c => c.time))
+    const gatorResult = calculateGatorOscillator(highs, lows)
 
     // Build EMA object with standard periods + optimized periods
     const emaObj: Record<number, number[]> = {
@@ -116,6 +135,17 @@ export function calculateAllIndicators(
         parabolicSar: { sar: sarResult.sar, direction: sarResult.trend },
         adx: adxResult.adx,
         volume: volumes,
-        volumeSma: calculateSMA(volumes, 20)
+        volumeSma: calculateSMA(volumes, 20),
+        // Bill Williams
+        alligator: {
+            jaw: alligatorResult.jaw,
+            teeth: alligatorResult.teeth,
+            lips: alligatorResult.lips,
+            state: alligatorResult.state,
+        },
+        awesomeOscillator: aoResult,
+        acceleratorOscillator: acResult,
+        fractals: fractalResult,
+        gatorOscillator: gatorResult,
     }
 }

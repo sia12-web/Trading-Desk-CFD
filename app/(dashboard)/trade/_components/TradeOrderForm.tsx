@@ -379,6 +379,9 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
 
     const assetCfg = getAssetConfig(selectedInstrument)
     const activeEntryPrice = orderType === 'LIMIT' ? limitPrice : entryPrice
+    const accountCurrency = accountInfo?.account?.currency || accountInfo?.currency || 'USD'
+
+    // Risk calculations — price_diff * units = PnL in quote currency, then convert to account
     const riskPips = Math.abs(activeEntryPrice - stopLoss) * assetCfg.pointMultiplier
     const riskAmount = Math.abs(activeEntryPrice - stopLoss) * units * conversionRate
     const rewardPips = takeProfit ? Math.abs(takeProfit - activeEntryPrice) * assetCfg.pointMultiplier : 0
@@ -386,7 +389,6 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const rrRatio = riskPips > 0 ? (rewardPips / riskPips).toFixed(2) : '0'
     const accountBalance = parseFloat(accountInfo?.account?.balance || accountInfo?.balance || '1')
     const riskPercent = (riskAmount / accountBalance) * 100
-    const accountCurrency = accountInfo?.account?.currency || accountInfo?.currency || 'USD'
 
     const marketSnapshot = getMarketSessions(new Date())
     const bidPrice = currentPrice ? parseFloat(currentPrice.bids[0].price) : 0
@@ -394,8 +396,21 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const liveSpread = (askPrice - bidPrice) * assetCfg.pointMultiplier
     const label = assetCfg.pointLabel
 
+    // Margin calculation — OANDA formula: units * marginRate * (base→account conversion)
     const marginRate = instrumentDetails?.marginRate ? parseFloat(instrumentDetails.marginRate) : 0.05
-    const marginRequired = units * activeEntryPrice * marginRate * (selectedInstrument.includes('USD') ? 1 : conversionRate)
+    const baseCurrency = selectedInstrument.split('_')[0]
+    const quoteCurrency = selectedInstrument.split('_')[1]
+    let marginRequired: number
+    if (baseCurrency === accountCurrency) {
+        // USD/JPY on USD account: base IS account currency → margin = units * marginRate
+        marginRequired = units * marginRate
+    } else if (quoteCurrency === accountCurrency) {
+        // EUR/USD on USD account: entry price IS base→account rate → margin = units * marginRate * price
+        marginRequired = units * marginRate * activeEntryPrice
+    } else {
+        // GBP/JPY on USD account: base→account ≈ entry * quote→account → margin = units * marginRate * price * conversion
+        marginRequired = units * marginRate * activeEntryPrice * conversionRate
+    }
 
     if (executionResult) {
         return (

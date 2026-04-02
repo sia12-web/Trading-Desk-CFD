@@ -15,6 +15,8 @@ const DEFAULT_PARAMS: Record<string, Record<string, number>> = {
     EMA_Cross: { fast: 8, slow: 21 },
     SMA_Cross: { fast: 50, slow: 200 },
     SAR: { step: 0.02, max: 0.2 },
+    Alligator: { jawPeriod: 13, teethPeriod: 8, lipsPeriod: 5 },
+    AO: { fast: 5, slow: 34 },
 }
 
 /**
@@ -109,7 +111,9 @@ Current ADX(14): ${lastAdx?.toFixed(1) ?? 'N/A'}
 Current BB Width: ${lastBbWidth?.toFixed(2) ?? 'N/A'}
 Current ATR(14): ${lastAtr?.toFixed(1) ?? 'N/A'} pips
 Current Stoch K: ${lastStochK?.toFixed(1) ?? 'N/A'}
-Patterns detected: ${tf.patterns.join(', ') || 'None'}`
+Patterns detected: ${tf.patterns.join(', ') || 'None'}
+Current Alligator state: ${tf.indicators.alligator.state[tf.indicators.alligator.state.length - 1] || 'N/A'}
+BW Setup Score: ${tf.fractalAnalysis?.setupScore ?? 'N/A'}/100`
     }).join('\n\n')
 
     return `You are a quantitative indicator optimization specialist. Analyze this ${pair} data across 5 timeframes and recommend optimal indicator parameters.
@@ -138,6 +142,8 @@ For each indicator on each timeframe, analyze whether the default parameters are
 6. **EMA Cross**: Are 8/21 appropriate, or should we adjust for this pair's cycle length?
 7. **SMA Cross**: Are 50/200 appropriate for the macro trend detection?
 8. **SAR**: Are step/max values appropriate for this volatility level?
+9. **Alligator**: Are the 13/8/5 periods appropriate for this pair's cycle length? Faster pairs may need shorter periods.
+10. **Awesome Oscillator**: Are 5/34 SMA periods optimal for this pair's momentum characteristics?
 
 Also determine the overall market regime (trending, ranging, volatile, transitioning).
 

@@ -4,6 +4,7 @@ import { assessTrend } from '@/lib/utils/trend-detector'
 import { calculateATR } from '@/lib/utils/atr'
 import { detectAMDPhase } from './amd-detector'
 import { mapLiquidityZones } from './liquidity-mapper'
+import { detectFractalSetup } from './fractal-detector'
 import type { OandaCandle } from '@/lib/types/oanda'
 import type { StoryDataPayload, TimeframeData, PriceLevel } from './types'
 
@@ -114,8 +115,9 @@ export async function collectStoryData(
         const patterns = detectSimplePatterns(candles)
         const swingHighs = findSwingHighs(candles)
         const swingLows = findSwingLows(candles)
+        const fractalAnalysis = detectFractalSetup(candles, indicators)
 
-        return { timeframe: tf, candles, indicators, trend, patterns, swingHighs, swingLows }
+        return { timeframe: tf, candles, indicators, trend, patterns, swingHighs, swingLows, fractalAnalysis }
     })
 
     // Detect AMD phases per timeframe

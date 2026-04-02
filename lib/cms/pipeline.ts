@@ -42,7 +42,7 @@ export async function generateCMSAnalysis(
                 pair,
                 generated_at: new Date().toISOString(),
                 total_conditions: 0,
-                categories: { daily: [], weekly: [], session: [], volatility: [], cross_market: [] },
+                categories: { daily: [], weekly: [], session: [], volatility: [], cross_market: [], fractal: [] },
                 summary: 'Insufficient data or no patterns met the minimum thresholds (n≥15, probability≥55%).',
                 data_stats: {
                     daily_candles: data.summaryStats.total_daily_candles,
@@ -121,7 +121,8 @@ export async function generateCMSAnalysis(
             (cats.weekly?.length || 0) +
             (cats.session?.length || 0) +
             (cats.volatility?.length || 0) +
-            (cats.cross_market?.length || 0)
+            (cats.cross_market?.length || 0) +
+            (cats.fractal?.length || 0)
 
         await storeResult(client, userId, pair, result)
 

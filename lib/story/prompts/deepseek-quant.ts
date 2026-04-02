@@ -27,6 +27,11 @@ export function buildStoryQuantPrompt(
 - Stochastic K/D (last 5): K=[${stochK.map(v => v.toFixed(1)).join(', ')}] D=[${stochD.map(v => v.toFixed(1)).join(', ')}]
 - ATR (last): ${i.atr[i.atr.length - 1]?.toFixed(6) || 'N/A'}
 - Parabolic SAR direction: ${i.parabolicSar.direction[i.parabolicSar.direction.length - 1] || 'N/A'}
+- Alligator: jaw=${i.alligator.jaw.slice(-1)[0]?.toFixed(6) || 'N/A'}, teeth=${i.alligator.teeth.slice(-1)[0]?.toFixed(6) || 'N/A'}, lips=${i.alligator.lips.slice(-1)[0]?.toFixed(6) || 'N/A'}, state=${i.alligator.state.slice(-1)[0] || 'N/A'}
+- AO (last 5): [${i.awesomeOscillator.slice(-5).map(v => isNaN(v) ? 'NaN' : v.toFixed(6)).join(', ')}]
+- AC (last 5): [${i.acceleratorOscillator.slice(-5).map(v => isNaN(v) ? 'NaN' : v.toFixed(6)).join(', ')}]
+- BW Setup: score=${tf.fractalAnalysis?.setupScore ?? 0}/100, direction=${tf.fractalAnalysis?.setupDirection ?? 'none'}
+- BW Signals: ${tf.fractalAnalysis?.signals.join('; ') || 'none'}
 - Trend score: ${tf.trend.score}/100 (${tf.trend.direction})`
     }).join('\n\n')
 
@@ -43,6 +48,7 @@ Your job is to validate the structural analysis with hard numbers and compute pr
 ## CROSS-VALIDATION MANDATE (MANDATORY)
 - Cross-check EVERY price level from Gemini's analysis against actual swing highs/lows in the indicator data.
 - Flag any Gemini level that does NOT correspond to an actual swing high/low or candle boundary within 1 ATR tolerance.
+- Cross-check fractal levels against Alligator teeth position — fractals inside the "mouth" (between jaw and teeth) are NOT valid Bill Williams signals.
 - Include a "flagged_levels" array in your output listing any suspicious levels with reasons.
 - Your own precise_levels must ONLY use prices derivable from actual candle data.
 

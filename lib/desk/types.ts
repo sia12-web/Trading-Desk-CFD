@@ -221,6 +221,15 @@ export interface MarketContext {
     volatility_status: Record<string, string>
 }
 
+export interface FractalSetupSummary {
+    pair: string
+    timeframe: string
+    alligatorState: string
+    setupScore: number
+    setupDirection: string
+    signals: string[]
+}
+
 export interface DeskContext {
     openPositions: OpenPosition[]
     todayClosedTrades: ClosedTrade[]
@@ -260,4 +269,5 @@ export interface DeskContext {
     deskState: DeskState | null
     recentProcessScores: ProcessScore[]
     marketContext: MarketContext
+    fractalSetups: FractalSetupSummary[]
 }

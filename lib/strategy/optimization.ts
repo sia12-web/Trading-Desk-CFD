@@ -15,6 +15,8 @@ export interface IndicatorSettings {
     'SMA Crossover': { fastPeriod: number; slowPeriod: number }
     SAR: { afStart: number; afStep: number; afMax: number }
     ADX: { period: number }
+    Alligator: { jawPeriod: number; teethPeriod: number; lipsPeriod: number }
+    'Awesome Oscillator': { fastPeriod: number; slowPeriod: number }
 }
 
 /**

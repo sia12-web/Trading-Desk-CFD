@@ -74,7 +74,8 @@ Return JSON with EXACTLY this structure:
     "weekly": [],
     "session": [],
     "volatility": [],
-    "cross_market": []
+    "cross_market": [],
+    "fractal": []
   },
   "summary": "Market personality paragraph",
   "data_stats": {

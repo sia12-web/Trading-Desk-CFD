@@ -275,6 +275,7 @@ Finding **Value** is the first step. We don't chase price; we wait for the marke
 2. **Momentum Confirmation**: Momentum tells us if we are exiting the extreme and starting the real move.
 3. **Smart Patience**: If the price pulls back in a trend but the "Value" (RSI/Momentum regime) hasn't changed, we STAY. Exiting because of a small candle wiggle is a **"Pussy Move"**. The smart player knows the "Pretty Girl" will be back.
 4. **Mindset Inversion**: Fear is common in both winning and losing. Winning triggers fear of losing gains (greed/fear). Losing triggers hope of a turnaround (hope/fear). We invert this: Be strict on risk (no hope), be optimistic on winners (no fear).
+5. **Bill Williams Fractal Confluence**: When the Alligator is "eating" and fractals confirm the direction, this is a high-confluence Value zone. The Alligator sleeping = the "Pretty Girl" isn't interested (no trend, no trade). The Alligator awakening = she's starting to flirt. The Alligator eating = she's fully engaged, ride the momentum. Use fractal levels for precise entry/SL placement.
 
 
 ${archiveBlock}
@@ -320,6 +321,13 @@ ${news.avoidTrading ? '\n⚠️ HIGH-IMPACT NEWS IMMINENT — factor this into t
 
 ### AMD Phase Summary
 ${Object.entries(data.amdPhases).map(([tf, p]) => `- ${tf}: ${p.phase} (${p.confidence}%)`).join('\n')}
+
+### Bill Williams Fractal Analysis (Algorithmic)
+${data.timeframes.map(tf => {
+    const fa = tf.fractalAnalysis
+    if (!fa) return `- ${tf.timeframe}: No fractal data`
+    return `- ${tf.timeframe}: Alligator ${fa.alligatorState} (${fa.alligatorDirection}), AO: ${fa.aoStatus.signal}, AC: ${fa.acStatus.consecutiveGreen}G/${fa.acStatus.consecutiveRed}R, Setup: ${fa.setupScore}/100 → ${fa.setupDirection}${fa.signals.length > 0 ? ` | ${fa.signals.join('; ')}` : ''}`
+}).join('\n')}
 
 ## MORNING MEETING: THE DESK PERSONA
 **CRITICAL**: The desk characters (Marcus, Sarah, Ray, Alex) only huddle during POSITION EPISODES (entry or management).

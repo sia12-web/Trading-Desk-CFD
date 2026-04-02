@@ -115,6 +115,14 @@ ${context.activeStoryPositions.length > 0
             : '- No active story positions'
         }
 
+### Bill Williams Fractal Setups (Algorithmic)
+${context.fractalSetups.length > 0
+            ? context.fractalSetups.map(s =>
+                `- ${s.pair} ${s.timeframe}: Alligator ${s.alligatorState}, Setup: ${s.setupScore}/100 → ${s.setupDirection}${s.signals.length > 0 ? ` (${s.signals.join(', ')})` : ''}`
+            ).join('\n')
+            : '- No active Bill Williams setups detected'
+        }
+
 ### Trader Profile
 - Style: ${context.profile.trading_style || 'not set'}
 - Risk Personality: ${context.profile.risk_personality || 'not set'}

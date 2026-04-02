@@ -31,6 +31,10 @@ export function buildStoryStructuralPrompt(
 - **Gann Levels** (high of swing low bars): ${tf.swingLows.slice(-3).filter(s => s.oppositeExtreme).map(s => s.oppositeExtreme!.toFixed(5)).join(', ') || 'none'}
 - **Volume trend**: ${describeVolume(tf.indicators.volume, tf.indicators.volumeSma)}
 - **EMA alignment**: ${describeEMAs(tf.indicators.ema)}
+- **Alligator**: ${tf.fractalAnalysis?.alligatorState ?? 'N/A'} (${tf.fractalAnalysis?.alligatorDirection ?? 'N/A'}), Jaw: ${tf.indicators.alligator.jaw.slice(-1)[0]?.toFixed(5) ?? 'N/A'}, Teeth: ${tf.indicators.alligator.teeth.slice(-1)[0]?.toFixed(5) ?? 'N/A'}, Lips: ${tf.indicators.alligator.lips.slice(-1)[0]?.toFixed(5) ?? 'N/A'}
+- **Fractals**: Bullish: ${tf.fractalAnalysis?.recentBullishFractals.slice(-3).map(f => f.price.toFixed(5)).join(', ') || 'none'} | Bearish: ${tf.fractalAnalysis?.recentBearishFractals.slice(-3).map(f => f.price.toFixed(5)).join(', ') || 'none'}
+- **AO**: ${tf.fractalAnalysis?.aoStatus.value.toFixed(6) ?? 'N/A'} (${tf.fractalAnalysis?.aoStatus.signal ?? 'N/A'})
+- **BW Setup**: ${tf.fractalAnalysis?.setupScore ?? 0}/100 → ${tf.fractalAnalysis?.setupDirection ?? 'none'}
 - **Last 5 candles**: ${last5.map(c => `${parseFloat(c.mid.o).toFixed(5)}->${parseFloat(c.mid.c).toFixed(5)} (H:${parseFloat(c.mid.h).toFixed(5)} L:${parseFloat(c.mid.l).toFixed(5)})`).join(' | ')}`
     }).join('\n\n')
 
@@ -93,6 +97,8 @@ Analyze ALL the data above and produce a JSON response:
   "structural_narrative": "A 3-4 sentence paragraph summarizing the structural story of this pair right now.",
   "optimization_suggestions": ["What indicators are most relevant given current structure?"]
 }
+
+**Bill Williams Fractal Analysis**: When the Alligator is 'eating' or 'awakening', note the direction and nearest valid fractals (those beyond the Teeth line). These are high-probability confluence zones. When the Alligator is 'sleeping', flag it as a compression/range phase — a breakout setup is building.
 
 Be precise with price levels. Reference specific timeframes. Look for confluences where multiple TFs tell the same story.`
 }
