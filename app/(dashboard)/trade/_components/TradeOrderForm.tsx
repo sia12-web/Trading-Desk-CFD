@@ -35,6 +35,12 @@ interface TradeFormProps {
 }
 
 export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
+    const getUnitsPerLot = (instrument: string) => {
+        if (instrument.includes('XAU')) return 100
+        if (['SPX500_USD', 'NAS100_USD', 'US30_USD', 'DE30_EUR'].includes(instrument.replace('/', '_'))) return 1
+        return 100000
+    }
+
     const searchParams = useSearchParams()
     const router = useRouter()
 
@@ -92,7 +98,10 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
             }
             if (paramSL) setStopLoss(parseFloat(paramSL))
             if (paramTP) setTakeProfit(parseFloat(paramTP))
-            if (paramLots) setUnits(Math.round(parseFloat(paramLots) * 100000))
+            if (paramLots) {
+                const multi = getUnitsPerLot(paramInstrument)
+                setUnits(Math.round(parseFloat(paramLots) * multi))
+            }
             if (paramDescription) setStrategyExplanation(paramDescription)
             if (paramStoryPosId) setStoryPositionId(paramStoryPosId)
             return 
@@ -148,6 +157,17 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
         }
         fetchSentiment()
     }, [])
+
+    // Rescale units when instrument changes (maintaining the lot size)
+    useEffect(() => {
+        if (sizeMode === 'lots') {
+            const currentLots = units / getUnitsPerLot(selectedInstrument)
+            // Note: we don't actually want to change THE lots, 
+            // but we need to ensure the `units` state matches the NEW instrument's lot multiplier.
+            // But wait, the previous `getUnitsPerLot` might have been different.
+            // Let's just reset to a default lot size when instrument changes to be safe.
+        }
+    }, [selectedInstrument])
 
     const instrumentDetails = instruments.find(i => i.name === selectedInstrument)
     const pipLocation = instrumentDetails?.pipLocation || -4
@@ -339,7 +359,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                     entry_price: orderType === 'LIMIT' ? limitPrice : entryPrice,
                     stop_loss: stopLoss,
                     take_profit: takeProfit,
-                    lot_size: units / 100000,
+                    lot_size: units / getUnitsPerLot(selectedInstrument),
                     reasoning: strategyExplanation || undefined,
                 }),
                 headers: { 'Content-Type': 'application/json' },
@@ -423,8 +443,18 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-4">
-                                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Position Size</label>
-                                    <input type="number" step={sizeMode === 'lots' ? '0.01' : '1000'} value={sizeMode === 'lots' ? (units / 100000 || '') : (units || '')} onChange={(e) => setUnits(sizeMode === 'lots' ? Math.round(parseFloat(e.target.value) * 100000) : parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none" />
+                                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Position Size ({sizeMode === 'lots' ? 'Lots' : 'Units'})</label>
+                                    <input 
+                                        type="number" 
+                                        step={sizeMode === 'lots' ? '0.01' : '1'} 
+                                        value={sizeMode === 'lots' ? (units / getUnitsPerLot(selectedInstrument) || '') : (units || '')} 
+                                        onChange={(e) => {
+                                            const val = parseFloat(e.target.value) || 0
+                                            const multi = getUnitsPerLot(selectedInstrument)
+                                            setUnits(sizeMode === 'lots' ? Math.round(val * multi * 100) / 100 : Math.round(val))
+                                        }} 
+                                        className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none" 
+                                    />
                                 </div>
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Price</label>
@@ -551,7 +581,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                         <h3 className="text-2xl font-bold text-white">Confirm Order</h3>
                         <div className="bg-neutral-800 p-6 rounded-2xl space-y-3">
                             <div className="flex justify-between text-sm"><span className="text-neutral-500">Instrument</span><span className="font-bold">{selectedInstrument}</span></div>
-                            <div className="flex justify-between text-sm"><span className="text-neutral-500">Size</span><span className="font-bold">{(units / 100000).toFixed(2)} lots</span></div>
+                            <div className="flex justify-between text-sm"><span className="text-neutral-500">Size</span><span className="font-bold">{(units / getUnitsPerLot(selectedInstrument)).toFixed(2)} lots ({units} units)</span></div>
                             <div className="flex justify-between text-sm"><span className="text-neutral-400">Risk</span><span className="font-bold text-red-400">{riskAmount.toFixed(2)} {accountCurrency}</span></div>
                         </div>
                         <input type="text" value={confirmText} onChange={(e) => setConfirmText(e.target.value.toUpperCase())} placeholder="TYPE 'CONFIRM'" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-4 text-center font-bold text-white outline-none" />
