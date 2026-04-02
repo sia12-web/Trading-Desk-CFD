@@ -1,5 +1,6 @@
 import type { StoryDataPayload } from '../types'
 import type { StoryNewsContext } from '../types'
+import type { CrossMarketReport, IndexCrossMarketReport } from '../agents/types'
 
 /**
  * Gemini "Pattern Archaeologist" prompt for Story.
@@ -7,7 +8,8 @@ import type { StoryNewsContext } from '../types'
  */
 export function buildStoryStructuralPrompt(
     data: StoryDataPayload,
-    news: StoryNewsContext
+    news: StoryNewsContext,
+    crossMarket?: CrossMarketReport | IndexCrossMarketReport | null
 ): string {
     const tfSummaries = data.timeframes.map(tf => {
         const lastCandle = tf.candles[tf.candles.length - 1]
@@ -72,6 +74,9 @@ These are REAL levels from actual candle data, not projections. Use them as addi
 - ${news.fundamental_narrative}
 ${news.avoidTrading ? '⚠️ HIGH-IMPACT NEWS IMMINENT — trading avoidance recommended' : ''}
 
+## CROSS-MARKET INTELLIGENCE
+${buildCrossMarketBlock(crossMarket)}
+
 ## MULTI-TIMEFRAME DATA
 ${tfSummaries}
 
@@ -100,6 +105,8 @@ Analyze ALL the data above and produce a JSON response:
 
 **Bill Williams Fractal Analysis**: When the Alligator is 'eating' or 'awakening', note the direction and nearest valid fractals (those beyond the Teeth line). These are high-probability confluence zones. When the Alligator is 'sleeping', flag it as a compression/range phase — a breakout setup is building.
 
+**Cross-Market Validation**: If your structural bias contradicts the cross-market risk appetite (e.g., you're bullish but risk is off and equities are dumping), note this tension explicitly. Cross-market divergences often precede reversals.
+
 Be precise with price levels. Reference specific timeframes. Look for confluences where multiple TFs tell the same story.`
 }
 
@@ -113,6 +120,45 @@ function describeVolume(volume: number[], volumeSma: number[]): string {
     if (ratio > 1.3) return `above average (${ratio.toFixed(1)}x)`
     if (ratio < 0.5) return `very low (${ratio.toFixed(1)}x avg)`
     return `normal (${ratio.toFixed(1)}x avg)`
+}
+
+function buildCrossMarketBlock(crossMarket?: CrossMarketReport | IndexCrossMarketReport | null): string {
+    if (!crossMarket) return 'Cross-market data unavailable today.'
+
+    const parts: string[] = []
+    parts.push(`- Risk Appetite: ${crossMarket.risk_appetite}`)
+    parts.push(`- Summary: ${crossMarket.summary}`)
+
+    // CrossMarketReport (forex pairs)
+    if ('indices_analyzed' in crossMarket && crossMarket.indices_analyzed) {
+        parts.push('- Index Trends:')
+        for (const idx of crossMarket.indices_analyzed) {
+            parts.push(`  - ${idx.name} (${idx.instrument}): ${idx.recent_trend} — ${idx.correlation_signal}`)
+        }
+        if (crossMarket.currency_implications) {
+            const ci = crossMarket.currency_implications
+            parts.push(`- Currency Flow: base=${ci.base_currency}, quote=${ci.quote_currency}, net=${ci.net_effect}`)
+        }
+        if (crossMarket.divergences.length > 0) {
+            parts.push(`- Divergences: ${crossMarket.divergences.join('; ')}`)
+        }
+        parts.push(`- Thesis: ${crossMarket.cross_market_thesis}`)
+    }
+
+    // IndexCrossMarketReport (index pairs)
+    if ('peer_indices' in crossMarket && crossMarket.peer_indices) {
+        parts.push('- Peer Indices:')
+        for (const idx of crossMarket.peer_indices) {
+            parts.push(`  - ${idx.name}: 1D=${idx.change1d > 0 ? '+' : ''}${idx.change1d.toFixed(1)}%, 5D=${idx.change5d > 0 ? '+' : ''}${idx.change5d.toFixed(1)}% | ${idx.trend}${idx.divergence_note ? ` (${idx.divergence_note})` : ''}`)
+        }
+        if (crossMarket.bond_analysis) {
+            parts.push(`- Bonds: ${crossMarket.bond_analysis.yield_trend} — ${crossMarket.bond_analysis.implication}`)
+        }
+        parts.push(`- Dollar: ${crossMarket.dollar_analysis.trend} — ${crossMarket.dollar_analysis.implication}`)
+        parts.push(`- Thesis: ${crossMarket.correlation_thesis}`)
+    }
+
+    return parts.join('\n')
 }
 
 function describeEMAs(ema: Record<number, number[]>): string {

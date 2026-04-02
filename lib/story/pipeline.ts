@@ -261,7 +261,7 @@ export async function generateStory(
         console.log(`${TAG} [Gemini] Starting structural analysis (gemini-2.5-flash, 90s, 8K tokens)...`)
         const geminiStart = Date.now()
         await updateProgress(taskId, 35, 'Gemini analyzing market structure...', client)
-        const geminiPrompt = buildStoryStructuralPrompt(data, news)
+        const geminiPrompt = buildStoryStructuralPrompt(data, news, agentIntelligence.crossMarket)
         const geminiOutput = await callGemini(geminiPrompt, {
             timeout: 90_000,
             maxTokens: 8192,
@@ -272,7 +272,7 @@ export async function generateStory(
         console.log(`${TAG} [DeepSeek] Starting quant validation (deepseek-chat V3.2, 90s, 4K tokens)...`)
         const deepseekStart = Date.now()
         await updateProgress(taskId, 55, 'DeepSeek validating with quantitative analysis...', client)
-        const deepseekPrompt = buildStoryQuantPrompt(data, geminiOutput, scenarioAnalysisLevels)
+        const deepseekPrompt = buildStoryQuantPrompt(data, geminiOutput, scenarioAnalysisLevels, agentIntelligence.crossMarket)
         const deepseekOutput = await callDeepSeek(deepseekPrompt, {
             timeout: 90_000,
             maxTokens: 4096,

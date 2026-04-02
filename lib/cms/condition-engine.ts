@@ -22,7 +22,7 @@ export function computeAllConditions(data: CMSDataPayload): ProgrammaticConditio
         ...computeWeeklyConditions(data.weeklyRelationships),
         ...computeSessionConditions(data.sessionAnnotated, data.volatilityProfile.atr14_daily),
         ...computeVolatilityConditions(data.dailyRelationships, data.weeklyRelationships, data.volatilityProfile.atr14_daily),
-        ...computeCrossMarketConditions(data.dailyRelationships, data.crossMarketCorrelations, data.pipMultiplier),
+        ...computeCrossMarketConditions(data.dailyRelationships, data.crossMarketCorrelations, data.pipMultiplier, data.pair),
         ...computeFractalConditions(data.dailyRelationships, data.volatilityProfile.atr14_daily, data.pipMultiplier),
     ]
 
@@ -874,13 +874,18 @@ function computeCrossMarketConditions(
     dr: DailyRelationship[],
     correlations: CMSDataPayload['crossMarketCorrelations'],
     pipMult: number,
+    pair: string,
 ): ProgrammaticCondition[] {
     const conditions: ProgrammaticCondition[] = []
+    const pairUpper = pair.toUpperCase()
 
     // Use the pre-computed correlation data from data-collector
     const spx = correlations.find(c => c.index_name === 'SPX500_USD')
     const nas = correlations.find(c => c.index_name === 'NAS100_USD')
     const dji = correlations.find(c => c.index_name === 'US30_USD')
+    const dax = correlations.find(c => c.index_name === 'DE30_EUR')
+    const ftse = correlations.find(c => c.index_name === 'UK100_GBP')
+    const nikkei = correlations.find(c => c.index_name === 'JP225_USD')
 
     // cm1: SPX500 up → pair direction (positive correlation)
     if (spx && spx.sample_days >= MIN_SAMPLE) {
@@ -944,6 +949,95 @@ function computeCrossMarketConditions(
                 probability: avgCorr,
                 avg_move_pips: 0,
                 time_to_play_out: 'Same day',
+            })
+        }
+    }
+
+    // cm5: DAX closes bullish → EUR pairs follow direction
+    if (dax && dax.sample_days >= MIN_SAMPLE && pairUpper.includes('EUR')) {
+        conditions.push({
+            id: 'cm5', category: 'cross_market',
+            condition: 'DAX (DE30) closes bullish',
+            outcome: 'EUR pairs follow direction (positive correlation)',
+            sample_size: dax.sample_days,
+            hits: Math.round(dax.sample_days * dax.positive_correlation_pct / 100),
+            probability: dax.positive_correlation_pct,
+            avg_move_pips: 0,
+            time_to_play_out: 'Same day',
+        })
+    }
+
+    // cm6: FTSE 100 closes bullish → GBP pairs follow direction
+    if (ftse && ftse.sample_days >= MIN_SAMPLE && pairUpper.includes('GBP')) {
+        conditions.push({
+            id: 'cm6', category: 'cross_market',
+            condition: 'FTSE 100 (UK100) closes bullish',
+            outcome: 'GBP pairs follow direction (positive correlation)',
+            sample_size: ftse.sample_days,
+            hits: Math.round(ftse.sample_days * ftse.positive_correlation_pct / 100),
+            probability: ftse.positive_correlation_pct,
+            avg_move_pips: 0,
+            time_to_play_out: 'Same day',
+        })
+    }
+
+    // cm7: Nikkei 225 closes bullish → JPY pairs move inversely (safe-haven inverse)
+    if (nikkei && nikkei.sample_days >= MIN_SAMPLE && pairUpper.includes('JPY')) {
+        const inverseCorr = 100 - nikkei.positive_correlation_pct
+        conditions.push({
+            id: 'cm7', category: 'cross_market',
+            condition: 'Nikkei 225 (JP225) closes bullish',
+            outcome: 'JPY pairs move inversely (risk-on weakens safe-haven JPY)',
+            sample_size: nikkei.sample_days,
+            hits: Math.round(nikkei.sample_days * inverseCorr / 100),
+            probability: inverseCorr,
+            avg_move_pips: 0,
+            time_to_play_out: 'Same day',
+        })
+    }
+
+    // cm8: US-Europe divergence (SPX vs DAX disagree) → cross-Atlantic volatility
+    if (spx && dax && spx.sample_days >= MIN_SAMPLE && dax.sample_days >= MIN_SAMPLE) {
+        const directionMatchRate = Math.round(
+            (spx.positive_correlation_pct + dax.positive_correlation_pct) / 2
+        )
+        // Low match rate = high divergence
+        const divergencePct = 100 - directionMatchRate
+        if (divergencePct > 30) {
+            const sampleSize = Math.min(spx.sample_days, dax.sample_days)
+            conditions.push({
+                id: 'cm8', category: 'cross_market',
+                condition: 'US-Europe divergence (SPX and DAX direction disagree >30%)',
+                outcome: 'Cross-Atlantic volatility spike — wider ranges expected',
+                sample_size: sampleSize,
+                hits: Math.round(sampleSize * divergencePct / 100),
+                probability: divergencePct,
+                avg_move_pips: 0,
+                time_to_play_out: '1-3 days',
+            })
+        }
+    }
+
+    // cm9: Global risk consensus (4+ of 6 indices bullish) → risk currencies strengthen
+    {
+        const allIndices = [spx, nas, dji, dax, ftse, nikkei].filter(
+            (idx): idx is NonNullable<typeof idx> => idx != null && idx.sample_days >= MIN_SAMPLE
+        )
+        if (allIndices.length >= 4) {
+            const bullishCount = allIndices.filter(idx => idx.positive_correlation_pct > 50).length
+            const consensusPct = Math.round((bullishCount / allIndices.length) * 100)
+            const avgSample = Math.round(
+                allIndices.reduce((s, idx) => s + idx.sample_days, 0) / allIndices.length
+            )
+            conditions.push({
+                id: 'cm9', category: 'cross_market',
+                condition: `Global risk consensus (${bullishCount}/${allIndices.length} indices bullish-correlated)`,
+                outcome: 'Risk currencies (AUD, NZD, CAD) strengthen vs safe havens (JPY, CHF)',
+                sample_size: avgSample,
+                hits: Math.round(avgSample * consensusPct / 100),
+                probability: consensusPct,
+                avg_move_pips: 0,
+                time_to_play_out: '1-5 days',
             })
         }
     }

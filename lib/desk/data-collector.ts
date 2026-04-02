@@ -36,6 +36,7 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         recentScores,
         openTradesRaw,
         todayClosedRaw,
+        crossMarketReport,
     ] = await Promise.all([
         getPortfolioSummary(userId),
         getDashboardStats(userId),
@@ -47,6 +48,7 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         getRecentProcessScores(supabase, userId),
         getOpenTrades(supabase, userId, accountId),
         getTodayClosedTrades(supabase, userId, accountId),
+        getLatestCrossMarketReport(supabase, userId),
     ])
 
     // Build open positions
@@ -168,11 +170,19 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         .filter(t => t.closed_at && new Date(t.closed_at) >= weekStart)
         .reduce((sum, t) => sum + t.pnl_amount, 0)
 
-    // Market context from latest episodes
+    // Market context from latest episodes + cross-market intelligence
     const marketContext: MarketContext = {
         overall_sentiment: determineSentiment(activeScenarios),
         key_events_today: [],
         volatility_status: {},
+        ...(crossMarketReport ? {
+            risk_appetite: crossMarketReport.risk_appetite === 'risk_on' ? 'risk-on' as const
+                : crossMarketReport.risk_appetite === 'risk_off' ? 'risk-off' as const
+                : 'mixed' as const,
+            equity_indices: crossMarketReport.indices,
+            dollar_trend: crossMarketReport.dollar_trend || undefined,
+            cross_market_thesis: crossMarketReport.thesis || undefined,
+        } : {}),
     }
 
     return {
@@ -338,5 +348,88 @@ async function getFractalSetups(
         return setups
     } catch {
         return []
+    }
+}
+
+async function getLatestCrossMarketReport(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    userId: string
+): Promise<{
+    risk_appetite: 'risk_on' | 'risk_off' | 'mixed'
+    indices: Array<{ name: string; instrument: string; change_1d: number; trend: string }>
+    dollar_trend: string | null
+    thesis: string | null
+} | null> {
+    try {
+        // Get the most recent cross_market agent report (today or yesterday)
+        const yesterday = new Date()
+        yesterday.setDate(yesterday.getDate() - 1)
+
+        const { data } = await supabase
+            .from('story_agent_reports')
+            .select('report')
+            .eq('user_id', userId)
+            .eq('agent_type', 'cross_market')
+            .gte('created_at', yesterday.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+        if (!data?.report) return null
+
+        const report = data.report as Record<string, unknown>
+
+        // Extract from CrossMarketReport or IndexCrossMarketReport shape
+        const riskAppetite = (report.risk_appetite as string) || 'mixed'
+        const normalizedRisk = riskAppetite === 'risk_on' ? 'risk_on'
+            : riskAppetite === 'risk_off' ? 'risk_off'
+            : 'mixed' as const
+
+        // Build indices array from indices_analyzed (forex) or peer_indices (index)
+        const indices: Array<{ name: string; instrument: string; change_1d: number; trend: string }> = []
+
+        const indicesAnalyzed = report.indices_analyzed as Array<Record<string, unknown>> | undefined
+        if (indicesAnalyzed) {
+            for (const idx of indicesAnalyzed) {
+                indices.push({
+                    name: (idx.name as string) || '',
+                    instrument: (idx.instrument as string) || '',
+                    change_1d: 0,
+                    trend: (idx.recent_trend as string) || 'unknown',
+                })
+            }
+        }
+
+        const peerIndices = report.peer_indices as Array<Record<string, unknown>> | undefined
+        if (peerIndices) {
+            for (const idx of peerIndices) {
+                indices.push({
+                    name: (idx.name as string) || '',
+                    instrument: (idx.instrument as string) || '',
+                    change_1d: (idx.change1d as number) || 0,
+                    trend: (idx.trend as string) || 'unknown',
+                })
+            }
+        }
+
+        // Dollar trend from currency_implications or dollar_analysis
+        let dollarTrend: string | null = null
+        const dollarAnalysis = report.dollar_analysis as Record<string, unknown> | undefined
+        if (dollarAnalysis) {
+            dollarTrend = (dollarAnalysis.trend as string) || null
+        }
+        const currImplications = report.currency_implications as Record<string, unknown> | undefined
+        if (!dollarTrend && currImplications) {
+            dollarTrend = (currImplications.net_effect as string) || null
+        }
+
+        const thesis = (report.cross_market_thesis as string)
+            || (report.correlation_thesis as string)
+            || (report.summary as string)
+            || null
+
+        return { risk_appetite: normalizedRisk, indices, dollar_trend: dollarTrend, thesis }
+    } catch {
+        return null
     }
 }

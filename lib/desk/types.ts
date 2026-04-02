@@ -219,6 +219,16 @@ export interface MarketContext {
     overall_sentiment: string
     key_events_today: string[]
     volatility_status: Record<string, string>
+    // Cross-market intelligence (from story agent reports)
+    risk_appetite?: 'risk-on' | 'risk-off' | 'mixed'
+    equity_indices?: Array<{
+        name: string
+        instrument: string
+        change_1d: number
+        trend: string
+    }>
+    dollar_trend?: string
+    cross_market_thesis?: string
 }
 
 export interface FractalSetupSummary {

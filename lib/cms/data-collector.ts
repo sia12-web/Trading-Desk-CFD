@@ -46,10 +46,13 @@ export async function collectCMSData(pair: string): Promise<CMSDataPayload> {
         getCandles({ instrument, granularity: 'W', count: 200 }),
         getCandles({ instrument, granularity: 'H1', count: 500 }),
         getCandles({ instrument, granularity: 'H4', count: 300 }),
-        // Cross-market indices (best-effort)
+        // Cross-market indices (best-effort) — US + European + Asian
         getCandles({ instrument: 'SPX500_USD', granularity: 'D', count: 250 }).catch(() => ({ data: undefined })),
         getCandles({ instrument: 'NAS100_USD', granularity: 'D', count: 250 }).catch(() => ({ data: undefined })),
         getCandles({ instrument: 'US30_USD', granularity: 'D', count: 250 }).catch(() => ({ data: undefined })),
+        getCandles({ instrument: 'DE30_EUR', granularity: 'D', count: 250 }).catch(() => ({ data: undefined })),
+        getCandles({ instrument: 'UK100_GBP', granularity: 'D', count: 250 }).catch(() => ({ data: undefined })),
+        getCandles({ instrument: 'JP225_USD', granularity: 'D', count: 250 }).catch(() => ({ data: undefined })),
     ])
 
     const dailyCandles = dailyRes.data || []
@@ -69,6 +72,9 @@ export async function collectCMSData(pair: string): Promise<CMSDataPayload> {
             { name: 'SPX500_USD', candles: indexResults[0]?.data || [] },
             { name: 'NAS100_USD', candles: indexResults[1]?.data || [] },
             { name: 'US30_USD', candles: indexResults[2]?.data || [] },
+            { name: 'DE30_EUR', candles: indexResults[3]?.data || [] },
+            { name: 'UK100_GBP', candles: indexResults[4]?.data || [] },
+            { name: 'JP225_USD', candles: indexResults[5]?.data || [] },
         ],
     )
 

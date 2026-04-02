@@ -1,4 +1,5 @@
 import type { StoryDataPayload } from '../types'
+import type { CrossMarketReport, IndexCrossMarketReport } from '../agents/types'
 
 /**
  * DeepSeek "Quantitative Engine" prompt for Story.
@@ -7,7 +8,8 @@ import type { StoryDataPayload } from '../types'
 export function buildStoryQuantPrompt(
     data: StoryDataPayload,
     geminiOutput: string,
-    scenarioAnalysisLevels?: Array<{ price: number; type: string; timeframe: string; significance: string }> | null
+    scenarioAnalysisLevels?: Array<{ price: number; type: string; timeframe: string; significance: string }> | null,
+    crossMarket?: CrossMarketReport | IndexCrossMarketReport | null
 ): string {
     // Extract indicator data for quant analysis
     const indicatorSummary = data.timeframes.map(tf => {
@@ -69,6 +71,9 @@ ${rsiByTF.map(r => `${r.tf}: RSI=${r.rsi.toFixed(1)}, MACD Hist=${r.macdHist.toF
 ## AMD ALGORITHMIC ASSESSMENT
 ${Object.entries(data.amdPhases).map(([tf, p]) => `${tf}: ${p.phase} (${p.confidence}%)`).join('\n')}
 
+## CROSS-MARKET DIVERGENCE CHECK
+${buildCrossMarketCheck(crossMarket)}
+
 ${scenarioAnalysisLevels && scenarioAnalysisLevels.length > 0 ? `## PRE-VALIDATED LEVELS (from Scenario Analysis)
 The following levels were validated in a recent institutional scenario analysis. Use them as REFERENCE anchors when validating Gemini's levels — if Gemini cites a level that is close to one of these, it is more likely legitimate.
 ${scenarioAnalysisLevels.map(l => `- ${l.price.toFixed(5)} (${l.type}, ${l.timeframe}): ${l.significance}`).join('\n')}
@@ -117,4 +122,39 @@ Respond with JSON:
 IMPORTANT: The "flagged_levels" array is MANDATORY. If all Gemini levels check out, return an empty array [].
 
 Be mathematically precise. Use exact pip values. Show your reasoning in the descriptions.`
+}
+
+function buildCrossMarketCheck(crossMarket?: CrossMarketReport | IndexCrossMarketReport | null): string {
+    if (!crossMarket) return 'Cross-market data unavailable — skip this check.'
+
+    const parts: string[] = []
+    parts.push(`Risk Appetite: ${crossMarket.risk_appetite}`)
+    parts.push(`Summary: ${crossMarket.summary}`)
+
+    // Forex pair cross-market report
+    if ('indices_analyzed' in crossMarket && crossMarket.indices_analyzed) {
+        const trends = crossMarket.indices_analyzed.map(idx =>
+            `${idx.name}: ${idx.recent_trend}`
+        ).join(', ')
+        parts.push(`Index Trends: ${trends}`)
+        if (crossMarket.currency_implications) {
+            parts.push(`Currency Flow: net effect = ${crossMarket.currency_implications.net_effect}`)
+        }
+    }
+
+    // Index cross-market report
+    if ('peer_indices' in crossMarket && crossMarket.peer_indices) {
+        const trends = crossMarket.peer_indices.map(idx =>
+            `${idx.name}: ${idx.change1d > 0 ? '+' : ''}${idx.change1d.toFixed(1)}%`
+        ).join(', ')
+        parts.push(`Peer Indices: ${trends}`)
+        parts.push(`Dollar: ${crossMarket.dollar_analysis.trend}`)
+    }
+
+    parts.push('')
+    parts.push('VALIDATION RULE: If Gemini\'s bullish bias is CONTRADICTED by risk-off conditions')
+    parts.push('(equities dumping, dollar strengthening), flag in disagreements and reduce')
+    parts.push('confidence_adjustment. If aligned, boost confidence.')
+
+    return parts.join('\n')
 }
