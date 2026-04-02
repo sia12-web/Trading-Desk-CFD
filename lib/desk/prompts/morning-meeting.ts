@@ -142,6 +142,11 @@ ${context.deskState?.marcus_memory?.last_directive
             ? `### Previous Meeting Context\n- Marcus's last directive: ${context.deskState.marcus_memory.last_directive}`
             : ''
         }
+        
+${context.deskState?.ai_trading_scars && context.deskState.ai_trading_scars.length > 0
+            ? `### AI DESK TRADING SCARS (Past Failed Scenarios & Lessons Learned)\n${context.deskState.ai_trading_scars.map(s => `- ${s}`).join('\n')}\n*Note: Ray and Marcus should reference these when evaluating new trades to avoid repeating these specific mistakes.*`
+            : ''
+        }
 
 ## OUTPUT FORMAT
 

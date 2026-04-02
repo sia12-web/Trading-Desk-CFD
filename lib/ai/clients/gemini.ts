@@ -19,7 +19,7 @@ interface GeminiOptions {
 
 /**
  * Call Gemini API — used as the "Pattern Archaeologist" for structural analysis.
- * Default model: gemini-3-flash-preview (Gemini 3 Flash).
+ * Primary model: gemini-1.5-flash (reliable with JSON mode).
  */
 export async function callGemini(
     prompt: string,
@@ -28,7 +28,7 @@ export async function callGemini(
     const {
         timeout = 90_000,
         maxTokens = 8192,
-        model = 'gemini-3-flash-preview',
+        model = 'gemini-1.5-flash',
         usage,
     } = options
 
@@ -50,6 +50,7 @@ export async function callGemini(
                 contents: prompt,
                 config: {
                     maxOutputTokens: maxTokens,
+                    responseMimeType: 'application/json',
                 },
             })
 

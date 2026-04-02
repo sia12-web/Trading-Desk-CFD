@@ -23,7 +23,7 @@ import type {
 } from './types'
 import type { ClosedTradeForScoring } from './prompts/process-scoring'
 
-const DESK_MODEL = 'gemini-3-flash-preview'
+const DESK_MODEL = 'gemini-1.5-flash'
 
 // =============================================================================
 // Morning Meeting Generator
@@ -274,14 +274,15 @@ export async function scoreTradeProcess(
             overall_score: output.overall_score,
             sarah_commentary: output.sarah_commentary,
             marcus_commentary: output.marcus_commentary,
+            ai_lesson: output.ai_lesson,
         })
         .select()
         .single()
 
     if (scoreErr) throw new Error(`Failed to save process score: ${scoreErr.message}`)
 
-    // 7. Update desk state streak and averages
-    await updateStreakAfterScore(supabase, userId, output.overall_score)
+    // 7. Update desk state streak, averages, and TRADING SCARS (AI lessons)
+    await updateStreakAfterScore(supabase, userId, output.overall_score, output.ai_lesson)
 
     // 8. If score < 5, issue violation alert
     if (output.overall_score < 5) {
@@ -394,7 +395,8 @@ async function updateDeskState(
 async function updateStreakAfterScore(
     supabase: Awaited<ReturnType<typeof createClient>>,
     userId: string,
-    score: number
+    score: number,
+    aiLesson?: string
 ) {
     const { data: state } = await supabase
         .from('desk_state')
@@ -426,6 +428,9 @@ async function updateStreakAfterScore(
                 violations_this_week: score < 5
                     ? (state.violations_this_week || 0) + 1
                     : state.violations_this_week || 0,
+                ai_trading_scars: aiLesson 
+                    ? [aiLesson, ...(Array.isArray(state.ai_trading_scars) ? state.ai_trading_scars : [])].slice(0, 5)
+                    : state.ai_trading_scars
             })
             .eq('user_id', userId)
     } else {

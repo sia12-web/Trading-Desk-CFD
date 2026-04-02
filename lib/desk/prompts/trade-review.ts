@@ -110,6 +110,11 @@ ${context.activeScenarios.filter(s => s.pair === proposal.pair).length > 0
 ### Trader Profile
 - Weaknesses: ${context.profile.observed_weaknesses.join(', ') || 'none identified'}
 
+${context.deskState?.ai_trading_scars && context.deskState.ai_trading_scars.length > 0
+            ? `### AI DESK TRADING SCARS (Past Failed Scenarios & Lessons Learned)\n${context.deskState.ai_trading_scars.map(s => `- ${s}`).join('\n')}\n*Note: Marcus and Sarah MUST block or caution this trade if it resembles any of these past strategic failures.*`
+            : ''
+        }
+
 ## OUTPUT FORMAT
 
 Respond with ONLY valid JSON:

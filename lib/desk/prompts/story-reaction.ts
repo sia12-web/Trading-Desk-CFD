@@ -8,6 +8,7 @@ interface PsychologyContext {
     currentFocus: string | null
     riskPersonality: string | null
     violationsThisWeek: number
+    ai_trading_scars: string[]
 }
 
 /**

@@ -81,6 +81,7 @@ export interface ProcessScore {
     overall_score: number | null
     sarah_commentary: string | null
     marcus_commentary: string | null
+    ai_lesson: string | null
     scored_at: string
 }
 
@@ -110,6 +111,7 @@ export interface DeskState {
         macro_thesis?: string
         key_events_tracked?: string[]
     }
+    ai_trading_scars?: string[]
     current_streak: number
     weekly_process_average: number | null
     monthly_process_average: number | null
@@ -156,6 +158,7 @@ export interface ProcessScoreOutput {
     overall_score: number
     sarah_commentary: string
     marcus_commentary: string
+    ai_lesson: string
 }
 
 // --- Trade Proposal (for desk review) ---

@@ -8,7 +8,7 @@ import {
 } from './prompts/story-reaction'
 import type { PsychologyContext } from './prompts/story-reaction'
 
-const DESK_MODEL = 'gemini-3-flash-preview'
+const DESK_MODEL = 'gemini-1.5-flash'
 
 // Re-export PsychologyContext for pipeline usage
 export type { PsychologyContext }
@@ -232,12 +232,13 @@ export async function getMinimalPsychologyContext(
         currentFocus: null,
         riskPersonality: null,
         violationsThisWeek: 0,
+        ai_trading_scars: [],
     }
 
     try {
         // Fetch desk state + trader profile in parallel
         const [stateRes, profileRes, scoresRes] = await Promise.all([
-            client.from('desk_state').select('current_streak, weekly_process_average, violations_this_week').eq('user_id', userId).limit(1).maybeSingle(),
+            client.from('desk_state').select('current_streak, weekly_process_average, violations_this_week, ai_trading_scars').eq('user_id', userId).limit(1).maybeSingle(),
             client.from('trader_profile').select('observed_weaknesses, current_focus, risk_personality').eq('user_id', userId).limit(1).maybeSingle(),
             client.from('process_scores').select('overall_score').eq('user_id', userId).order('scored_at', { ascending: false }).limit(5),
         ])
@@ -258,6 +259,7 @@ export async function getMinimalPsychologyContext(
             currentFocus: (profile?.current_focus as string) || null,
             riskPersonality: (profile?.risk_personality as string) || null,
             violationsThisWeek: state?.violations_this_week ?? 0,
+            ai_trading_scars: (state?.ai_trading_scars as string[]) || [],
         }
     } catch (err) {
         console.error('[DeskReaction] Failed to fetch psychology context:', err instanceof Error ? err.message : err)

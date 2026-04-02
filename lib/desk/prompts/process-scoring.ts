@@ -97,7 +97,8 @@ Respond with ONLY valid JSON:
     "patience_score": 0,
     "overall_score": 0.0,
     "sarah_commentary": "Sarah's blunt risk assessment of this trade's process (2-3 sentences)",
-    "marcus_commentary": "Marcus's strategic feedback on execution quality (2-3 sentences)"
+    "marcus_commentary": "Marcus's strategic feedback on execution quality (2-3 sentences)",
+    "ai_lesson": "Ray (Quant) explains in 1 sentence why the AI's scenario/prediction succeeded or failed based on this outcome."
 }`
 }
 
