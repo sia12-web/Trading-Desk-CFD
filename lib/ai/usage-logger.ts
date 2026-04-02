@@ -59,8 +59,11 @@ async function _logUsage(entry: UsageEntry): Promise<void> {
         entry.cacheReadTokens || 0
     )
 
+    // Defensive: convert "system" string to null for UUID column
+    const userId = entry.userId === 'system' ? null : entry.userId
+
     const { error } = await client.from('ai_usage_logs').insert({
-        user_id: entry.userId,
+        user_id: userId,
         provider: entry.provider,
         model: entry.model,
         feature: entry.feature,
