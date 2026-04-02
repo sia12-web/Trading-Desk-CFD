@@ -15,6 +15,7 @@ import {
     Settings2
 } from 'lucide-react'
 import { Card } from '@/components/ui/card' // Assuming basic UI components exist or using standard div
+import { ALLOWED_INSTRUMENTS, oandaToDisplayPair } from '@/lib/constants/instruments'
 
 interface Calibration {
     id: string
@@ -26,7 +27,7 @@ interface Calibration {
 
 export default function IndicatorOptimizationPage() {
     const [calibrations, setCalibrations] = useState<Calibration[]>([])
-    const [subscribedPairs, setSubscribedPairs] = useState<{ pair: string }[]>([])
+    const [availablePairs, setAvailablePairs] = useState<string[]>([])
     const [selectedPair, setSelectedPair] = useState<string>('all')
     const [loading, setLoading] = useState(true)
     const [running, setRunning] = useState(false)
@@ -36,17 +37,13 @@ export default function IndicatorOptimizationPage() {
     const fetchData = useCallback(async () => {
         setLoading(true)
         try {
-            const [calRes, subRes] = await Promise.all([
-                fetch('/api/indicators/calibrations'),
-                fetch('/api/story/subscriptions')
-            ])
-            
+            const calRes = await fetch('/api/indicators/calibrations')
             const { calibrations: data } = await calRes.json()
-            const { pairs } = await subRes.json()
-            
+
             setCalibrations(data)
-            setSubscribedPairs(pairs || [])
-            
+            // Use shared ALLOWED_INSTRUMENTS list (Trade page instruments)
+            setAvailablePairs(ALLOWED_INSTRUMENTS.map(oandaToDisplayPair))
+
             // Find most recent update
             if (data.length > 0) {
                 const dates = data.map((c: any) => new Date(c.updated_at).getTime())
@@ -117,9 +114,9 @@ export default function IndicatorOptimizationPage() {
                                 className="bg-neutral-800 border border-neutral-700 text-white rounded-xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer min-w-[180px]"
                             >
                                 <option value="all">🌐 All Pairs</option>
-                                {subscribedPairs.map(sub => (
-                                    <option key={sub.pair} value={sub.pair}>
-                                        {sub.pair.replace('_', ' / ')}
+                                {availablePairs.map(pair => (
+                                    <option key={pair} value={pair}>
+                                        {pair}
                                     </option>
                                 ))}
                             </select>

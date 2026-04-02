@@ -3,6 +3,7 @@ import { getAccountInstruments, getAccountSummary } from '@/lib/oanda/client'
 import { redirect } from 'next/navigation'
 import { TradeOrderForm } from '@/app/(dashboard)/trade/_components/TradeOrderForm'
 import { Activity } from 'lucide-react'
+import { ALLOWED_INSTRUMENTS } from '@/lib/constants/instruments'
 
 export default async function TradePage() {
     const user = await getAuthUser()
@@ -11,14 +12,7 @@ export default async function TradePage() {
     const { data: instruments = [] } = await getAccountInstruments()
     const { data: account } = await getAccountSummary()
 
-    // Full list synced with Story section instruments
-    const ALLOWED_INSTRUMENTS = [
-        'EUR_USD', 'GBP_USD', 'USD_JPY', 'EUR_GBP', 'AUD_USD',
-        'USD_CAD', 'NZD_USD', 'EUR_JPY', 'USD_CHF', 'GBP_JPY',
-        'GBP_AUD', 'EUR_AUD', 'AUD_JPY', 'NZD_JPY', 'USD_TRY', 'XAU_USD',
-        'NAS100_USD', 'SPX500_USD', 'US30_USD', 'DE30_EUR'
-    ]
-    const filteredInstruments = instruments.filter(i => ALLOWED_INSTRUMENTS.includes(i.name))
+    const filteredInstruments = instruments.filter(i => ALLOWED_INSTRUMENTS.includes(i.name as any))
 
     return (
         <div className="max-w-6xl mx-auto space-y-12 pb-20">
