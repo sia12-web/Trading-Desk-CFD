@@ -5,7 +5,10 @@ import type { UsageContext } from './claude'
 let _client: GoogleGenAI | null = null
 function getClient() {
     if (!_client) {
-        _client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
+        _client = new GoogleGenAI({ 
+            apiKey: process.env.GEMINI_API_KEY!,
+            apiVersion: 'v1'  // Explicitly use stable v1 API to avoid v1beta model availability issues
+        })
     }
     return _client
 }
@@ -28,7 +31,7 @@ export async function callGemini(
     const {
         timeout = 90_000,
         maxTokens = 8192,
-        model = 'gemini-1.5-flash',
+        model = 'gemini-1.5-flash', // Using stable model on V1 endpoint
         usage,
     } = options
 

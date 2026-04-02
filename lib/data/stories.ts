@@ -273,6 +273,7 @@ export async function updateScenarioStatus(
             status,
             outcome_notes: outcomeNotes || null,
             resolved_at: new Date().toISOString(),
+            monitor_active: false,
             ...(resolvedBy ? { resolved_by: resolvedBy } : {}),
         })
         .eq('id', scenarioId)
