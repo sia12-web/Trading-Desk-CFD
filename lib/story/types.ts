@@ -1,6 +1,7 @@
 import type { OandaCandle } from '@/lib/types/oanda'
 import type { CalculatedIndicators } from '@/lib/strategy/types'
 import type { TrendAssessment } from '@/lib/utils/trend-detector'
+import type { ElliottWaveAnalysis } from './elliott-wave-detector'
 
 // ── Data Payload (raw data collected for AI) ──
 
@@ -29,6 +30,7 @@ export interface TimeframeData {
             trapWarning: boolean
         }
     }
+    elliottWave?: ElliottWaveAnalysis
 }
 
 export interface PriceLevel {

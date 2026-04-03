@@ -5,6 +5,7 @@ import { calculateATR } from '@/lib/utils/atr'
 import { detectAMDPhase } from './amd-detector'
 import { mapLiquidityZones } from './liquidity-mapper'
 import { detectFractalSetup } from './fractal-detector'
+import { detectElliottWave } from './elliott-wave-detector'
 import type { OandaCandle } from '@/lib/types/oanda'
 import type { StoryDataPayload, TimeframeData, PriceLevel } from './types'
 
@@ -116,8 +117,9 @@ export async function collectStoryData(
         const swingHighs = findSwingHighs(candles)
         const swingLows = findSwingLows(candles)
         const fractalAnalysis = detectFractalSetup(candles, indicators)
+        const elliottWave = detectElliottWave(candles)
 
-        return { timeframe: tf, candles, indicators, trend, patterns, swingHighs, swingLows, fractalAnalysis }
+        return { timeframe: tf, candles, indicators, trend, patterns, swingHighs, swingLows, fractalAnalysis, elliottWave }
     })
 
     // Detect AMD phases per timeframe
