@@ -55,6 +55,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const [stopLoss, setStopLoss] = useState<number>(0)
     const [takeProfit, setTakeProfit] = useState<number>(0)
     const [currentPrice, setCurrentPrice] = useState<OandaPrice | null>(null)
+    const [hasSetInitialPrice, setHasSetInitialPrice] = useState(false)
 
     const [validation, setValidation] = useState<RiskValidationResult | null>(null)
     const [isValidating, setIsValidating] = useState(false)
@@ -74,6 +75,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const [isReviewing, setIsReviewing] = useState(false)
     const [storyPositionId, setStoryPositionId] = useState<string | null>(null)
     const [conversionRate, setConversionRate] = useState<number>(1)
+    const [baseConversionRate, setBaseConversionRate] = useState<number>(1)
 
     // Load persisted state or params on mount
     useEffect(() => {
@@ -159,15 +161,9 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
         fetchSentiment()
     }, [])
 
-    // Rescale units when instrument changes (maintaining the lot size)
+    // Reset price flag when instrument changes to fetch new initial price
     useEffect(() => {
-        if (sizeMode === 'lots') {
-            const currentLots = units / getUnitsPerLot(selectedInstrument)
-            // Note: we don't actually want to change THE lots, 
-            // but we need to ensure the `units` state matches the NEW instrument's lot multiplier.
-            // But wait, the previous `getUnitsPerLot` might have been different.
-            // Let's just reset to a default lot size when instrument changes to be safe.
-        }
+        setHasSetInitialPrice(false)
     }, [selectedInstrument])
 
     const instrumentDetails = instruments.find(i => i.name === selectedInstrument)
@@ -175,48 +171,90 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
 
     const fetchPrice = async () => {
         try {
+            const baseCurrency = selectedInstrument.split('_')[0]
             const quoteCurrency = selectedInstrument.split('_')[1]
             const accountCurrency = accountInfo?.account?.currency || accountInfo?.currency || 'USD'
-            
-            const instrumentsToFetch = [selectedInstrument]
-            let conversionPair: string | null = null
-            let inverseConversionPair: string | null = null
 
+            const instrumentsToFetch = [selectedInstrument]
+            let quoteConversionPair: string | null = null
+            let quoteInverseConversionPair: string | null = null
+            let baseConversionPair: string | null = null
+            let baseInverseConversionPair: string | null = null
+
+            // Fetch quote→account conversion if needed
             if (quoteCurrency !== accountCurrency) {
-                conversionPair = `${quoteCurrency}_${accountCurrency}`
-                inverseConversionPair = `${accountCurrency}_${quoteCurrency}`
-                instrumentsToFetch.push(conversionPair, inverseConversionPair)
+                quoteConversionPair = `${quoteCurrency}_${accountCurrency}`
+                quoteInverseConversionPair = `${accountCurrency}_${quoteCurrency}`
+                instrumentsToFetch.push(quoteConversionPair, quoteInverseConversionPair)
+            }
+
+            // Fetch base→account conversion if needed (for margin calculation)
+            if (baseCurrency !== accountCurrency) {
+                baseConversionPair = `${baseCurrency}_${accountCurrency}`
+                baseInverseConversionPair = `${accountCurrency}_${baseCurrency}`
+                instrumentsToFetch.push(baseConversionPair, baseInverseConversionPair)
             }
 
             const res = await fetch(`/api/oanda/prices?instruments=${instrumentsToFetch.join(',')}`)
             const data = await res.json()
-            
+
             const prices = data.prices || []
             const price = prices.find((p: any) => p.instrument === selectedInstrument)
             
             if (price) {
                 setCurrentPrice(price)
                 const marketPrice = direction === 'long' ? parseFloat(price.asks[0].price) : parseFloat(price.bids[0].price)
-                if (entryPrice === 0 || orderType === 'MARKET') {
+
+                // Only set initial price once, then only update if MARKET order
+                if (!hasSetInitialPrice || (orderType === 'MARKET' && entryPrice !== 0)) {
                     setEntryPrice(marketPrice)
+                    if (limitPrice === 0) setLimitPrice(marketPrice)
+                    setHasSetInitialPrice(true)
                 }
-                if (limitPrice === 0) setLimitPrice(marketPrice)
             }
 
+            // Set quote→account conversion rate (for P&L calculation)
             if (quoteCurrency === accountCurrency) {
                 setConversionRate(1)
             } else {
-                const convPrice = prices.find((p: any) => p.instrument === conversionPair)
+                const convPrice = prices.find((p: any) => p.instrument === quoteConversionPair)
                 if (convPrice) {
                     const mid = (parseFloat(convPrice.asks[0].price) + parseFloat(convPrice.bids[0].price)) / 2
                     setConversionRate(mid)
                 } else {
-                    const invConvPrice = prices.find((p: any) => p.instrument === inverseConversionPair)
+                    const invConvPrice = prices.find((p: any) => p.instrument === quoteInverseConversionPair)
                     if (invConvPrice) {
                         const mid = (parseFloat(invConvPrice.asks[0].price) + parseFloat(invConvPrice.bids[0].price)) / 2
                         setConversionRate(1 / mid)
                     } else {
-                        setConversionRate(1) 
+                        setConversionRate(1)
+                    }
+                }
+            }
+
+            // Set base→account conversion rate (for margin calculation)
+            if (baseCurrency === accountCurrency) {
+                setBaseConversionRate(1)
+            } else {
+                const baseConvPrice = prices.find((p: any) => p.instrument === baseConversionPair)
+                if (baseConvPrice) {
+                    const mid = (parseFloat(baseConvPrice.asks[0].price) + parseFloat(baseConvPrice.bids[0].price)) / 2
+                    setBaseConversionRate(mid)
+                } else {
+                    const baseInvConvPrice = prices.find((p: any) => p.instrument === baseInverseConversionPair)
+                    if (baseInvConvPrice) {
+                        const mid = (parseFloat(baseInvConvPrice.asks[0].price) + parseFloat(baseInvConvPrice.bids[0].price)) / 2
+                        setBaseConversionRate(1 / mid)
+                    } else {
+                        // Fallback: estimate from entry price if it's a cross pair
+                        // For GBP/JPY: GBP→USD ≈ entry_price * (JPY→USD)
+                        if (quoteCurrency !== accountCurrency && price) {
+                            const quoteMid = conversionRate // Already calculated above
+                            const entryMid = (parseFloat(price.asks[0].price) + parseFloat(price.bids[0].price)) / 2
+                            setBaseConversionRate(entryMid * quoteMid)
+                        } else {
+                            setBaseConversionRate(1)
+                        }
                     }
                 }
             }
@@ -401,6 +439,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const baseCurrency = selectedInstrument.split('_')[0]
     const quoteCurrency = selectedInstrument.split('_')[1]
     let marginRequired: number
+
     if (baseCurrency === accountCurrency) {
         // USD/JPY on USD account: base IS account currency → margin = units * marginRate
         marginRequired = units * marginRate
@@ -408,8 +447,9 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
         // EUR/USD on USD account: entry price IS base→account rate → margin = units * marginRate * price
         marginRequired = units * marginRate * activeEntryPrice
     } else {
-        // GBP/JPY on USD account: base→account ≈ entry * quote→account → margin = units * marginRate * price * conversion
-        marginRequired = units * marginRate * activeEntryPrice * conversionRate
+        // GBP/JPY on USD account: need base→account conversion rate
+        // Margin = units * marginRate * baseConversionRate
+        marginRequired = units * marginRate * baseConversionRate
     }
 
     if (executionResult) {
@@ -462,16 +502,16 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Position Size ({sizeMode === 'lots' ? 'Lots' : 'Units'})</label>
-                                    <input 
-                                        type="number" 
-                                        step={sizeMode === 'lots' ? '0.01' : '1'} 
-                                        value={sizeMode === 'lots' ? (units / getUnitsPerLot(selectedInstrument) || '') : (units || '')} 
+                                    <input
+                                        type="number"
+                                        step={sizeMode === 'lots' ? '0.01' : '1'}
+                                        value={sizeMode === 'lots' ? (units / getUnitsPerLot(selectedInstrument) || '') : (units || '')}
                                         onChange={(e) => {
                                             const val = parseFloat(e.target.value) || 0
                                             const multi = getUnitsPerLot(selectedInstrument)
-                                            setUnits(sizeMode === 'lots' ? Math.round(val * multi * 100) / 100 : Math.round(val))
-                                        }} 
-                                        className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none" 
+                                            setUnits(sizeMode === 'lots' ? Math.round(val * multi) : Math.round(val))
+                                        }}
+                                        className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none"
                                     />
                                 </div>
                                 <div className="space-y-4">
