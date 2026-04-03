@@ -28,6 +28,7 @@ import {
     FlaskConical,
     Radio,
     ScrollText,
+    BarChart3,
 } from 'lucide-react'
 import LinkNext from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -46,6 +47,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         { label: 'Dashboard', href: '/', icon: LayoutDashboard },
         { label: 'Calendar', href: '/calendar', icon: Calendar },
         { label: 'Story', href: '/story', icon: ScrollText },
+        { label: 'Fundamentals', href: '/fundamentals', icon: BarChart3 },
         { label: 'Trading Gurus', href: '/trading-gurus', icon: GraduationCap },
         { label: 'Market News', href: '/news', icon: Newspaper },
         { label: 'Indicator Optimization', href: '/indicator-optimization', icon: FlaskConical },
