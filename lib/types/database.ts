@@ -1081,6 +1081,67 @@ export interface Database {
                     created_at?: string
                 }
             }
+            fundamental_sessions: {
+                Row: {
+                    id: string
+                    user_id: string
+                    pair: string
+                    title: string | null
+                    conclusion: string | null
+                    status: string | null
+                    created_episode_id: string | null
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    pair: string
+                    title?: string | null
+                    conclusion?: string | null
+                    status?: string | null
+                    created_episode_id?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    pair?: string
+                    title?: string | null
+                    conclusion?: string | null
+                    status?: string | null
+                    created_episode_id?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
+            fundamental_messages: {
+                Row: {
+                    id: string
+                    session_id: string
+                    role: string
+                    content: string
+                    macro_context: Json | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    session_id: string
+                    role: string
+                    content: string
+                    macro_context?: Json | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    session_id?: string
+                    role?: string
+                    content?: string
+                    macro_context?: Json | null
+                    created_at?: string
+                }
+            }
         }
     }
 }
