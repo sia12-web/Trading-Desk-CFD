@@ -13,6 +13,7 @@ import {
     RefreshCw
 } from 'lucide-react'
 import { SyncButton } from '@/components/sync/SyncButton'
+import { BackfillButton } from './_components/BackfillButton'
 
 export default async function ExecutionLogPage() {
     const user = await getAuthUser()
@@ -69,7 +70,10 @@ export default async function ExecutionLogPage() {
                     <h1 className="text-4xl font-bold tracking-tight">Execution Audit Log</h1>
                     <p className="text-neutral-500 mt-2">Historical record of every trading action and risk validation.</p>
                 </div>
-                <SyncButton />
+                <div className="flex items-center gap-3">
+                    <BackfillButton />
+                    <SyncButton />
+                </div>
             </div>
 
             <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] overflow-hidden">
