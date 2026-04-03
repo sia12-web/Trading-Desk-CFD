@@ -24,6 +24,7 @@ export function computeAllConditions(data: CMSDataPayload): ProgrammaticConditio
         ...computeVolatilityConditions(data.dailyRelationships, data.weeklyRelationships, data.volatilityProfile.atr14_daily),
         ...computeCrossMarketConditions(data.dailyRelationships, data.crossMarketCorrelations, data.pipMultiplier, data.pair),
         ...computeFractalConditions(data.dailyRelationships, data.volatilityProfile.atr14_daily, data.pipMultiplier),
+        ...computeElliottWaveConditions(data.dailyRelationships, data.volatilityProfile.atr14_daily, data.pipMultiplier),
     ]
 
     return all.filter(c => c.sample_size >= MIN_SAMPLE && c.probability >= MIN_PROBABILITY)
@@ -1188,3 +1189,117 @@ function computeFractalConditions(
 
     return conditions
 }
+
+
+// ── Elliott Wave Conditions (Wave structure patterns) ──
+
+function computeElliottWaveConditions(
+    dr: DailyRelationship[],
+    atr: number,
+    pipMult: number,
+): ProgrammaticCondition[] {
+    const conditions: ProgrammaticCondition[] = []
+    if (dr.length < 30) return conditions
+
+    // e1: 5-wave impulsive structure (strong trend) → Wave 5 completes, reversal expected
+    // NOTE: This requires Elliott Wave detection on historical data. For now, using proxy: 5+ consecutive trend days
+    {
+        let sample = 0, hits = 0
+        const moves: number[] = []
+        for (let i = 5; i < dr.length - 3; i++) {
+            const last5Dirs = [dr[i - 4], dr[i - 3], dr[i - 2], dr[i - 1], dr[i]].map(d => d.direction)
+            const allBullish = last5Dirs.every(d => d === "bullish")
+            const allBearish = last5Dirs.every(d => d === "bearish")
+            
+            if (allBullish || allBearish) {
+                sample++
+                const next3 = [dr[i + 1], dr[i + 2], dr[i + 3]]
+                const reversals = next3.filter(d => d?.direction !== (allBullish ? "bullish" : "bearish")).length
+                if (reversals >= 2) {
+                    hits++
+                    const move = next3.reduce((sum, d) => sum + (d?.range_pips || 0), 0) / 3
+                    moves.push(move)
+                }
+            }
+        }
+        if (sample >= 5) {
+            conditions.push({
+                id: "e1", category: "elliott_wave",
+                condition: "5+ consecutive trend days (proxy for Wave 5 completion)",
+                outcome: "Reversal within 3 days (Wave 1 of new cycle)",
+                sample_size: sample, hits,
+                probability: pct(hits, sample),
+                avg_move_pips: avg(moves),
+                time_to_play_out: "1-3 days",
+            })
+        }
+    }
+
+    // e2: 3-wave correction (A-B-C zigzag) → Price reaches 61.8% Fibonacci retracement, trend resumes
+    // Proxy: 3 alternating days after strong move, then continuation
+    {
+        let sample = 0, hits = 0
+        const moves: number[] = []
+        for (let i = 4; i < dr.length - 2; i++) {
+            const bigMove = dr[i - 3].range_pips > atr * 1.5
+            const alt1 = dr[i - 2].direction !== dr[i - 3].direction
+            const alt2 = dr[i - 1].direction !== dr[i - 2].direction
+            const alt3 = dr[i].direction !== dr[i - 1].direction
+            
+            if (bigMove && alt1 && alt2 && alt3) {
+                sample++
+                const resume = dr[i + 1]
+                if (resume?.direction === dr[i - 3].direction) {
+                    hits++
+                    moves.push(resume.range_pips)
+                }
+            }
+        }
+        if (sample >= 5) {
+            conditions.push({
+                id: "e2", category: "elliott_wave",
+                condition: "3-wave alternating pattern after strong move (A-B-C correction proxy)",
+                outcome: "Original trend resumes (Fibonacci 61.8% bounce)",
+                sample_size: sample, hits,
+                probability: pct(hits, sample),
+                avg_move_pips: avg(moves),
+                time_to_play_out: "Next day",
+            })
+        }
+    }
+
+    // e3: Corrective flat pattern → Consolidation before breakout
+    // Proxy: 3+ days with overlapping ranges
+    {
+        let sample = 0, hits = 0
+        const moves: number[] = []
+        for (let i = 3; i < dr.length - 1; i++) {
+            const overlap1 = dr[i].low <= dr[i - 1].high && dr[i].high >= dr[i - 1].low
+            const overlap2 = dr[i - 1].low <= dr[i - 2].high && dr[i - 1].high >= dr[i - 2].low
+            const overlap3 = dr[i - 2].low <= dr[i - 3].high && dr[i - 2].high >= dr[i - 3].low
+            
+            if (overlap1 && overlap2 && overlap3) {
+                sample++
+                const breakout = dr[i + 1]
+                if (breakout && breakout.range_pips > atr * 1.2) {
+                    hits++
+                    moves.push(breakout.range_pips)
+                }
+            }
+        }
+        if (sample >= 5) {
+            conditions.push({
+                id: "e3", category: "elliott_wave",
+                condition: "Flat correction: 3+ days overlapping ranges (consolidation)",
+                outcome: "Breakout exceeds 1.2x ATR",
+                sample_size: sample, hits,
+                probability: pct(hits, sample),
+                avg_move_pips: avg(moves),
+                time_to_play_out: "Next day",
+            })
+        }
+    }
+
+    return conditions
+}
+

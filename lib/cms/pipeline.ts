@@ -42,7 +42,7 @@ export async function generateCMSAnalysis(
                 pair,
                 generated_at: new Date().toISOString(),
                 total_conditions: 0,
-                categories: { daily: [], weekly: [], session: [], volatility: [], cross_market: [], fractal: [] },
+                categories: { daily: [], weekly: [], session: [], volatility: [], cross_market: [], fractal: [], elliott_wave: [] },
                 summary: 'Insufficient data or no patterns met the minimum thresholds (n≥15, probability≥55%).',
                 data_stats: {
                     daily_candles: data.summaryStats.total_daily_candles,
