@@ -28,8 +28,16 @@ interface MonitorResult {
     siblingsDeactivated: number
     generationsQueued: number
     skippedBusy: number
+    skippedCooldown: number
+    skippedInvalidSetup: number
     skippedMarketClosed: boolean
 }
+
+// Minimum distance between trigger and invalidation (0.1 pip for forex, 1 point for indices)
+const MIN_RANGE_PIPS = 0.00010
+
+// Cooldown: minimum time between bot-generated episodes per pair (30 minutes)
+const EPISODE_COOLDOWN_MS = 30 * 60 * 1000
 
 // Map our timeframe labels to OANDA granularities
 const TIMEFRAME_TO_GRANULARITY: Record<string, string> = {
@@ -58,6 +66,32 @@ export function isMarketOpen(): boolean {
 }
 
 /**
+ * Validate a scenario's levels are internally consistent.
+ * Returns false if levels are malformed (zero range, wrong direction, etc.)
+ */
+function isValidScenario(scenario: MonitorableScenario): boolean {
+    const range = Math.abs(scenario.trigger_level - scenario.invalidation_level)
+
+    // Zero or near-zero range: would cause infinite triggers
+    if (range < MIN_RANGE_PIPS) {
+        console.error(`[ScenarioMonitor] INVALID scenario ${scenario.id}: range too small (${range.toFixed(6)})`)
+        return false
+    }
+
+    // Direction consistency check
+    if (scenario.trigger_direction === 'above' && scenario.trigger_level <= scenario.invalidation_level) {
+        console.error(`[ScenarioMonitor] INVALID scenario ${scenario.id}: trigger_direction=above but trigger (${scenario.trigger_level}) <= invalidation (${scenario.invalidation_level})`)
+        return false
+    }
+    if (scenario.trigger_direction === 'below' && scenario.trigger_level >= scenario.invalidation_level) {
+        console.error(`[ScenarioMonitor] INVALID scenario ${scenario.id}: trigger_direction=below but trigger (${scenario.trigger_level}) >= invalidation (${scenario.invalidation_level})`)
+        return false
+    }
+
+    return true
+}
+
+/**
  * Fetch all active scenarios that have structured monitoring levels.
  */
 async function getMonitorableScenarios(client: SupabaseClient): Promise<MonitorableScenario[]> {
@@ -81,47 +115,56 @@ async function getMonitorableScenarios(client: SupabaseClient): Promise<Monitora
  * Check if a candle close has crossed a scenario's trigger or invalidation level.
  * Uses candle CLOSE price, not spot price — prevents false triggers from wicks.
  *
- * HIGH-CONFIDENCE OPTIMIZATION (NEW):
+ * HIGH-CONFIDENCE OPTIMIZATION:
  * For scenarios with probability >= 55%, we allow triggering at 85% proximity
  * to avoid missing good entries. Conservative approach remains for low-confidence scenarios.
+ *
+ * PROXIMITY MATH (unified for both directions):
+ *   progress = how far price has moved FROM invalidation TOWARD trigger
+ *   progressPct = progress / totalRange (0.0 = at invalidation, 1.0 = at trigger)
+ *   if progressPct >= threshold → trigger
  */
 function evaluateScenario(
     scenario: MonitorableScenario,
     closePrice: number
-): 'triggered' | 'invalidated' | null {
+): { result: 'triggered' | 'invalidated' | null; progressPct: number } {
     const isHighConfidence = scenario.probability >= 0.55
-    const proximityThreshold = isHighConfidence ? 0.85 : 1.0 // 85% for high confidence, 100% for low
+    const proximityThreshold = isHighConfidence ? 0.85 : 1.0
 
-    // Calculate the range between invalidation and trigger
-    const range = Math.abs(scenario.trigger_level - scenario.invalidation_level)
+    const totalRange = Math.abs(scenario.trigger_level - scenario.invalidation_level)
 
-    // ── Check trigger (with proximity optimization for high-confidence scenarios) ──
+    // ── Calculate progress toward trigger (direction-aware) ──
+    let progressPct: number
     if (scenario.trigger_direction === 'above') {
-        // Bullish: trigger is above current, invalidation is below
-        // 85% proximity: price has moved 85% of the way from invalidation to trigger
-        const proximityLevel = scenario.invalidation_level + (range * proximityThreshold)
-        if (closePrice >= proximityLevel) {
-            return 'triggered'
-        }
+        // Bullish: invalidation is below, trigger is above
+        // progress = how far above invalidation we are
+        progressPct = (closePrice - scenario.invalidation_level) / totalRange
+    } else {
+        // Bearish: invalidation is above, trigger is below
+        // progress = how far below invalidation we are
+        progressPct = (scenario.invalidation_level - closePrice) / totalRange
     }
-    if (scenario.trigger_direction === 'below') {
-        // Bearish: trigger is below current, invalidation is above
-        // 85% proximity: price has moved 85% of the way from invalidation to trigger
-        const proximityLevel = scenario.invalidation_level - (range * proximityThreshold)
-        if (closePrice <= proximityLevel) {
-            return 'triggered'
+
+    // Clamp to reasonable range for logging
+    progressPct = Math.max(-0.5, Math.min(1.5, progressPct))
+
+    // ── Check trigger ──
+    if (progressPct >= proximityThreshold) {
+        return { result: 'triggered', progressPct }
+    }
+
+    // ── Check invalidation (always at 0% — price crossed wrong way) ──
+    if (progressPct <= 0) {
+        // Price is at or past invalidation level
+        if (scenario.invalidation_direction === 'above' && closePrice >= scenario.invalidation_level) {
+            return { result: 'invalidated', progressPct }
+        }
+        if (scenario.invalidation_direction === 'below' && closePrice <= scenario.invalidation_level) {
+            return { result: 'invalidated', progressPct }
         }
     }
 
-    // ── Check invalidation (always 100% - no proximity leniency) ──
-    if (scenario.invalidation_direction === 'above' && closePrice >= scenario.invalidation_level) {
-        return 'invalidated'
-    }
-    if (scenario.invalidation_direction === 'below' && closePrice <= scenario.invalidation_level) {
-        return 'invalidated'
-    }
-
-    return null
+    return { result: null, progressPct }
 }
 
 /**
@@ -133,17 +176,6 @@ async function isGenerationAlreadyRunning(
     userId: string,
     pair: string
 ): Promise<boolean> {
-    const { data } = await client
-        .from('background_tasks')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('task_type', 'story_generation')
-        .in('status', ['pending', 'running'])
-        .limit(1)
-
-    if (!data?.length) return false
-
-    // Check if it's for this pair (metadata contains pair)
     const { data: tasks } = await client
         .from('background_tasks')
         .select('id, metadata')
@@ -155,6 +187,30 @@ async function isGenerationAlreadyRunning(
         const meta = t.metadata as Record<string, unknown> | null
         return meta?.pair === pair
     })
+}
+
+/**
+ * Check if a bot-generated episode was created recently for this pair.
+ * Prevents infinite trigger loops in volatile markets.
+ */
+async function isInCooldownPeriod(
+    client: SupabaseClient,
+    userId: string,
+    pair: string
+): Promise<boolean> {
+    const cutoff = new Date(Date.now() - EPISODE_COOLDOWN_MS).toISOString()
+
+    const { data } = await client
+        .from('story_episodes')
+        .select('id, created_at')
+        .eq('user_id', userId)
+        .eq('pair', pair)
+        .in('generation_source', ['bot', 'cron'])
+        .gte('created_at', cutoff)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+    return (data?.length ?? 0) > 0
 }
 
 /**
@@ -194,6 +250,13 @@ async function getLatestCandleClose(
  * Main orchestrator: check all monitorable scenarios against candle closes.
  * Uses candle close prices (not spot) to prevent false triggers from wicks.
  *
+ * Safety features:
+ * - Range validation: rejects zero-range scenarios
+ * - Direction validation: rejects inconsistent trigger/invalidation directions
+ * - Per-pair dedup: only triggers the HIGHEST-probability scenario per pair per run
+ * - Episode cooldown: prevents infinite trigger loops (30-minute cooldown)
+ * - Candle close only: both triggers AND invalidations use candle close (no spot)
+ *
  * Lifecycle: When one scenario triggers, its sibling is auto-invalidated,
  * and a new episode is queued (passing the triggered scenario context).
  */
@@ -205,6 +268,8 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
         siblingsDeactivated: 0,
         generationsQueued: 0,
         skippedBusy: 0,
+        skippedCooldown: 0,
+        skippedInvalidSetup: 0,
         skippedMarketClosed: false,
     }
 
@@ -249,87 +314,64 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
     })
     await Promise.all(fetchPromises)
 
-    // Also fetch spot prices for invalidation fallback
-    const uniquePairs = [...new Set(scenarios.map(s => s.pair))]
-    const instruments = uniquePairs.map(p => p.replace('/', '_'))
-    const { data: spotPrices } = await getCurrentPrices(instruments)
-    const spotPriceMap: Record<string, number> = {}
-    for (const p of spotPrices || []) {
-        const ask = p.asks?.[0]?.price
-        const bid = p.bids?.[0]?.price
-        if (ask && bid) {
-            const mid = (parseFloat(ask) + parseFloat(bid)) / 2
-            spotPriceMap[p.instrument.replace('_', '/')] = mid
-        }
-    }
-
     // Track which user+pair combos need new episodes (with triggered context)
-    const generationQueue: Array<{
+    // KEY SAFETY: only ONE trigger per user+pair per run (highest probability wins)
+    const generationQueue = new Map<string, {
         userId: string
         pair: string
         triggeredScenarioId: string
         triggeredEpisodeId: string
         isInvalidation: boolean
-    }> = []
+        probability: number
+    }>()
 
     // Evaluate each scenario against its timeframe's candle close
     for (const scenario of scenarios) {
+        // ── GUARD: Validate scenario levels ──
+        if (!isValidScenario(scenario)) {
+            result.skippedInvalidSetup++
+            // Auto-invalidate broken scenarios so they don't block forever
+            try {
+                await updateScenarioStatus(
+                    scenario.id,
+                    'invalidated',
+                    'System: auto-invalidated due to invalid level configuration (zero range or direction mismatch)',
+                    'bot',
+                    client
+                )
+            } catch (err) {
+                console.error(`[ScenarioMonitor] Failed to auto-invalidate ${scenario.id}:`, err instanceof Error ? err.message : err)
+            }
+            continue
+        }
+
         const tf = scenario.trigger_timeframe || 'H1'
         const key = `${scenario.pair}|${tf}`
         const candleData = closePriceMap.get(key)
 
-        // Use candle close for trigger evaluation, fall back to spot for invalidation
+        // Use candle close for BOTH triggers AND invalidations (consistent)
         const closePrice = candleData?.close
-        const spotPrice = spotPriceMap[scenario.pair]
-
-        if (closePrice == null && spotPrice == null) continue
-
-        // Primary: evaluate on candle close (prevents wick false triggers)
-        let evaluation: 'triggered' | 'invalidated' | null = null
-        let priceUsed = 0
-        let method = ''
-
-        if (closePrice != null) {
-            evaluation = evaluateScenario(scenario, closePrice)
-            priceUsed = closePrice
-            method = `${tf} candle close`
+        if (closePrice == null) {
+            // No candle data available — log but don't silently skip
+            console.warn(`[ScenarioMonitor] No candle data for ${scenario.pair} ${tf} — skipping scenario "${scenario.title}"`)
+            continue
         }
 
-        // If no trigger from candle close, check spot price for invalidation only
-        // (invalidation is more urgent — a wick below support IS a break)
-        if (!evaluation && spotPrice != null) {
-            // Only check invalidation on spot — triggers need candle close confirmation
-            if (scenario.invalidation_direction === 'above' && spotPrice >= scenario.invalidation_level) {
-                evaluation = 'invalidated'
-                priceUsed = spotPrice
-                method = 'spot price'
-            }
-            if (scenario.invalidation_direction === 'below' && spotPrice <= scenario.invalidation_level) {
-                evaluation = 'invalidated'
-                priceUsed = spotPrice
-                method = 'spot price'
-            }
-        }
+        // Evaluate against candle close only (no spot price fallback)
+        const { result: evaluation, progressPct } = evaluateScenario(scenario, closePrice)
 
         if (!evaluation) continue
 
         // Resolve the scenario
         const candleTimeStr = candleData?.time ? ` (candle: ${new Date(candleData.time).toISOString()})` : ''
         const isHighConfidence = scenario.probability >= 0.55
-        const exactHit = evaluation === 'triggered' && (
-            (scenario.trigger_direction === 'above' && priceUsed >= scenario.trigger_level) ||
-            (scenario.trigger_direction === 'below' && priceUsed <= scenario.trigger_level)
-        )
-        const proximityTrigger = evaluation === 'triggered' && !exactHit && isHighConfidence
+        const isProximityTrigger = evaluation === 'triggered' && progressPct < 1.0 && isHighConfidence
 
         const outcomeNotes = evaluation === 'triggered'
-            ? proximityTrigger
-                ? `Bot detected: ${tf} candle close at ${priceUsed.toFixed(5)} reached 85% proximity to trigger level ${scenario.trigger_level.toFixed(5)} (${scenario.trigger_direction}). High-confidence scenario (${Math.round(scenario.probability * 100)}%) triggered early to avoid missing entry.${candleTimeStr}`
-                : `Bot detected: ${tf} candle close at ${priceUsed.toFixed(5)} confirmed trigger level ${scenario.trigger_level.toFixed(5)} (${scenario.trigger_direction})${candleTimeStr}`
-            : `Bot detected: ${method} ${priceUsed.toFixed(5)} crossed invalidation level ${scenario.invalidation_level} (${scenario.invalidation_direction})`
-
-        // Check if this was a high-confidence prediction failure
-        const isHighConfidenceFailure = evaluation === 'invalidated'
+            ? isProximityTrigger
+                ? `Bot detected: ${tf} candle close at ${closePrice.toFixed(5)} reached ${Math.round(progressPct * 100)}% proximity to trigger level ${scenario.trigger_level.toFixed(5)} (${scenario.trigger_direction}). High-confidence scenario (${Math.round(scenario.probability * 100)}%) triggered early to avoid missing entry.${candleTimeStr}`
+                : `Bot detected: ${tf} candle close at ${closePrice.toFixed(5)} confirmed trigger level ${scenario.trigger_level.toFixed(5)} (${scenario.trigger_direction})${candleTimeStr}`
+            : `Bot detected: ${tf} candle close at ${closePrice.toFixed(5)} crossed invalidation level ${scenario.invalidation_level.toFixed(5)} (${scenario.invalidation_direction}). Progress was ${Math.round(progressPct * 100)}% toward trigger.${candleTimeStr}`
 
         try {
             await updateScenarioStatus(
@@ -349,8 +391,10 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
 
             // Notify user with timeframe context
             const triggerDetail = evaluation === 'triggered'
-                ? `${tf} candle closed ${scenario.trigger_direction} ${scenario.trigger_level.toFixed(5)} at ${priceUsed.toFixed(5)}`
-                : `Price ${priceUsed.toFixed(5)} broke ${scenario.invalidation_direction} invalidation ${scenario.invalidation_level.toFixed(5)}`
+                ? isProximityTrigger
+                    ? `${tf} candle at ${closePrice.toFixed(5)} — ${Math.round(progressPct * 100)}% toward trigger ${scenario.trigger_level.toFixed(5)} (high-confidence early trigger)`
+                    : `${tf} candle closed ${scenario.trigger_direction} ${scenario.trigger_level.toFixed(5)} at ${closePrice.toFixed(5)}`
+                : `${tf} candle at ${closePrice.toFixed(5)} crossed invalidation ${scenario.invalidation_level.toFixed(5)} (${scenario.invalidation_direction})`
 
             await notifyUser(scenario.user_id, {
                 title: `${evaluation === 'triggered' ? 'Scenario Triggered' : 'Scenario Invalidated'}: ${scenario.pair}`,
@@ -365,61 +409,70 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
                 await client.from('desk_messages').insert({
                     user_id: scenario.user_id,
                     speaker: 'sarah',
-                    message: `SCENARIO TRIGGERED: ${scenario.pair} — "${scenario.title}". ${tf} candle closed ${scenario.trigger_direction} ${scenario.trigger_level.toFixed(5)} at ${priceUsed.toFixed(5)}. Review your position sizing before entry.`,
+                    message: `SCENARIO TRIGGERED: ${scenario.pair} — "${scenario.title}". ${tf} candle closed ${scenario.trigger_direction} ${scenario.trigger_level.toFixed(5)} at ${closePrice.toFixed(5)}. Review your position sizing before entry.`,
                     message_type: 'alert',
                     context_data: {
                         scenario_id: scenario.id,
                         pair: scenario.pair,
                         trigger_level: scenario.trigger_level,
                         trigger_timeframe: tf,
-                        close_price: priceUsed,
+                        close_price: closePrice,
+                        proximity_pct: Math.round(progressPct * 100),
                     },
                 })
 
-                // Queue generation for triggered scenarios (with context)
-                const alreadyQueued = generationQueue.some(
-                    g => g.userId === scenario.user_id && g.pair === scenario.pair
-                )
-                if (!alreadyQueued) {
-                    generationQueue.push({
+                // Queue generation — only highest-probability scenario per user+pair
+                const queueKey = `${scenario.user_id}:${scenario.pair}`
+                const existing = generationQueue.get(queueKey)
+                if (!existing || scenario.probability > existing.probability) {
+                    generationQueue.set(queueKey, {
                         userId: scenario.user_id,
                         pair: scenario.pair,
                         triggeredScenarioId: scenario.id,
                         triggeredEpisodeId: scenario.episode_id,
-                        isInvalidation: false
+                        isInvalidation: false,
+                        probability: scenario.probability,
                     })
                 }
             } else {
                 result.invalidated++
                 // Queue generation for INVALIDATED scenarios too (Narrative Reset)
-                const alreadyQueued = generationQueue.some(
-                    g => g.userId === scenario.user_id && g.pair === scenario.pair
-                )
-                if (!alreadyQueued) {
-                    generationQueue.push({
+                const queueKey = `${scenario.user_id}:${scenario.pair}`
+                if (!generationQueue.has(queueKey)) {
+                    generationQueue.set(queueKey, {
                         userId: scenario.user_id,
                         pair: scenario.pair,
                         triggeredScenarioId: scenario.id,
                         triggeredEpisodeId: scenario.episode_id,
-                        isInvalidation: true
+                        isInvalidation: true,
+                        probability: scenario.probability,
                     })
                 }
+                // NOTE: triggers always take priority over invalidations via probability comparison above
             }
 
-            console.log(`[ScenarioMonitor] ${scenario.pair} "${scenario.title}" → ${evaluation} via ${method} at ${priceUsed.toFixed(5)}`)
+            console.log(`[ScenarioMonitor] ${scenario.pair} "${scenario.title}" → ${evaluation} via ${tf} candle close at ${closePrice.toFixed(5)} (progress: ${Math.round(progressPct * 100)}%)`)
         } catch (error) {
             console.error(`[ScenarioMonitor] Failed to resolve ${scenario.id}:`, error instanceof Error ? error.message : error)
         }
     }
 
     // Queue new episode generation for triggered scenarios (fire-and-forget)
-    for (const item of generationQueue) {
+    for (const [queueKey, item] of generationQueue) {
         try {
             // Guard: don't queue if a generation is already running for this pair
             const busy = await isGenerationAlreadyRunning(client, item.userId, item.pair)
             if (busy) {
                 result.skippedBusy++
                 console.log(`[ScenarioMonitor] ${item.pair} generation skipped (already running)`)
+                continue
+            }
+
+            // Guard: episode cooldown to prevent infinite loops
+            const inCooldown = await isInCooldownPeriod(client, item.userId, item.pair)
+            if (inCooldown) {
+                result.skippedCooldown++
+                console.log(`[ScenarioMonitor] ${item.pair} generation skipped (cooldown: episode generated <${EPISODE_COOLDOWN_MS / 60000}min ago)`)
                 continue
             }
 
@@ -442,12 +495,12 @@ export async function runScenarioMonitor(): Promise<MonitorResult> {
             })
 
             result.generationsQueued++
-            console.log(`[ScenarioMonitor] Queued new episode for ${item.pair} (task: ${taskId}, triggered: ${item.triggeredScenarioId})`)
+            console.log(`[ScenarioMonitor] Queued new episode for ${item.pair} (task: ${taskId}, triggered: ${item.triggeredScenarioId}, proximity: ${item.isInvalidation ? 'invalidation' : 'trigger'})`)
         } catch (error) {
             console.error(`[ScenarioMonitor] Failed to queue generation for ${item.pair}:`, error instanceof Error ? error.message : error)
         }
     }
 
-    console.log(`[ScenarioMonitor] Done: checked=${result.checked} triggered=${result.triggered} invalidated=${result.invalidated} siblings=${result.siblingsDeactivated} queued=${result.generationsQueued} busy=${result.skippedBusy}`)
+    console.log(`[ScenarioMonitor] Done: checked=${result.checked} triggered=${result.triggered} invalidated=${result.invalidated} siblings=${result.siblingsDeactivated} queued=${result.generationsQueued} busy=${result.skippedBusy} cooldown=${result.skippedCooldown} invalid=${result.skippedInvalidSetup}`)
     return result
 }

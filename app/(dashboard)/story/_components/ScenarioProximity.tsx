@@ -24,6 +24,29 @@ interface Props {
 
 const REFRESH_INTERVAL = 60_000 // 60 seconds
 
+/**
+ * Calculate how far price has progressed from invalidation toward trigger.
+ * Returns 0-100 (0% = at invalidation, 100% = at trigger).
+ * Can go negative (past invalidation) or above 100 (past trigger).
+ */
+function calculateProgress(
+    currentPrice: number,
+    triggerLevel: number,
+    invalidationLevel: number,
+    triggerDirection: string | null
+): number {
+    const totalRange = Math.abs(triggerLevel - invalidationLevel)
+    if (totalRange === 0) return 50
+
+    if (triggerDirection === 'above') {
+        // Bullish: invalidation below, trigger above
+        return Math.round(((currentPrice - invalidationLevel) / totalRange) * 100)
+    } else {
+        // Bearish: invalidation above, trigger below
+        return Math.round(((invalidationLevel - currentPrice) / totalRange) * 100)
+    }
+}
+
 export function ScenarioProximity({ scenarios, currentPrice: initialPrice, pair, positionEntry }: Props) {
     const [livePrice, setLivePrice] = useState<number>(initialPrice)
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -110,6 +133,9 @@ export function ScenarioProximity({ scenarios, currentPrice: initialPrice, pair,
     const currentPct = toPercent(currentPrice)
     const entryPct = positionEntry != null ? toPercent(positionEntry) : null
 
+    // Format price based on magnitude
+    const fmt = (price: number) => price.toFixed(price >= 100 ? 2 : price >= 10 ? 3 : 5)
+
     return (
         <section className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-4">
             <div className="flex items-center justify-between mb-4">
@@ -137,15 +163,28 @@ export function ScenarioProximity({ scenarios, currentPrice: initialPrice, pair,
                     const invalidationPct = toPercent(scenario.invalidation_level!)
                     const isBullish = scenario.direction === 'bullish'
 
-                    // Distance from current price to trigger/invalidation
-                    const distToTrigger = Math.abs(currentPrice - scenario.trigger_level!)
-                    const distToInvalidation = Math.abs(currentPrice - scenario.invalidation_level!)
-                    const totalDist = distToTrigger + distToInvalidation
-                    const triggerProximity = totalDist > 0 ? Math.round((1 - distToTrigger / totalDist) * 100) : 50
+                    // Direction-aware progress: 0% = at invalidation, 100% = at trigger
+                    const triggerProximity = calculateProgress(
+                        currentPrice,
+                        scenario.trigger_level!,
+                        scenario.invalidation_level!,
+                        scenario.trigger_direction ?? null
+                    )
+
+                    // Clamp for display (can show negative or >100 as warning)
+                    const displayProximity = Math.max(-20, Math.min(120, triggerProximity))
 
                     // High-confidence scenarios (>= 55%) trigger at 85% proximity
                     const isHighConfidence = scenario.probability >= 0.55
                     const willAutoTrigger = isHighConfidence && triggerProximity >= 85
+                    const isPastInvalidation = triggerProximity <= 0
+
+                    // Calculate the 85% proximity level (direction-aware)
+                    const levelRange = Math.abs(scenario.trigger_level! - scenario.invalidation_level!)
+                    const proximity85Level = scenario.trigger_direction === 'above'
+                        ? scenario.invalidation_level! + (levelRange * 0.85) // bullish: 85% above invalidation
+                        : scenario.invalidation_level! - (levelRange * 0.85) // bearish: 85% below invalidation
+                    const proximity85Pct = toPercent(proximity85Level)
 
                     return (
                         <div key={scenario.id} className="space-y-2">
@@ -184,29 +223,24 @@ export function ScenarioProximity({ scenarios, currentPrice: initialPrice, pair,
                                     className="absolute -top-0.5 text-[8px] text-red-400 font-mono z-20 -translate-x-1/2"
                                     style={{ left: `${Math.max(5, Math.min(95, invalidationPct))}%` }}
                                 >
-                                    {scenario.invalidation_level!.toFixed(scenario.invalidation_level! >= 100 ? 2 : 4)}
+                                    {fmt(scenario.invalidation_level!)}
                                 </div>
 
                                 {/* 85% Proximity marker for high-confidence scenarios */}
-                                {isHighConfidence && (() => {
-                                    const range = scenario.trigger_level! - scenario.invalidation_level!
-                                    const proximity85Level = scenario.invalidation_level! + (range * 0.85)
-                                    const proximity85Pct = toPercent(proximity85Level)
-                                    return (
-                                        <>
-                                            <div
-                                                className="absolute top-0 bottom-0 w-0.5 bg-amber-400/40 z-10"
-                                                style={{ left: `${proximity85Pct}%` }}
-                                            />
-                                            <div
-                                                className="absolute top-1/2 -translate-y-1/2 text-[7px] text-amber-400/60 font-mono z-20 -translate-x-1/2"
-                                                style={{ left: `${Math.max(5, Math.min(95, proximity85Pct))}%` }}
-                                            >
-                                                85%
-                                            </div>
-                                        </>
-                                    )
-                                })()}
+                                {isHighConfidence && (
+                                    <>
+                                        <div
+                                            className="absolute top-0 bottom-0 w-0.5 bg-amber-400/40 z-10"
+                                            style={{ left: `${proximity85Pct}%` }}
+                                        />
+                                        <div
+                                            className="absolute top-1/2 -translate-y-1/2 text-[7px] text-amber-400/60 font-mono z-20 -translate-x-1/2"
+                                            style={{ left: `${Math.max(5, Math.min(95, proximity85Pct))}%` }}
+                                        >
+                                            85%
+                                        </div>
+                                    </>
+                                )}
 
                                 {/* Trigger marker */}
                                 <div
@@ -217,7 +251,7 @@ export function ScenarioProximity({ scenarios, currentPrice: initialPrice, pair,
                                     className="absolute bottom-0 text-[8px] text-green-400 font-mono z-20 -translate-x-1/2"
                                     style={{ left: `${Math.max(5, Math.min(95, triggerPct))}%` }}
                                 >
-                                    {scenario.trigger_level!.toFixed(scenario.trigger_level! >= 100 ? 2 : 4)}
+                                    {fmt(scenario.trigger_level!)}
                                 </div>
 
                                 {/* Current price indicator */}
@@ -248,16 +282,23 @@ export function ScenarioProximity({ scenarios, currentPrice: initialPrice, pair,
                             <div className="flex items-center justify-between text-[10px] text-neutral-500">
                                 <span>Invalidation</span>
                                 <span className={`font-semibold ${
-                                    willAutoTrigger
-                                        ? 'text-green-400 animate-pulse'
-                                        : triggerProximity >= 60
-                                            ? 'text-green-400'
-                                            : triggerProximity >= 40
-                                                ? 'text-yellow-400'
-                                                : 'text-red-400'
+                                    isPastInvalidation
+                                        ? 'text-red-400'
+                                        : willAutoTrigger
+                                            ? 'text-green-400 animate-pulse'
+                                            : displayProximity >= 60
+                                                ? 'text-green-400'
+                                                : displayProximity >= 40
+                                                    ? 'text-yellow-400'
+                                                    : 'text-red-400'
                                 }`}>
-                                    {triggerProximity}% toward trigger
-                                    {willAutoTrigger && ' (Auto-trigger active)'}
+                                    {isPastInvalidation
+                                        ? `${Math.abs(displayProximity)}% past invalidation`
+                                        : displayProximity > 100
+                                            ? `${displayProximity}% — past trigger`
+                                            : `${displayProximity}% toward trigger`
+                                    }
+                                    {willAutoTrigger && !isPastInvalidation && ' (Auto-trigger active)'}
                                 </span>
                                 <span>Trigger</span>
                             </div>
@@ -270,7 +311,7 @@ export function ScenarioProximity({ scenarios, currentPrice: initialPrice, pair,
             <div className="flex items-center gap-4 mt-3 pt-3 border-t border-neutral-800 text-[9px] text-neutral-500">
                 <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-white rounded-sm" />
-                    <span>Price: {currentPrice.toFixed(currentPrice >= 100 ? 2 : 5)}</span>
+                    <span>Price: {fmt(currentPrice)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-green-500/60 rounded-sm" />
@@ -278,7 +319,7 @@ export function ScenarioProximity({ scenarios, currentPrice: initialPrice, pair,
                 </div>
                 <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-amber-400/40 rounded-sm" />
-                    <span>85% Auto (High-Conf)</span>
+                    <span>85% Auto</span>
                 </div>
                 <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-red-500/60 rounded-sm" />
@@ -295,7 +336,7 @@ export function ScenarioProximity({ scenarios, currentPrice: initialPrice, pair,
             {/* Info note for high-confidence scenarios */}
             {scenariosWithLevels.some(s => s.probability >= 0.55) && (
                 <div className="mt-2 text-[9px] text-amber-400/60 bg-amber-900/10 border border-amber-800/30 rounded px-2 py-1">
-                    ⚡ High-confidence scenarios (≥55%) auto-trigger at 85% proximity to avoid missing entries
+                    High-confidence scenarios (&ge;55%) auto-trigger at 85% proximity on candle close
                 </div>
             )}
         </section>

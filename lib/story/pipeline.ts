@@ -578,6 +578,34 @@ async function processPositionGuidance(
             const direction = (action === 'enter_long' || action === 'set_limit_long') ? 'long' : 'short'
             const isLimit = action === 'set_limit_long' || action === 'set_limit_short'
 
+            // ── SAFETY: Validate price levels before creating position ──
+            const stopOnCorrectSide = direction === 'long'
+                ? guidance.stop_loss < guidance.entry_price
+                : guidance.stop_loss > guidance.entry_price
+
+            if (!stopOnCorrectSide) {
+                console.error(`[Story Position] REJECTED: Stop loss on WRONG SIDE! direction=${direction} entry=${guidance.entry_price} SL=${guidance.stop_loss}`)
+                return
+            }
+
+            // Stop distance should be reasonable (< 10% of entry price)
+            const stopDistancePct = Math.abs((guidance.stop_loss - guidance.entry_price) / guidance.entry_price)
+            if (stopDistancePct > 0.10) {
+                console.error(`[Story Position] REJECTED: Excessive stop distance (${(stopDistancePct * 100).toFixed(1)}% of entry) — likely AI hallucination`)
+                return
+            }
+
+            // TP1 should be on correct side if provided
+            if (guidance.take_profit_1) {
+                const tpOnCorrectSide = direction === 'long'
+                    ? guidance.take_profit_1 > guidance.entry_price
+                    : guidance.take_profit_1 < guidance.entry_price
+                if (!tpOnCorrectSide) {
+                    console.warn(`[Story Position] WARNING: TP1 on wrong side, clearing it. direction=${direction} entry=${guidance.entry_price} TP1=${guidance.take_profit_1}`)
+                    guidance.take_profit_1 = undefined
+                }
+            }
+
             const position = await createPosition(userId, pair, {
                 season_number: seasonNumber,
                 direction,
