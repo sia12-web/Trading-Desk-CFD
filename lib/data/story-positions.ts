@@ -105,7 +105,7 @@ export async function createPosition(
     positionData: {
         season_number: number
         direction: 'long' | 'short'
-        entry_episode_id: string
+        entry_episode_id: string | null
         entry_episode_number: number
         suggested_entry: number
         original_stop_loss: number
@@ -159,7 +159,7 @@ export async function updatePosition(
 export async function addAdjustment(
     adjustmentData: {
         position_id: string
-        episode_id: string
+        episode_id: string | null
         episode_number: number
         action: PositionAdjustment['action']
         details?: Record<string, unknown>

@@ -140,7 +140,7 @@ export async function generateStory(
                 activePosition = await createPosition(userId, pair, {
                     season_number: season,
                     direction: live.units > 0 ? 'long' : 'short',
-                    entry_episode_id: lastEpisodeRaw?.id || '',
+                    entry_episode_id: lastEpisodeRaw?.id || null,
                     entry_episode_number: epNum,
                     suggested_entry: live.entryPrice,
                     original_stop_loss: live.stopLoss || 0,
@@ -156,7 +156,7 @@ export async function generateStory(
 
                 await addAdjustment({
                     position_id: activePosition.id,
-                    episode_id: lastEpisodeRaw?.id || '',
+                    episode_id: lastEpisodeRaw?.id || null,
                     episode_number: epNum,
                     action: 'open',
                     details: { adopted_from_oanda: true, oanda_trade_id: live.id },
