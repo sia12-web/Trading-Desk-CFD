@@ -739,6 +739,8 @@ export default function SettingsPage() {
                             { name: 'Story Agents', schedule: 'Mon-Fri 4:00 AM UTC', description: 'Daily intelligence agents (Optimizer, News, Cross-Market)', status: 'pending' },
                             { name: 'Story Generation', schedule: 'Mon-Fri 5:00 AM UTC', description: 'Daily episode generation for subscribed pairs', status: 'pending' },
                             { name: 'Scenario Monitor', schedule: 'Every 15 minutes', description: 'Auto-resolve scenarios vs OANDA prices', status: 'pending' },
+                            { name: 'Generate Daily Predictions', schedule: 'Daily 5:30 AM UTC', description: 'Auto-generate correlation predictions using complete market close data', status: 'pending' },
+                            { name: 'Correlation Pattern Alerts', schedule: 'Every 15 minutes', description: 'Monitor correlation patterns, send Telegram alerts when ≥75% conditions met', status: 'pending' },
                         ]).map((job: any) => (
                             <div key={job.name} className={`p-5 rounded-2xl border flex items-center justify-between gap-4 ${
                                 job.status === 'success' ? 'bg-green-500/5 border-green-500/20' :
