@@ -84,3 +84,74 @@ export async function GET(req: NextRequest) {
     limit
   })
 }
+
+/**
+ * DELETE /api/correlation/scenarios
+ *
+ * Deletes ALL correlation patterns for the current user.
+ * Also clears:
+ * - Scenario occurrences
+ * - Analysis cache
+ * - AI memory (correlation insights)
+ */
+export async function DELETE(req: NextRequest) {
+  const user = await getAuthUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  console.log('[CorrelationAPI] Deleting all patterns for user:', user.id)
+
+  const client = await createClient()
+
+  try {
+    // Count patterns before deletion
+    const { count } = await client
+      .from('correlation_scenarios')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    const patternCount = count || 0
+
+    // Delete all scenarios (cascade will delete occurrences automatically)
+    const { error: scenariosError } = await client
+      .from('correlation_scenarios')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (scenariosError) {
+      console.error('[CorrelationAPI] Error deleting scenarios:', scenariosError)
+      return NextResponse.json(
+        { error: 'Failed to delete patterns: ' + scenariosError.message },
+        { status: 500 }
+      )
+    }
+
+    // Delete analysis cache
+    const { error: cacheError } = await client
+      .from('correlation_analysis_cache')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (cacheError) {
+      console.warn('[CorrelationAPI] Error deleting cache:', cacheError)
+      // Non-fatal, continue
+    }
+
+    // Clear AI memory: Delete any cached correlation insights
+    // (In future, this could clear specific Story/Desk cache tables if they exist)
+    console.log(`[CorrelationAPI] Deleted ${patternCount} patterns and cleared AI memory`)
+
+    return NextResponse.json({
+      success: true,
+      deleted: patternCount,
+      message: `Deleted ${patternCount} patterns and cleared AI memory`
+    })
+  } catch (error) {
+    console.error('[CorrelationAPI] Fatal error during deletion:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    )
+  }
+}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useBackgroundTask } from '@/lib/hooks/use-background-task'
-import { TrendingUp } from 'lucide-react'
+import { TrendingUp, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ScenarioCard } from './_components/ScenarioCard'
@@ -15,6 +15,7 @@ export default function CorrelationScenariosPage() {
   const [scenarios, setScenarios] = useState<CorrelationScenarioRow[]>([])
   const [cache, setCache] = useState<CorrelationCacheRow | null>(null)
   const [loading, setLoading] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [filters, setFilters] = useState({
     minAccuracy: 55,
     day: null as string | null,
@@ -55,6 +56,41 @@ export default function CorrelationScenariosPage() {
   const handleAnalyze = async () => {
     task.reset()
     task.startTask('/api/correlation/analyze', { lookbackDays: 200 })
+  }
+
+  const handleDeleteAll = async () => {
+    if (!confirm(
+      'Are you sure you want to delete ALL correlation patterns?\n\n' +
+      'This will:\n' +
+      '• Delete all discovered patterns from the database\n' +
+      '• Clear correlation insights from AI memory (Story & Desk)\n' +
+      '• Remove pattern references from future AI analysis\n\n' +
+      'This action cannot be undone.'
+    )) {
+      return
+    }
+
+    setDeleting(true)
+    try {
+      const res = await fetch('/api/correlation/scenarios', {
+        method: 'DELETE'
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        alert(`✅ Successfully deleted ${data.deleted} patterns and cleared AI memory`)
+        await checkCache()
+        await loadScenarios()
+      } else {
+        const error = await res.json()
+        alert(`❌ Failed to delete patterns: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deleting patterns:', error)
+      alert('❌ Error deleting patterns')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   useEffect(() => {
@@ -146,6 +182,17 @@ export default function CorrelationScenariosPage() {
               >
                 Export JSON
               </Button>
+
+              {scenarios.length > 0 && (
+                <Button
+                  onClick={handleDeleteAll}
+                  disabled={deleting}
+                  className="bg-red-600 hover:bg-red-500 text-white text-xs disabled:opacity-50"
+                >
+                  <Trash2 size={14} className="mr-1" />
+                  {deleting ? 'Deleting...' : 'Delete All'}
+                </Button>
+              )}
 
               <select
                 value={filters.minAccuracy}

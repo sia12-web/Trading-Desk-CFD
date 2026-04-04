@@ -39,6 +39,7 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 | `/risk-rules` | Risk Rules | Max position, daily loss, drawdown limits |
 | `/calendar` | Calendar | Trading calendar with recurring events |
 | `/cms` | CMS Engine | Conditional Market Shaping — programmatic pattern analysis |
+| `/correlation-scenarios` | Correlation Scenarios | Multi-currency pattern mining — statistical edge discovery |
 | `/news` | News | Forex Factory + economic calendar |
 | `/references` | References | Candlestick patterns, chart patterns |
 | `/settings` | Settings | OANDA connection, notifications, profile |
@@ -132,12 +133,28 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 | POST | `/api/cms/generate` | Trigger CMS analysis (background task) |
 | GET | `/api/cms/results?pair=EUR/USD` | Fetch cached CMS results |
 
-### Cron Jobs (Protected by `CRON_SECRET`, scheduled via Supabase pg_cron + pg_net)
+### Correlation Scenarios (Multi-Currency Pattern Mining)
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/correlation/analyze` | Trigger pattern discovery (200 days × 18 pairs, background task) |
+| GET | `/api/correlation/scenarios` | List discovered patterns (filter by accuracy, day, sort) |
+| DELETE | `/api/correlation/scenarios` | Delete ALL patterns + clear AI memory |
+| DELETE | `/api/correlation/scenarios/[id]` | Delete single pattern |
+| GET | `/api/correlation/cache` | Check if analysis cache is valid (7-day TTL) |
+| POST | `/api/correlation/predict` | AI-powered tomorrow's predictions (current conditions vs patterns) |
+| GET | `/api/correlation/export` | Export patterns as CSV/JSON |
+| POST | `/api/correlation/explain/[id]` | AI explanation (Gemini → Claude) of why pattern works |
+| POST | `/api/correlation/backtest/[id]` | DeepSeek backtests pattern, suggests position sizing |
+| GET | `/api/correlation/monitor` | Real-time pattern trigger status (for alerts) |
+
+### Cron Jobs (Protected by `CRON_SECRET`, scheduled via Railway cron or Supabase pg_cron + pg_net)
 | Endpoint | Schedule | Purpose |
 |----------|----------|---------|
 | `/api/cron/scenario-analysis` | **Mon 3:30 AM UTC** | Weekly institutional scenario analysis per pair |
 | `/api/cron/story-agents` | **4:00 AM UTC Mon-Fri** | Daily intelligence agents (Optimizer, News, Cross-Market) |
+| `/api/cron/story-generation` | **5:00 AM UTC Mon-Fri** | Daily episode generation for subscribed pairs |
 | `/api/cron/scenario-monitor` | **Every 15 min** | Check active scenarios vs OANDA prices, auto-resolve |
+| `/api/cron/pattern-alerts` | **Every 15 min** | Monitor correlation patterns, send Telegram alerts when ≥75% conditions met |
 
 ### Utilities
 | Method | Endpoint | Purpose |
@@ -686,6 +703,167 @@ Centralized in `lib/ai/chart-style.ts` → `CHART_STYLE_PROMPT_BLOCK`. Injected 
 | Trader Profile | `lib/data/trader-profile.ts` | Profile management |
 | Push Subs | `lib/data/push-subscriptions.ts` | Push subscription management |
 
+---
+
+## Correlation System & AI Memory Integration
+
+### Overview
+
+The **Correlation Scenario Analysis** system is a hedge fund-grade statistical pattern discovery engine that mines historical data to find multi-currency correlation patterns. It integrates seamlessly with Story AI and The Desk, creating a unified intelligence loop:
+
+```
+OANDA Data → Correlation Discovery → AI Memory → Story/Desk → Position Guidance → Telegram Alerts
+```
+
+### Architecture
+
+#### 1. Pattern Discovery (`lib/correlation/pattern-detector.ts`)
+- **Data Source**: 200 days × 18 forex pairs (all VALID_PAIRS)
+- **Analysis**: Discovers 2-pair, 3-pair, and 4-pair correlation patterns
+- **Algorithm**:
+  1. For each day, detect significant moves (>0.5% threshold)
+  2. Generate hypotheses: "When A+B move, what happens to C?"
+  3. Validate outcomes over next 1-5 days
+  4. Aggregate by pattern signature (SHA256 hash)
+  5. Filter: ≥55% accuracy AND ≥15 occurrences
+- **Output**: 300+ patterns with accuracy%, occurrences, day-of-week distribution, avg pips
+
+#### 2. AI Memory Storage
+**Database Tables**:
+- `correlation_scenarios` — Discovered patterns with metrics
+- `correlation_scenario_occurrences` — Individual historical instances
+- `correlation_analysis_cache` — 7-day cache (expires_at)
+
+**AI Memory Integration**:
+- Story AI (`lib/story/correlation-integrator.ts`) fetches active patterns (≥50% conditions met)
+- Desk AI (`lib/desk/data-collector.ts`) fetches active patterns + tomorrow's predictions
+- When patterns are deleted, AI memory is automatically cleared (no stale data)
+
+#### 3. Real-Time Monitoring (`lib/correlation/pattern-monitor.ts`)
+- **Trigger**: Cron job every 15 minutes (`/api/cron/pattern-alerts`)
+- **Logic**:
+  1. Fetch patterns ≥65% accurate
+  2. Get current prices from OANDA
+  3. Calculate match percentage (conditionsMet / totalConditions)
+  4. If ≥75% → send Telegram alert
+- **Session Awareness**: Detects Asian/London/NY/Overlap sessions (UTC-based)
+- **Urgency Levels**:
+  - **Immediate** (≥90%): Pattern almost certain to trigger
+  - **High** (≥80%): Strong probability
+  - **Medium** (<80%): Moderate probability
+
+#### 4. Tomorrow's Predictions (`lib/correlation/predictor.ts`)
+- **Input**: Current market conditions + discovered patterns
+- **Process**:
+  1. Compare today's price action against all pattern conditions
+  2. Find patterns with ≥75% conditions met
+  3. Aggregate predictions by outcome pair
+  4. Use **Gemini** (structural analysis) → **Claude** (narrative synthesis)
+  5. Check calendar for weekends/holidays via `calendar-checker.ts`
+- **Output**: Top 5 predictions with confidence (high/medium/low)
+- **Anti-Hallucination**: Strict prompt rules — AI ONLY references provided pattern data
+
+### AI Memory Lifecycle
+
+#### **Creation**:
+1. User clicks "Run Analysis" → Background task runs `pattern-detector.ts`
+2. Patterns stored in `correlation_scenarios` table
+3. Cache record created with 7-day TTL
+
+#### **Usage (Story AI)**:
+1. Story generation triggered (`lib/story/pipeline.ts`)
+2. Data collector calls `getCorrelationInsights(pair)`
+3. Checks current prices vs pattern conditions
+4. Returns active patterns (≥50% match) + tomorrow's predictions
+5. Story AI writes episodes referencing pattern accuracy & expected moves
+
+#### **Usage (Desk AI)**:
+1. Morning meeting triggered (`/`)
+2. Desk data collector fetches correlation insights
+3. Characters reference patterns:
+   - **Marcus**: Uses for multi-pair position construction
+   - **Sarah**: Flags correlation-based concentration risk
+   - **Ray**: Validates statistical significance
+   - **Alex**: Connects to macro risk regime
+
+#### **Deletion**:
+1. User clicks "Delete All" on `/correlation-scenarios`
+2. API route deletes all scenarios + occurrences + cache
+3. Next Story/Desk call returns `null` for correlation insights
+4. AI no longer references deleted patterns (clean slate)
+
+### Telegram Alert Flow
+
+1. **Cron Job** (`/api/cron/pattern-alerts`) runs every 15 min
+2. Fetches users with `correlation_alerts_enabled = true`
+3. For each user: `monitorPatternTriggers(userId)`
+   - Compares current prices vs pattern conditions
+   - Detects ≥75% match → creates trigger
+4. Formats message: `formatTriggerMessage(trigger)`
+   - Includes pattern description, accuracy, expected move
+   - Session context (London/NY overlap = high volatility)
+   - Urgency tag (immediate/high/medium)
+5. Sends via Telegram Bot API (rate-limited 1 msg/sec)
+6. User receives actionable alert on mobile
+
+### Integration Points
+
+| System | Integration File | Data Flow |
+|--------|------------------|-----------|
+| Story AI | `lib/story/correlation-integrator.ts` | Fetches active patterns → includes in episode data payload |
+| Desk AI | `lib/desk/data-collector.ts` | Fetches patterns + predictions → characters reference in dialogue |
+| Predictions Panel | `app/(dashboard)/correlation-scenarios/_components/PredictionsPanel.tsx` | Calls `/api/correlation/predict` → displays AI synthesis |
+| Pattern Monitor | `lib/correlation/pattern-monitor.ts` | Real-time condition checking → Telegram alerts |
+| Delete All | `app/api/correlation/scenarios/route.ts` (DELETE) | Deletes patterns + clears cache → AI memory purged |
+
+### Example Flow: Pattern Discovery → AI Usage → Alert
+
+1. **Discovery** (Monday 3:00 AM):
+   - User runs "Analyze 200 Days"
+   - System discovers Pattern #47: "When EUR/USD shows EUR weakness AND USD/JPY shows JPY strength → EUR/JPY moves DOWN"
+   - Accuracy: 72%, Occurrences: 23, Avg Move: 0.6%
+
+2. **AI Memory Storage**:
+   - Pattern stored in `correlation_scenarios` table
+   - Available to Story AI and Desk AI
+
+3. **Story Generation** (Tuesday 5:00 AM):
+   - Story AI generates EUR/JPY episode
+   - Data collector finds Pattern #47 has 65% conditions met today
+   - Episode text: "EUR/JPY daily chart shows bearish structure. **Correlation Pattern #47 (72% accurate) is ACTIVE**. When this pattern triggered in the past, EUR/JPY dropped 55 pips within 24 hours."
+
+4. **Desk Morning Meeting** (Tuesday 9:00 AM):
+   - Marcus: "We have correlation intelligence: Pattern #47 suggests EUR/JPY downside. This is a high-conviction setup."
+   - Sarah: "Wait — Pattern #47 also predicts GBP weakness. That's concentration risk."
+   - Ray: "When Pattern #47 hits 100% conditions, win rate is 78%."
+   - Alex: "Macro supports EUR weakness. Risk-off regime."
+
+5. **Real-Time Alert** (Tuesday 1:15 PM):
+   - Cron job detects Pattern #47 now has 100% conditions met (London/NY overlap)
+   - Sends Telegram: "🚨 PATTERN TRIGGER: EUR/JPY expected DOWN 0.6% (72% accuracy, 23 occurrences). Session: LONDON/NY OVERLAP (High Volatility!)"
+
+6. **Deletion** (Wednesday):
+   - User clicks "Delete All" to start fresh
+   - All patterns deleted, cache cleared
+   - Next Story/Desk call returns `null` for correlation insights
+   - AI no longer references Pattern #47
+
+### Critical Files
+
+| File | Purpose |
+|------|---------|
+| `lib/correlation/pattern-detector.ts` | Core pattern discovery algorithm |
+| `lib/correlation/data-fetcher.ts` | Fetches 200 days × 18 pairs from OANDA |
+| `lib/correlation/pipeline.ts` | Background task orchestration |
+| `lib/correlation/storage.ts` | Stores patterns in database |
+| `lib/correlation/predictor.ts` | Tomorrow's predictions (Gemini + Claude) |
+| `lib/correlation/pattern-monitor.ts` | Real-time trigger detection |
+| `lib/correlation/calendar-checker.ts` | Weekend/holiday detection |
+| `lib/story/correlation-integrator.ts` | Story AI integration |
+| `lib/desk/data-collector.ts` | Desk AI integration |
+| `app/api/correlation/scenarios/route.ts` | GET (list), DELETE (purge all + AI memory) |
+| `app/api/correlation/predict/route.ts` | Tomorrow's predictions endpoint |
+| `app/api/cron/pattern-alerts/route.ts` | 15-minute monitoring cron job |
 
 ---
 
