@@ -131,16 +131,14 @@ export default function CorrelationScenariosPage() {
             <div className="ml-auto flex gap-3">
               <Button
                 onClick={() => window.open('/api/correlation/export?format=csv', '_blank')}
-                variant="outline"
-                className="text-xs"
+                className="bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-600 text-xs"
               >
                 Export CSV
               </Button>
 
               <Button
                 onClick={() => window.open('/api/correlation/export?format=json', '_blank')}
-                variant="outline"
-                className="text-xs"
+                className="bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-600 text-xs"
               >
                 Export JSON
               </Button>
