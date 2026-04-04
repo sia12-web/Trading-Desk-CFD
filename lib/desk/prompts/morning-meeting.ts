@@ -127,6 +127,30 @@ ${context.fractalSetups.length > 0
             : '- No active Bill Williams setups detected'
         }
 
+### Multi-Currency Correlation Intelligence (Hedge Fund Grade)
+${context.correlationInsights?.activePatterns && context.correlationInsights.activePatterns.length > 0
+            ? `**Active Patterns Detected:**
+${context.correlationInsights.activePatterns.slice(0, 5).map(p =>
+                    `- ${p.description} (${p.accuracy.toFixed(1)}% accurate, ${p.occurrences} occurrences) → Expects ${p.expectedOutcome.pair} to move ${p.expectedOutcome.direction.toUpperCase()} by ${(p.expectedOutcome.minMove * 100).toFixed(1)}% [${p.matchPercentage.toFixed(0)}% conditions met]`
+                ).join('\n')}`
+            : ''
+        }
+${context.correlationInsights?.predictions
+            ? `
+**Tomorrow's Predictions (AI Synthesis):**
+Confidence: ${context.correlationInsights.predictions.confidence.toUpperCase()}
+${context.correlationInsights.predictions.topPredictions.slice(0, 3).map(pred =>
+                `- ${pred.pair}: ${pred.direction.toUpperCase()} by ~${pred.expectedMove.toFixed(1)}% (${pred.supportingPatterns} patterns, ${pred.avgAccuracy.toFixed(1)}% avg accuracy)`
+            ).join('\n')}`
+            : context.correlationInsights ? '- No strong predictions for tomorrow' : '- Correlation analysis not available'
+        }
+
+**DESK USAGE:**
+- Marcus: Reference correlation patterns for multi-pair position construction and portfolio-level edge
+- Sarah: Flag correlation-based concentration risk (e.g., multiple patterns pointing to same currency strength)
+- Ray: Validate statistical significance of pattern match percentages before committing capital
+- Alex: Connect correlation outcomes to macro risk regime (risk-on/risk-off)
+
 ### Trader Profile
 - Style: ${context.profile.trading_style || 'not set'}
 - Risk Personality: ${context.profile.risk_personality || 'not set'}

@@ -6,6 +6,7 @@ import { detectAMDPhase } from './amd-detector'
 import { mapLiquidityZones } from './liquidity-mapper'
 import { detectFractalSetup } from './fractal-detector'
 import { detectElliottWave } from './elliott-wave-detector'
+import { getCorrelationInsights } from './correlation-integrator'
 import type { OandaCandle } from '@/lib/types/oanda'
 import type { StoryDataPayload, TimeframeData, PriceLevel } from './types'
 
@@ -140,6 +141,9 @@ export async function collectStoryData(
     const ratio = atr50 > 0 ? atr14 / atr50 : 1
     const volatilityStatus = ratio > 1.5 ? 'spike' : ratio > 1.1 ? 'hot' : ratio < 0.7 ? 'cold' : 'normal'
 
+    // Fetch correlation patterns and predictions (hedge fund grade analysis)
+    const correlationInsights = await getCorrelationInsights(supabase, userId, pair)
+
     return {
         pair,
         instrument,
@@ -152,6 +156,7 @@ export async function collectStoryData(
         atr14,
         atr50,
         atrRatio: ratio,
+        correlationInsights: correlationInsights || undefined,
         recent_trades: trades,
         live_oanda_position: liveOandaTrade ? {
             id: liveOandaTrade.id,

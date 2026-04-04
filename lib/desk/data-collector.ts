@@ -5,6 +5,7 @@ import { getActiveRiskRules } from '@/lib/data/risk-rules'
 import { getSubscribedPairs, getLatestEpisode, getActiveScenarios } from '@/lib/data/stories'
 import { getActivePosition } from '@/lib/data/story-positions'
 import { getProfile } from '@/lib/data/trader-profile'
+import { getCorrelationInsights } from '@/lib/story/correlation-integrator'
 import type {
     DeskContext,
     DeskState,
@@ -213,6 +214,12 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         recentProcessScores: recentScores,
         marketContext,
         fractalSetups,
+        correlationInsights: await getCorrelationInsights(supabase, userId, '').then(insights =>
+            insights ? {
+                activePatterns: insights.activePatterns,
+                predictions: insights.tomorrowPredictions
+            } : undefined
+        ),
     }
 }
 

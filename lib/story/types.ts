@@ -40,6 +40,30 @@ export interface PriceLevel {
     oppositeExtreme?: number  // Gann concept: high of swing low bar, or low of swing high bar
 }
 
+export interface CorrelationInsight {
+    activePatterns: Array<{
+        id: string
+        description: string
+        accuracy: number
+        occurrences: number
+        expectedOutcome: { pair: string; direction: string; minMove: number }
+        conditionsMet: number
+        totalConditions: number
+        matchPercentage: number
+    }>
+    tomorrowPredictions?: {
+        topPredictions: Array<{
+            pair: string
+            direction: 'up' | 'down'
+            expectedMove: number
+            supportingPatterns: number
+            avgAccuracy: number
+        }>
+        confidence: 'high' | 'medium' | 'low'
+        aiSynthesis: string
+    }
+}
+
 export interface StoryDataPayload {
     pair: string
     instrument: string // OANDA format: EUR_USD
@@ -52,6 +76,7 @@ export interface StoryDataPayload {
     atr14: number
     atr50: number
     atrRatio: number  // atr14/atr50 — >1 = expanding, <1 = contracting
+    correlationInsights?: CorrelationInsight  // Hedge fund grade: multi-currency pattern analysis
     recent_trades?: Array<{
         direction: string
         status: string

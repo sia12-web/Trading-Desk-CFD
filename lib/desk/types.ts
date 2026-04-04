@@ -280,4 +280,23 @@ export interface DeskContext {
     recentProcessScores: ProcessScore[]
     marketContext: MarketContext
     fractalSetups: FractalSetupSummary[]
+    correlationInsights?: {
+        activePatterns: Array<{
+            description: string
+            accuracy: number
+            occurrences: number
+            expectedOutcome: { pair: string; direction: string; minMove: number }
+            matchPercentage: number
+        }>
+        predictions?: {
+            topPredictions: Array<{
+                pair: string
+                direction: 'up' | 'down'
+                expectedMove: number
+                supportingPatterns: number
+                avgAccuracy: number
+            }>
+            confidence: 'high' | 'medium' | 'low'
+        }
+    }
 }
