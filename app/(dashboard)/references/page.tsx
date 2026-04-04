@@ -7,7 +7,7 @@ import { CHART_PATTERNS } from '@/lib/references/chart-patterns'
 import { CandlestickPatternCard } from './_components/CandlestickPatternCard'
 import { ChartPatternCard } from './_components/ChartPatternCard'
 
-type Tab = 'patterns' | 'fibonacci' | 'volume' | 'oscillators' | 'smc'
+type Tab = 'patterns' | 'fibonacci' | 'volume' | 'oscillators' | 'smc' | 'elliot-waves'
 
 export default function ReferencesPage() {
   const [activeTab, setActiveTab] = useState<Tab>('patterns')
@@ -78,6 +78,36 @@ export default function ReferencesPage() {
           icon={CandlestickChart}
           label="Patterns"
         />
+        <TabButton
+          active={activeTab === 'fibonacci'}
+          onClick={() => setActiveTab('fibonacci')}
+          icon={Target}
+          label="Fibonacci"
+        />
+        <TabButton
+          active={activeTab === 'volume'}
+          onClick={() => setActiveTab('volume')}
+          icon={Activity}
+          label="Volume"
+        />
+        <TabButton
+          active={activeTab === 'oscillators'}
+          onClick={() => setActiveTab('oscillators')}
+          icon={Gauge}
+          label="Oscillators"
+        />
+        <TabButton
+          active={activeTab === 'smc'}
+          onClick={() => setActiveTab('smc')}
+          icon={Landmark}
+          label="Smart Money Concepts"
+        />
+        <TabButton
+          active={activeTab === 'elliot-waves'}
+          onClick={() => setActiveTab('elliot-waves')}
+          icon={Waves}
+          label="Elliot Waves"
+        />
       </div>
 
       {/* Content */}
@@ -96,6 +126,7 @@ export default function ReferencesPage() {
       {activeTab === 'volume' && <VolumeSection />}
       {activeTab === 'oscillators' && <OscillatorsSection />}
       {activeTab === 'smc' && <SmartMoneySection />}
+      {activeTab === 'elliot-waves' && <ElliotWavesSection />}
     </div>
   )
 }
@@ -995,7 +1026,139 @@ function SmartMoneySection() {
   )
 }
 
+function ElliotWavesSection() {
+  return (
+    <div className="space-y-8">
+      <div>
+        <h3 className="text-2xl font-bold flex items-center gap-3">
+          <Waves className="text-indigo-500" size={28} />
+          Elliot Waves
+        </h3>
+        <p className="text-neutral-400 mt-2">The market moves in repetitive structures driven by human psychology. The core pattern consists of 5 Impulsive Waves in the direction of the trend, followed by 3 Corrective Waves against the trend.</p>
+      </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-[2rem]">
+          <h4 className="text-base font-bold text-indigo-400 mb-3">Impulsive Waves (1, 2, 3, 4, 5)</h4>
+          <div className="space-y-3">
+            <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-3">
+              <p className="text-sm font-semibold text-green-400 flex items-center gap-2">Wave 1 <span className="text-xs text-neutral-400 font-normal ml-auto">The Start</span></p>
+              <p className="text-xs text-neutral-400 mt-1">Smart money enters slowly. Trend change isn't obvious yet to the masses.</p>
+            </div>
+            <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-3">
+              <p className="text-sm font-semibold text-red-400 flex items-center gap-2">Wave 2 <span className="text-xs text-neutral-400 font-normal ml-auto">The Deep Pullback</span></p>
+              <p className="text-xs text-neutral-400 mt-1">First major correction. Can retrace up to 99% of Wave 1, but <strong className="text-neutral-200">never breaks below the start of Wave 1</strong>.</p>
+            </div>
+            <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-3">
+              <p className="text-sm font-semibold text-green-400 flex items-center gap-2">Wave 3 <span className="text-xs text-neutral-400 font-normal ml-auto">The Power Move</span></p>
+              <p className="text-xs text-neutral-400 mt-1">Retail money joins in. Always the strongest and longest. <strong className="text-neutral-200">Cannot be the shortest motive wave</strong>.</p>
+            </div>
+            <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-3">
+              <p className="text-sm font-semibold text-red-400 flex items-center gap-2">Wave 4 <span className="text-xs text-neutral-400 font-normal ml-auto">The Profit Taking</span></p>
+              <p className="text-xs text-neutral-400 mt-1">A sideways consolidation. <strong className="text-neutral-200">Never overlaps into the price territory of Wave 1</strong>.</p>
+            </div>
+            <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-3">
+              <p className="text-sm font-semibold text-green-400 flex items-center gap-2">Wave 5 <span className="text-xs text-neutral-400 font-normal ml-auto">The Exhaustion</span></p>
+              <p className="text-xs text-neutral-400 mt-1">Final push on lower momentum. Retail FOMO is at its highest, but smart money is exiting.</p>
+            </div>
+          </div>
+        </div>
 
+        <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-[2rem]">
+          <h4 className="text-base font-bold text-pink-400 mb-3">Corrective Waves (A, B, C)</h4>
+          <div className="space-y-3">
+            <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-3">
+              <p className="text-sm font-semibold text-red-400">Wave A</p>
+              <p className="text-xs text-neutral-400 mt-1">Initial drop ending the uptrend. Often seen as another minor pullback by late buyers.</p>
+            </div>
+            <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-3">
+              <p className="text-sm font-semibold text-green-400">Wave B</p>
+              <p className="text-xs text-neutral-400 mt-1">The bull trap. "Buy the dip" crowd steps in, forming a lower high on weak volume.</p>
+            </div>
+            <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-3">
+              <p className="text-sm font-semibold text-red-400">Wave C</p>
+              <p className="text-xs text-neutral-400 mt-1">The capitulation. Price violently drops, breaking Wave A's low and destroying late buyers' hopes.</p>
+            </div>
+            <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl mt-4">
+              <p className="text-sm font-bold text-indigo-400 mb-2">3 Golden Rules of Elliot Waves</p>
+              <ul className="text-xs text-neutral-300 space-y-1.5 list-disc list-inside">
+                <li>Wave 2 never retraces more than 100% of Wave 1.</li>
+                <li>Wave 3 is never the shortest wave out of 1, 3, and 5.</li>
+                <li>Wave 4 does not enter the price territory of Wave 1.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
 
+        <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-[2rem] lg:col-span-2">
+          <h4 className="text-base font-bold text-indigo-400 mb-3 flex items-center gap-2">
+            <Target size={20} className="text-purple-500" />
+            Fibonacci Levels for Elliot Waves
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-xl p-4">
+              <p className="text-sm font-semibold text-neutral-200">Wave 2 Retracement</p>
+              <p className="text-xs text-neutral-400 mt-1 mb-3">Pullback of Wave 1</p>
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400">Common:</span>
+                  <span className="text-purple-400 font-bold">50% - 61.8%</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400">Deep:</span>
+                  <span className="text-purple-400 font-bold">78.6%</span>
+                </div>
+              </div>
+            </div>
 
+            <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-xl p-4">
+              <p className="text-sm font-semibold text-neutral-200">Wave 3 Target</p>
+              <p className="text-xs text-neutral-400 mt-1 mb-3">Extension of W1 from W2</p>
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400">Standard:</span>
+                  <span className="text-green-400 font-bold">161.8%</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400">Extended:</span>
+                  <span className="text-green-400 font-bold">261.8% - 361.8%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-xl p-4">
+              <p className="text-sm font-semibold text-neutral-200">Wave 4 Retracement</p>
+              <p className="text-xs text-neutral-400 mt-1 mb-3">Pullback of Wave 3</p>
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400">Standard:</span>
+                  <span className="text-blue-400 font-bold">38.2%</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400">Maximum:</span>
+                  <span className="text-blue-400 font-bold">50%</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-xl p-4">
+              <p className="text-sm font-semibold text-neutral-200">Wave C Target</p>
+              <p className="text-xs text-neutral-400 mt-1 mb-3">Extension of A from B</p>
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400">Equality:</span>
+                  <span className="text-red-400 font-bold">100% (A = C)</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-neutral-400">Extended:</span>
+                  <span className="text-red-400 font-bold">123.6% - 161.8%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
