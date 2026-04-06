@@ -822,21 +822,6 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
-                {/* Global Settings Placeholder */}
-                <section className="bg-neutral-900/50 border border-neutral-800/50 rounded-[2.5rem] p-10 opacity-50 grayscale transition-all hover:grayscale-0 hover:bg-neutral-900 hover:opacity-100">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 rounded-[1.5rem] bg-neutral-800 text-neutral-400 flex items-center justify-center">
-                                <Settings size={32} />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold">Preferences</h3>
-                                <p className="text-neutral-500 text-sm mt-1">Theme, notifications, and localization.</p>
-                            </div>
-                        </div>
-                        <ChevronRight className="text-neutral-700" size={24} />
-                    </div>
-                </section>
 
                 {/* System Memory Reset — always visible */}
                 <section className="bg-amber-950/20 border-2 border-amber-900/50 rounded-[2.5rem] overflow-hidden">
