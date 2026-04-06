@@ -14,10 +14,11 @@ interface PairCardProps {
         created_at: string
     } | null
     activeScenarios: number
+    hasNewEpisode?: boolean
     onDelete: (pair: string) => void
 }
 
-export function PairCard({ pair, latestEpisode, activeScenarios, onDelete }: PairCardProps) {
+export function PairCard({ pair, latestEpisode, activeScenarios, hasNewEpisode, onDelete }: PairCardProps) {
     const pairUrl = latestEpisode
         ? `/story/${encodeURIComponent(pair.replace('/', '_'))}`
         : `/story/${encodeURIComponent(pair.replace('/', '_'))}?autoGenerate=true`
@@ -32,7 +33,11 @@ export function PairCard({ pair, latestEpisode, activeScenarios, onDelete }: Pai
                     <div className="space-y-1">
                         <h3 className="text-lg font-bold text-neutral-100 group-hover/card:text-white transition-colors flex items-center gap-2">
                             {pair}
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                            {hasNewEpisode && (
+                                <span className="text-[9px] font-black tracking-tighter bg-blue-500 text-white px-1.5 py-0.5 rounded-sm animate-pulse shadow-[0_0_12px_rgba(59,130,246,0.6)]">
+                                    NEW
+                                </span>
+                            )}
                         </h3>
                         {latestEpisode && (
                             <div className="flex items-center gap-2">
