@@ -6,6 +6,7 @@ import { CANDLESTICK_PATTERNS } from '@/lib/utils/candlestick-patterns'
 import { CHART_PATTERNS } from '@/lib/references/chart-patterns'
 import { CandlestickPatternCard } from './_components/CandlestickPatternCard'
 import { ChartPatternCard } from './_components/ChartPatternCard'
+import { WaveCalculator } from './_components/WaveCalculator'
 
 type Tab = 'patterns' | 'fibonacci' | 'volume' | 'oscillators' | 'smc' | 'elliot-waves'
 
@@ -1156,6 +1157,80 @@ function ElliotWavesSection() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[2.5rem] lg:col-span-2 space-y-6">
+          <div>
+            <h4 className="text-xl font-bold flex items-center gap-3 mb-4">
+              <Target className="text-green-500" size={24} />
+              How to Find Wave 3 and 5 Targets
+            </h4>
+            <div className="prose prose-invert max-w-none text-sm text-neutral-400 space-y-4">
+              <p>
+                In Elliott Wave Theory, <strong>Wave 3 is the "money wave."</strong> It is typically the longest, strongest, and most impulsive wave in the entire sequence. One of the unbreakable rules of the theory is that Wave 3 can never be the shortest motive wave (compared to Waves 1 and 5).
+              </p>
+              
+              <p>
+                To find the precise price targets for a downward (bearish) Wave 3, professional traders use a specific tool called the <strong>Trend-Based Fibonacci Extension</strong> (often just called Fib Extension). Unlike Fib Retracements, which measure how far a pullback goes, Fib Extensions measure how far the next impulsive leg will travel.
+              </p>
+
+              <div className="bg-neutral-800/50 border border-neutral-700/50 p-5 rounded-xl my-6">
+                <h5 className="font-bold text-white mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs">1</span>
+                  The 3-Point Measurement
+                </h5>
+                <p className="mb-2">To calculate the target, you need three specific price points on your chart:</p>
+                <ul className="list-disc list-inside space-y-2 ml-2">
+                  <li><strong>The Origin (Start of Wave 1)</strong>: The absolute top of the previous trend before the market started dropping.</li>
+                  <li><strong>The Low (End of Wave 1)</strong>: The bottom of the initial bearish drop.</li>
+                  <li><strong>The Lower High (End of Wave 2)</strong>: The peak of the corrective bounce.</li>
+                </ul>
+              </div>
+
+              <div className="bg-neutral-800/50 border border-neutral-700/50 p-5 rounded-xl my-6">
+                <h5 className="font-bold text-white mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs">2</span>
+                  The Core Fibonacci Targets
+                </h5>
+                <p className="mb-2">The tool calculates the length of Wave 1, multiplies it by Fibonacci ratios, and projects that distance downward starting from the peak of Wave 2.</p>
+                <p className="mb-2 text-neutral-300">Here are the key levels you are looking for:</p>
+                <ul className="space-y-3 mt-4">
+                  <li className="flex gap-3">
+                    <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-bold text-xs h-fit">1.618</span>
+                    <div>
+                      <strong className="text-white block">The Golden Target:</strong>
+                      This is the most common and standard target for Wave 3. In a strong bear market, prices will violently slice through previous support and gravitate right to the 161.8% extension.
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="px-2 py-0.5 rounded bg-neutral-700 text-neutral-300 font-bold text-xs h-fit">1.000</span>
+                    <div>
+                      <strong className="text-white block">Symmetry Level:</strong>
+                      At this level, Wave 3 is exactly equal in length to Wave 1. If the price stops here, it warns you that the trend might be weak (and remember, if Wave 3 is only 1.0, Wave 5 must be even shorter so that Wave 3 isn't the shortest overall).
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="px-2 py-0.5 rounded bg-green-500/20 text-green-400 font-bold text-xs h-fit">2.618</span>
+                    <div>
+                      <strong className="text-white block">The Extended Target:</strong>
+                      If the market enters a phase of pure capitulation or panic selling, Wave 3 can "extend." The 2.618 level is the primary target for an extended Wave 3.
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-xl mt-6">
+              <h5 className="font-bold text-blue-400 mb-2 flex items-center gap-2">
+                <Target size={16} /> Look for Confluence
+              </h5>
+              <p className="text-sm text-blue-100/70">
+                Just like with time analysis, you never want to place a limit order blindly at a 1.618 extension. Pros look down the y-axis to see what else is sitting at that exact price level. If your 1.618 Fibonacci Extension aligns perfectly with an unfilled daily Fair Value Gap (FVG) from months ago, or a major Wyckoff support level, you have a high-probability target.
+              </p>
+            </div>
+          </div>
+
+          <WaveCalculator />
         </div>
 
       </div>

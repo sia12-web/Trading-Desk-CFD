@@ -54,6 +54,7 @@ const ACTION_CONFIG = {
 
 export function PositionGuidanceCard({ pair, guidance, activePosition, onActivate }: Props) {
     const [activating, setActivating] = useState(false)
+    const [selectedTP, setSelectedTP] = useState<'tp1' | 'tp2' | 'tp3'>('tp1')
 
     if (!guidance) return null
 
@@ -72,12 +73,23 @@ export function PositionGuidanceCard({ pair, guidance, activePosition, onActivat
     }
 
     const isEntry = guidance.action === 'enter_long' || guidance.action === 'enter_short'
+
+    // Get selected TP value based on user selection
+    const getSelectedTPValue = () => {
+        switch(selectedTP) {
+            case 'tp1': return guidance.take_profit_1
+            case 'tp2': return guidance.take_profit_2
+            case 'tp3': return guidance.take_profit_3
+            default: return guidance.take_profit_1
+        }
+    }
+
     const tradeUrl = isEntry ? `/trade?${new URLSearchParams({
         instrument: pair.replace('/', '_'),
         direction: guidance.action === 'enter_long' ? 'long' : 'short',
         entry: guidance.entry_price?.toString() || '',
         sl: guidance.stop_loss?.toString() || '',
-        tp: guidance.take_profit_1?.toString() || '',
+        tp: getSelectedTPValue()?.toString() || '',
         lots: guidance.suggested_lots?.toString() || '',
         description: `Story Season Position: ${guidance.reasoning}`,
         storyPositionId: activePosition?.id || '',
@@ -185,11 +197,59 @@ export function PositionGuidanceCard({ pair, guidance, activePosition, onActivat
 
             {/* Activate / Trade link (for suggested positions) */}
             {activePosition?.status === 'suggested' && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
+                    {/* TP Selector */}
+                    {isEntry && (guidance.take_profit_1 || guidance.take_profit_2 || guidance.take_profit_3) && (
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Select Take Profit Target</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {guidance.take_profit_1 != null && (
+                                    <button
+                                        onClick={() => setSelectedTP('tp1')}
+                                        className={`px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${
+                                            selectedTP === 'tp1'
+                                                ? 'bg-green-600 text-white ring-2 ring-green-400'
+                                                : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                                        }`}
+                                    >
+                                        <div className="text-[9px] opacity-70">TP1</div>
+                                        <div className="font-mono">{guidance.take_profit_1}</div>
+                                    </button>
+                                )}
+                                {guidance.take_profit_2 != null && (
+                                    <button
+                                        onClick={() => setSelectedTP('tp2')}
+                                        className={`px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${
+                                            selectedTP === 'tp2'
+                                                ? 'bg-green-600 text-white ring-2 ring-green-400'
+                                                : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                                        }`}
+                                    >
+                                        <div className="text-[9px] opacity-70">TP2</div>
+                                        <div className="font-mono">{guidance.take_profit_2}</div>
+                                    </button>
+                                )}
+                                {guidance.take_profit_3 != null && (
+                                    <button
+                                        onClick={() => setSelectedTP('tp3')}
+                                        className={`px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${
+                                            selectedTP === 'tp3'
+                                                ? 'bg-green-600 text-white ring-2 ring-green-400'
+                                                : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                                        }`}
+                                    >
+                                        <div className="text-[9px] opacity-70">TP3</div>
+                                        <div className="font-mono">{guidance.take_profit_3}</div>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {tradeUrl && (
                         <Link
                             href={tradeUrl}
-                            className="flex items-center gap-2 w-full justify-center px-4 py-2 text-xs font-black uppercase tracking-widest bg-blue-600 text-white hover:bg-blue-500 rounded-xl transition-all shadow-lg shadow-blue-600/20"
+                            className="flex items-center gap-2 w-full justify-center px-4 py-3 text-xs font-black uppercase tracking-widest bg-blue-600 text-white hover:bg-blue-500 rounded-xl transition-all shadow-lg shadow-blue-600/20"
                         >
                             <Zap size={14} />
                             Go to Trade Page

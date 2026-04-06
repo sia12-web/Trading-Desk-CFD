@@ -49,7 +49,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const [selectedInstrument, setSelectedInstrument] = useState<string>('EUR_USD')
     const [direction, setDirection] = useState<'long' | 'short'>('long')
     const [units, setUnits] = useState<number>(1000)
-    const [sizeMode, setSizeMode] = useState<'units' | 'lots'>('lots')
+    const [sizeMode, setSizeMode] = useState<'units' | 'margin'>('units')
     const [entryPrice, setEntryPrice] = useState<number>(0)
     const [limitPrice, setLimitPrice] = useState<number>(0)
     const [stopLoss, setStopLoss] = useState<number>(0)
@@ -501,22 +501,56 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-4">
-                                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Position Size ({sizeMode === 'lots' ? 'Lots' : 'Units'})</label>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Position Size</label>
+                                        <div className="flex gap-1 bg-neutral-800/50 p-1 rounded-lg">
+                                            <button
+                                                onClick={() => setSizeMode('units')}
+                                                className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-all ${sizeMode === 'units' ? 'bg-blue-600 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                            >
+                                                Units
+                                            </button>
+                                            <button
+                                                onClick={() => setSizeMode('margin')}
+                                                className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-all ${sizeMode === 'margin' ? 'bg-blue-600 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                            >
+                                                Margin
+                                            </button>
+                                        </div>
+                                    </div>
                                     <input
                                         type="number"
-                                        step={sizeMode === 'lots' ? '0.01' : '1'}
-                                        value={sizeMode === 'lots' ? (units / getUnitsPerLot(selectedInstrument) || '') : (units || '')}
+                                        step={sizeMode === 'margin' ? '1' : '1'}
+                                        value={sizeMode === 'margin'
+                                            ? (marginRequired || '')
+                                            : (units || '')}
                                         onChange={(e) => {
                                             const val = parseFloat(e.target.value) || 0
-                                            const multi = getUnitsPerLot(selectedInstrument)
-                                            setUnits(sizeMode === 'lots' ? Math.round(val * multi) : Math.round(val))
+                                            if (sizeMode === 'margin') {
+                                                // Calculate units from margin: units = margin / (marginRate * baseConversionRate)
+                                                const calculatedUnits = Math.round(val / (marginRate * baseConversionRate))
+                                                setUnits(calculatedUnits > 0 ? calculatedUnits : 1)
+                                            } else {
+                                                setUnits(Math.round(val))
+                                            }
                                         }}
                                         className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none"
                                     />
+                                    <p className="text-[10px] text-neutral-500 font-mono">
+                                        {sizeMode === 'margin'
+                                            ? `≈ ${units.toLocaleString()} units`
+                                            : `≈ ${marginRequired.toFixed(2)} ${accountCurrency} margin`}
+                                    </p>
                                 </div>
                                 <div className="space-y-4">
-                                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Price</label>
+                                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Entry Price</label>
                                     <input type="number" step="0.00001" value={orderType === 'MARKET' ? entryPrice : limitPrice} disabled={orderType === 'MARKET'} onChange={(e) => setLimitPrice(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none" />
+                                    {currentPrice && (
+                                        <div className="flex justify-between text-[10px] font-mono">
+                                            <span className="text-red-400">BID: {bidPrice.toFixed(instrumentDetails?.displayPrecision || 5)}</span>
+                                            <span className="text-green-400">ASK: {askPrice.toFixed(instrumentDetails?.displayPrecision || 5)}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -558,16 +592,35 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
 
                     {/* Sidebar */}
                     <div className="space-y-8">
+                        {/* Visual Risk Gauge */}
+                        <TradeRiskGauge
+                            riskPercent={riskPercent}
+                            rrRatio={parseFloat(rrRatio)}
+                            passedValidation={validation?.passed || false}
+                        />
+
+                        {/* Risk Metrics */}
                         <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] p-8 space-y-6">
                             <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
                                 <Activity size={14} className="text-blue-400" />
-                                Risk Analytics
+                                Trade Metrics
                             </h4>
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="text-neutral-500">Live Spread</span>
+                                    <span className="text-neutral-500">Opening Spread</span>
                                     <span className="text-blue-400 font-mono font-bold">{liveSpread.toFixed(1)} {label}</span>
                                 </div>
+                                {instrumentDetails?.financing && (
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-neutral-500">Overnight Cost</span>
+                                        <span className="text-amber-400 font-mono font-bold">
+                                            {(direction === 'long'
+                                                ? parseFloat(instrumentDetails.financing.longRate)
+                                                : parseFloat(instrumentDetails.financing.shortRate)).toFixed(4)}%
+                                        </span>
+                                    </div>
+                                )}
+                                <div className="h-[1px] bg-neutral-800/50 my-2" />
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-neutral-500">Distance to SL</span>
                                     <span className="text-red-400 font-mono font-bold">{riskPips.toFixed(1)} {label}</span>
@@ -589,10 +642,6 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                     <span className="text-neutral-500">R:R Ratio</span>
                                     <span className="text-blue-400 font-bold">1:{rrRatio}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-neutral-500">Risk Pool %</span>
-                                    <span className={`font-bold ${riskPercent > 2 ? 'text-red-400' : 'text-blue-400'}`}>{riskPercent.toFixed(2)}%</span>
-                                </div>
                                 <div className="h-[1px] bg-neutral-800/50 my-2" />
                                 <div className="flex justify-between items-center text-xs">
                                     <span className="text-neutral-600">Margin Required</span>
@@ -605,11 +654,11 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                             </div>
                             <div className="flex gap-3 pt-4">
                                 <button onClick={handlePlanTrade} disabled={!stopLoss || isPlanning} className="flex-1 py-4 bg-amber-600/20 text-amber-400 border border-amber-500/30 rounded-2xl font-bold flex items-center justify-center gap-2">
-                                    {isPlanning ? <Loader2 size={16} className="animate-spin" /> : <Bookmark size={16} />} 
+                                    {isPlanning ? <Loader2 size={16} className="animate-spin" /> : <Bookmark size={16} />}
                                     Plan
                                 </button>
                                 <button onClick={handleDeskReview} disabled={!stopLoss || !takeProfit || isReviewing} className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2">
-                                    {isReviewing ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />} 
+                                    {isReviewing ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
                                     Review
                                 </button>
                             </div>
