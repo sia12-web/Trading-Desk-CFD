@@ -478,15 +478,15 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                             <button onClick={() => setOrderType('LIMIT')} className={`flex-1 py-3 rounded-2xl font-bold transition-all ${orderType === 'LIMIT' ? 'bg-neutral-800 text-white shadow-inner' : 'text-neutral-500'}`}>Limit</button>
                         </div>
 
-                        <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] p-10 space-y-10">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] p-4 md:p-10 space-y-6 md:space-y-10">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                                 <div className="md:col-span-2 space-y-4">
                                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Trade Name</label>
-                                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bullish Breakout" className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white font-bold outline-none" />
+                                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bullish Breakout" className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-bold outline-none" />
                                 </div>
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Instrument</label>
-                                    <select value={selectedInstrument} onChange={(e) => setSelectedInstrument(e.target.value)} className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white font-bold outline-none">
+                                    <select value={selectedInstrument} onChange={(e) => setSelectedInstrument(e.target.value)} className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-bold outline-none">
                                         {instruments.map(i => <option key={i.name} value={i.name}>{i.displayName}</option>)}
                                     </select>
                                 </div>
@@ -534,7 +534,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                                 setUnits(Math.round(val))
                                             }
                                         }}
-                                        className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none"
+                                        className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-mono font-bold outline-none"
                                     />
                                     <p className="text-[10px] text-neutral-500 font-mono">
                                         {sizeMode === 'margin'
@@ -544,7 +544,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 </div>
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Entry Price</label>
-                                    <input type="number" step="0.00001" value={orderType === 'MARKET' ? entryPrice : limitPrice} disabled={orderType === 'MARKET'} onChange={(e) => setLimitPrice(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none" />
+                                    <input type="number" step="0.00001" value={orderType === 'MARKET' ? entryPrice : limitPrice} disabled={orderType === 'MARKET'} onChange={(e) => setLimitPrice(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-mono font-bold outline-none" />
                                     {currentPrice && (
                                         <div className="flex justify-between text-[10px] font-mono">
                                             <span className="text-red-400">BID: {bidPrice.toFixed(instrumentDetails?.displayPrecision || 5)}</span>
@@ -557,24 +557,24 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Stop Loss</label>
-                                    <input type="number" step="0.00001" value={stopLoss || ''} onChange={(e) => setStopLoss(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-red-500/30 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none" />
+                                    <input type="number" step="0.00001" value={stopLoss || ''} onChange={(e) => setStopLoss(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-red-500/30 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-mono font-bold outline-none" />
                                     {stopLoss > 0 && <p className="text-[10px] text-red-400 font-mono">Risk: {riskAmount.toFixed(2)} {accountCurrency}</p>}
                                 </div>
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Take Profit</label>
-                                    <input type="number" step="0.00001" value={takeProfit || ''} onChange={(e) => setTakeProfit(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-green-500/30 rounded-2xl px-6 py-4 text-white font-mono font-bold outline-none" />
+                                    <input type="number" step="0.00001" value={takeProfit || ''} onChange={(e) => setTakeProfit(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-green-500/30 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-mono font-bold outline-none" />
                                     {takeProfit > 0 && <p className="text-[10px] text-green-400 font-mono">Reward: {rewardAmount.toFixed(2)} {accountCurrency}</p>}
                                 </div>
                             </div>
 
                              <div className="space-y-4 pt-4 border-t border-neutral-800">
                                 <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Strategy Execution Context</label>
-                                <textarea value={strategyExplanation} onChange={(e) => setStrategyExplanation(e.target.value)} placeholder="Reasoning..." className="w-full h-32 bg-neutral-800 border border-neutral-700 rounded-2xl px-6 py-4 text-white text-sm outline-none resize-none" />
+                                <textarea value={strategyExplanation} onChange={(e) => setStrategyExplanation(e.target.value)} placeholder="Reasoning..." className="w-full h-32 bg-neutral-800 border border-neutral-700 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white text-sm outline-none resize-none" />
                             </div>
                         </div>
 
                         {/* Market Snapshot Indicator */}
-                        <div className="bg-neutral-900 border border-neutral-800 rounded-[2rem] p-6 flex items-center justify-between">
+                        <div className="bg-neutral-900 border border-neutral-800 rounded-[2rem] p-4 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                             <div className="flex items-center gap-4">
                                 <div className={`w-3 h-3 rounded-full animate-pulse ${currentPrice ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`} />
                                 <div>
@@ -600,7 +600,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                         />
 
                         {/* Risk Metrics */}
-                        <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] p-8 space-y-6">
+                        <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] p-4 md:p-8 space-y-6">
                             <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
                                 <Activity size={14} className="text-blue-400" />
                                 Trade Metrics

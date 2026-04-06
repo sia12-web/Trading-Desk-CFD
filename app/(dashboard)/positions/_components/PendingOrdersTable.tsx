@@ -49,18 +49,18 @@ export function PendingOrdersTable({ orders }: PendingOrdersTableProps) {
                 <table className="w-full text-left">
                     <thead>
                         <tr className="border-b border-neutral-800">
-                            <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Type</th>
-                            <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Instrument</th>
-                            <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Units</th>
-                            <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Price</th>
-                            <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Expiration</th>
-                            <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Actions</th>
+                            <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Type</th>
+                            <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Instrument</th>
+                            <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Units</th>
+                            <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Price</th>
+                            <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Expiration</th>
+                            <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-800/50">
                         {orders.map((order) => (
                             <tr key={order.id} className="hover:bg-neutral-800/30 transition-colors">
-                                <td className="px-8 py-6">
+                                <td className="px-3 py-3 md:px-8 md:py-6">
                                     <div className="flex flex-col">
                                         <div className="flex items-center gap-2">
                                             <div className={`w-1.5 h-1.5 rounded-full ${order.type.includes('STOP_LOSS') ? 'bg-red-500' :
@@ -70,7 +70,7 @@ export function PendingOrdersTable({ orders }: PendingOrdersTableProps) {
                                         <span className="text-[10px] text-neutral-500 font-mono mt-1 px-3.5">ID: {order.id}</span>
                                     </div>
                                 </td>
-                                <td className="px-8 py-6">
+                                <td className="px-3 py-3 md:px-8 md:py-6">
                                     <div className="flex flex-col">
                                         <span className="font-bold text-premium-white text-sm">
                                             {order.instrument?.replace('_', '/') || 'N/A'}
@@ -80,18 +80,18 @@ export function PendingOrdersTable({ orders }: PendingOrdersTableProps) {
                                         )}
                                     </div>
                                 </td>
-                                <td className={`px-8 py-6 text-right font-mono font-bold text-sm ${parseFloat(order.units || '0') >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                <td className={`px-3 py-3 md:px-8 md:py-6 text-right font-mono font-bold text-sm ${parseFloat(order.units || '0') >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                     {order.units || '—'}
                                 </td>
-                                <td className="px-8 py-6 text-right font-mono font-bold text-sm text-neutral-300">
+                                <td className="px-3 py-3 md:px-8 md:py-6 text-right font-mono font-bold text-sm text-neutral-300">
                                     {order.price}
                                 </td>
-                                <td className="px-8 py-6 text-right">
+                                <td className="px-3 py-3 md:px-8 md:py-6 text-right">
                                     <span className="px-2 py-0.5 rounded bg-neutral-800 text-[10px] text-neutral-400 font-bold uppercase tracking-widest border border-neutral-700">
                                         {order.timeInForce}
                                     </span>
                                 </td>
-                                <td className="px-8 py-6">
+                                <td className="px-3 py-3 md:px-8 md:py-6">
                                     <div className="flex justify-end">
                                         <button
                                             onClick={() => handleCancel(order.id)}

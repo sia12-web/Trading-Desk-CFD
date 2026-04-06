@@ -11,13 +11,24 @@ export async function getSubscribedPairs(userId: string) {
     const supabase = await getDefaultClient()
     const { data, error } = await supabase
         .from('pair_subscriptions')
-        .select('*')
+        .select('id, user_id, pair, subscribed_at, last_viewed_at, is_active, notes')
         .eq('user_id', userId)
         .eq('is_active', true)
         .order('subscribed_at', { ascending: true })
 
     if (error) throw error
     return data || []
+}
+
+export async function markStoryAsViewed(userId: string, pair: string) {
+    const supabase = await getDefaultClient()
+    const { error } = await supabase
+        .from('pair_subscriptions')
+        .update({ last_viewed_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('pair', pair)
+
+    if (error) throw error
 }
 
 export async function subscribeToPair(userId: string, pair: string, notes?: string) {

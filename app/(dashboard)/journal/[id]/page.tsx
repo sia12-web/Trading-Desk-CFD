@@ -117,7 +117,7 @@ export default async function TradeDetailPage({ params }: TradeDetailPageProps) 
                                 {format(new Date(trade.created_at), 'MMMM dd, yyyy')}
                             </span>
                         </div>
-                        <h1 className="text-4xl font-bold tracking-tight flex items-center gap-4">
+                        <h1 className="text-2xl md:text-4xl font-bold tracking-tight flex items-center gap-4">
                             {trade.name || trade.pair}
                             <div className={`p-1.5 rounded-lg border ${trade.direction === 'long' ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
                                 {trade.direction === 'long' ? (

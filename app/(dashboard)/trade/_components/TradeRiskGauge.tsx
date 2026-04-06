@@ -89,20 +89,20 @@ export function TradeRiskGauge({ riskPercent, rrRatio, passedValidation }: Trade
     const thumbPos = polarToCartesian(center, center, radius, currentAngle)
 
     return (
-        <div className="flex flex-col items-center justify-center p-8 bg-neutral-900/50 border border-neutral-800/80 rounded-[2.5rem] relative overflow-hidden group shadow-2xl">
+        <div className="flex flex-col items-center justify-center p-4 md:p-8 bg-neutral-900/50 border border-neutral-800/80 rounded-[2.5rem] relative overflow-hidden group shadow-2xl">
             {/* Elegant Background Glow */}
             <div 
                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 opacity-20 blur-[100px] pointer-events-none transition-colors duration-1000 ease-out rounded-full"
                 style={{ backgroundColor: color }}
             />
             
-            <div className="absolute top-8 left-8 flex items-center gap-2 z-20">
+            <div className="absolute top-4 left-4 md:top-8 md:left-8 flex items-center gap-2 z-20">
                 <div className="w-2 h-2 rounded-full animate-pulse transition-colors duration-1000" style={{ backgroundColor: color }} />
                 <h4 className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em]">Risk Analysis</h4>
             </div>
 
             <div className="relative z-10 w-full flex justify-center py-4">
-                <svg width={size} height={size * 0.75} viewBox={`0 0 ${size} ${size * 0.85}`} className="drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                <svg viewBox={`0 0 ${size} ${size * 0.85}`} className="w-full max-w-[360px] drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">
                     <defs>
                         <linearGradient id="trackGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#10b981" />

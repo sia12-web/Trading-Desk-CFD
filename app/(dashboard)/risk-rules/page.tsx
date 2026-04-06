@@ -17,7 +17,7 @@ export default async function RiskRulesPage() {
         <div className="max-w-6xl mx-auto space-y-12 pb-20">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight text-premium-white">Risk Sentinel</h1>
+                    <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-premium-white">Risk Sentinel</h1>
                     <p className="text-neutral-500 mt-2 text-lg">Define the boundaries of your capital preservation strategy.</p>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-xl">
@@ -26,7 +26,7 @@ export default async function RiskRulesPage() {
                 </div>
             </div>
 
-            <div className="bg-blue-600/5 border border-blue-500/20 rounded-[2rem] p-8 flex gap-4 items-start">
+            <div className="bg-blue-600/5 border border-blue-500/20 rounded-[2rem] p-4 md:p-8 flex gap-3 md:gap-4 items-start">
                 <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
                     <Info size={20} />
                 </div>

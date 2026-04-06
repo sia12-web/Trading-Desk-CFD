@@ -271,7 +271,7 @@ export default function SettingsPage() {
     return (
         <div className="max-w-4xl mx-auto space-y-12 pb-20">
             <div>
-                <h1 className="text-4xl font-bold tracking-tight">Settings</h1>
+                <h1 className="text-2xl md:text-4xl font-bold tracking-tight">Settings</h1>
                 <p className="text-neutral-500 mt-2 text-lg">Manage your account connections and preferences.</p>
             </div>
 

@@ -140,7 +140,15 @@ export default function PairStoryPage() {
         }
     }, [loadEpisodes, loadBible, loadEpisode, loadPositions])
 
-    useEffect(() => { loadData() }, [loadData])
+    useEffect(() => { 
+        loadData() 
+        // Mark story as viewed
+        fetch('/api/story/view', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pair }),
+        }).catch(err => console.error('Failed to mark story as viewed:', err))
+    }, [loadData, pair])
 
     const handleResolveScenario = async (scenarioId: string, status: 'triggered' | 'invalidated') => {
         await fetch(`/api/story/scenarios/${scenarioId}`, {

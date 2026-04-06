@@ -18,7 +18,7 @@ export default async function TradePage() {
         <div className="max-w-6xl mx-auto space-y-12 pb-20">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight text-premium-white">Execution Terminal</h1>
+                    <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-premium-white">Execution Terminal</h1>
                     <p className="text-neutral-500 mt-2 text-lg">Precision entry with integrated risk enforcement.</p>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-neutral-900 border border-neutral-800 rounded-xl">

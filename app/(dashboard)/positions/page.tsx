@@ -61,7 +61,7 @@ export default async function PositionsPage() {
         <div className="max-w-6xl mx-auto space-y-12 pb-20">
             {/* Header */}
             <div>
-                <h1 className="text-4xl font-bold tracking-tight">Active Portfolio</h1>
+                <h1 className="text-2xl md:text-4xl font-bold tracking-tight">Active Portfolio</h1>
                 <p className="text-neutral-500 mt-2">Real-time positions and pending orders from OANDA.</p>
             </div>
 
@@ -82,12 +82,12 @@ export default async function PositionsPage() {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="border-b border-neutral-800">
-                                    <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Instrument</th>
-                                    <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Size</th>
-                                    <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Entry</th>
-                                    <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">SL / TP</th>
-                                    <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">P&L (USD)</th>
-                                    <th className="px-8 py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Actions</th>
+                                    <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Instrument</th>
+                                    <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Size</th>
+                                    <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Entry</th>
+                                    <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">SL / TP</th>
+                                    <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">P&L (USD)</th>
+                                    <th className="px-3 py-3 md:px-8 md:py-6 text-[10px] font-bold text-neutral-500 uppercase tracking-widest text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-800/50">
@@ -104,7 +104,7 @@ export default async function PositionsPage() {
                                         const isLong = parseFloat(trade.currentUnits) > 0
                                         return (
                                         <tr key={trade.id} className="hover:bg-neutral-800/30 transition-colors">
-                                            <td className="px-8 py-6">
+                                            <td className="px-3 py-3 md:px-8 md:py-6">
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-bold text-premium-white">{trade.instrument.replace('_', '/')}</span>
@@ -117,14 +117,14 @@ export default async function PositionsPage() {
                                                     <span className="text-[10px] text-neutral-500 font-mono">ID: {trade.id}</span>
                                                 </div>
                                             </td>
-                                            <td className={`px-8 py-6 text-right ${isLong ? 'text-green-400' : 'text-red-400'}`}>
+                                            <td className={`px-3 py-3 md:px-8 md:py-6 text-right ${isLong ? 'text-green-400' : 'text-red-400'}`}>
                                                 <div className="flex flex-col items-end">
                                                     <span className="font-bold">{lots} lot{parseFloat(lots) !== 1 ? 's' : ''}</span>
                                                     <span className="text-[10px] text-neutral-500 font-mono">{isLong ? '+' : ''}{trade.currentUnits} units</span>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 text-right font-mono text-neutral-300">{trade.price}</td>
-                                            <td className="px-8 py-6 text-right">
+                                            <td className="px-3 py-3 md:px-8 md:py-6 text-right font-mono text-neutral-300">{trade.price}</td>
+                                            <td className="px-3 py-3 md:px-8 md:py-6 text-right">
                                                 <div className="flex flex-col items-end gap-0.5">
                                                     <span className="text-[10px] text-red-400 font-mono">
                                                         SL: {trade.stopLossOrder?.price || '—'}
@@ -134,10 +134,10 @@ export default async function PositionsPage() {
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className={`px-8 py-6 text-right font-mono font-bold ${parseFloat(trade.unrealizedPL) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                            <td className={`px-3 py-3 md:px-8 md:py-6 text-right font-mono font-bold ${parseFloat(trade.unrealizedPL) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                                 {parseFloat(trade.unrealizedPL) >= 0 ? '+' : ''}${parseFloat(trade.unrealizedPL).toFixed(2)}
                                             </td>
-                                            <td className="px-8 py-6">
+                                            <td className="px-3 py-3 md:px-8 md:py-6">
                                                 <div className="flex justify-end">
                                                     <TradeActions
                                                         trade={trade}
@@ -187,8 +187,8 @@ export default async function PositionsPage() {
             </div>
 
             {/* Risk Warning */}
-            <div className="bg-amber-500/5 border border-amber-500/20 rounded-3xl p-8 flex gap-6">
-                <div className="p-4 rounded-2xl bg-amber-500/10 text-amber-500 h-fit">
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-3xl p-4 md:p-8 flex gap-3 md:gap-6">
+                <div className="p-2 md:p-4 rounded-xl md:rounded-2xl bg-amber-500/10 text-amber-500 h-fit">
                     <Shield size={24} />
                 </div>
                 <div>
