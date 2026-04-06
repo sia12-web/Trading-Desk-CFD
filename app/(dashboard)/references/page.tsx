@@ -1597,7 +1597,93 @@ function ElliotWavesSection() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════ */}
-      {/* SECTION 8 — WAVE CALCULATOR                               */}
+      {/* SECTION 8 — NAVIGATING AMBIGUITY (WAVE 4 VS REVERSAL)     */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[2.5rem] space-y-6">
+        <div className="flex flex-col gap-2">
+          <h4 className="text-xl font-bold flex items-center gap-3">
+            <Eye className="text-cyan-400" size={24} />
+            The Reality Check: Navigating Ambiguity
+          </h4>
+          <p className="text-sm text-neutral-400 leading-relaxed italic border-l-2 border-cyan-500/30 pl-4 py-1">
+            "Here is the candid reality: sometimes the market is confusing, and the energy is ambiguous. But you don't need a crystal ball. At the fund, we use a specific, strict toolkit to separate a Wave 4 pullback from a post-Wave 5 bloodbath."
+          </p>
+        </div>
+
+        <p className="text-sm text-neutral-300 font-semibold mb-2">Here is how you tell the difference:</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-2xl p-5 space-y-3 hover:border-cyan-500/20 transition-all">
+            <h5 className="font-bold text-blue-400 flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs">1</span>
+              The Momentum "Tell" (RSI & MACD)
+            </h5>
+            <p className="text-xs text-neutral-400 mb-2">Price lies, but momentum rarely does. Look at the peak right before the drop.</p>
+            <div className="space-y-2 text-xs">
+              <p><strong className="text-white">If it's Wave 4:</strong> The peak before this drop was Wave 3. Wave 3 almost always has the highest momentum reading. If the last high had explosive momentum, you are likely just in a Wave 4 pullback.</p>
+              <p><strong className="text-red-300">If it's an A-B-C Reversal:</strong> The peak before the drop was Wave 5. Wave 5 pushes to a new price high but with weaker momentum (bearish divergence). If the last high looked exhausted, the drop is the start of a major macro correction.</p>
+            </div>
+          </div>
+
+          <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-2xl p-5 space-y-3 hover:border-amber-500/20 transition-all">
+            <h5 className="font-bold text-amber-400 flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs">2</span>
+              The Rule of Alternation
+            </h5>
+            <p className="text-xs text-neutral-400 mb-2">Elliott Waves crave balance. Wave 2 and 4 almost always alternate in their correction style.</p>
+            <div className="space-y-2 text-xs">
+              <p><strong className="text-white">Expected:</strong> If Wave 2 was a brutal, sharp, deep crash (zigzag), Wave 4 will likely be prolonged, annoying, sideways chop (flat or triangle).</p>
+              <p><strong className="text-red-300">Red Flag:</strong> If you see a sharp violent drop but Wave 2 was ALSO a sharp drop, that breaks alternation. It means the drop probably isn't Wave 4; it's the start of a vicious A-wave after the trend ended.</p>
+            </div>
+          </div>
+
+          <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-2xl p-5 space-y-3 hover:border-purple-500/20 transition-all">
+            <h5 className="font-bold text-purple-400 flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs">3</span>
+              Fibonacci Depth Rules
+            </h5>
+            <p className="text-xs text-neutral-400 mb-2">Where the pullback stops tells you everything about institutional order flow.</p>
+            <div className="space-y-2 text-xs">
+              <p><strong className="text-white">Wave 4:</strong> Typically only retraces 38.2% of Wave 3. It is relatively shallow because the trend is still energized. Crucially, it can NEVER cross into Wave 1 territory.</p>
+              <p><strong className="text-red-300">A-B-C Correction:</strong> When the 5-wave structure finishes, the resulting macro correction retraces much deeper — often hitting 50% or 61.8% of the entire 1-through-5 structure.</p>
+            </div>
+          </div>
+
+          <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-2xl p-5 space-y-3 hover:border-green-500/20 transition-all">
+            <h5 className="font-bold text-green-400 flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center text-xs">4</span>
+              The Trend Channel
+            </h5>
+            <p className="text-xs text-neutral-400 mb-2">Draw a parallel channel: Connect highs of W1 and W3, copy to bottom of W2.</p>
+            <div className="space-y-2 text-xs">
+              <p><strong className="text-white">Wave 4 Valid:</strong> It will almost perfectly tap the bottom of that channel and bounce.</p>
+              <p><strong className="text-red-300">Trend Broken:</strong> If price violently crashes through the bottom of that channel, the impulsive trend is broken. The 5-wave sequence is over.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-blue-600/10 border border-blue-500/20 rounded-2xl p-6 mt-4 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
+          <h5 className="text-base font-bold text-blue-400 mb-3 flex items-center gap-2 relative z-10">
+            <Building2 size={18} />
+            The Hedge Fund Reality Check: How We Trade the Ambiguity
+          </h5>
+          <div className="text-sm text-neutral-300 space-y-3 leading-relaxed relative z-10">
+            <p>
+              As a fund manager, I will tell you a secret: <strong>Sometimes I don't know either, and I don't care.</strong> I don't need to know the future; I just need to manage risk. 
+            </p>
+            <p>
+              If my indicators suggest it's a Wave 4, I will buy the 38.2% Fibonacci dip. But my stop loss goes immediately above the peak of Wave 1.
+            </p>
+            <p className="text-blue-200">
+              If price drops into Wave 1 territory, the cardinal rule of Elliott Waves is broken. My "Wave 4" thesis is instantly invalidated. I take a tiny, controlled loss, flip my bias, and realize the market is in a larger macro correction. <strong className="text-white relative"><span className="absolute -bottom-1 left-0 w-full h-[2px] bg-blue-500/50"></span>You survive by knowing exactly where your count is wrong, not by stubbornly hoping you are right.</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* SECTION 9 — WAVE CALCULATOR                               */}
       {/* ═══════════════════════════════════════════════════════════ */}
       <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[2.5rem] space-y-6">
         <h4 className="text-xl font-bold flex items-center gap-3 mb-4">
