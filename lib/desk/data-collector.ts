@@ -15,6 +15,7 @@ import type {
     ActiveScenario,
     MarketContext,
     FractalSetupSummary,
+    TrueFractalSummary,
 } from './types'
 
 /**
@@ -125,6 +126,9 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
     // Fractal setups populated from latest cached structural analyses if available
     const fractalSetups: FractalSetupSummary[] = await getFractalSetups(supabase, userId, pairNames)
 
+    // True Fractal setups from latest story episodes
+    const trueFractalSetups: TrueFractalSummary[] = await getTrueFractalSetups(supabase, userId, pairNames)
+
     // Fetch per-pair data in parallel
     const pairResults = await Promise.all(
         pairNames.map(async (pair: string) => {
@@ -214,6 +218,7 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         recentProcessScores: recentScores,
         marketContext,
         fractalSetups,
+        trueFractalSetups,
         correlationInsights: await getCorrelationInsights(supabase, userId, '').then(insights =>
             insights ? {
                 activePatterns: insights.activePatterns,
@@ -352,6 +357,62 @@ async function getFractalSetups(
                 })
             }
         }
+        return setups
+    } catch {
+        return []
+    }
+}
+
+async function getTrueFractalSetups(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    userId: string,
+    pairs: string[]
+): Promise<TrueFractalSummary[]> {
+    if (pairs.length === 0) return []
+    try {
+        // Pull True Fractal data from story_episodes raw_data which includes trueFractal from data collector
+        const { data } = await supabase
+            .from('story_episodes')
+            .select('pair:story_subscriptions!inner(pair), raw_data')
+            .eq('story_subscriptions.user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(pairs.length * 2) // Get recent episodes across pairs
+
+        if (!data || data.length === 0) return []
+
+        const seen = new Set<string>()
+        const setups: TrueFractalSummary[] = []
+
+        for (const row of data) {
+            const pairData = row.pair as unknown as { pair: string } | { pair: string }[] | null
+            const pair = Array.isArray(pairData) ? pairData[0]?.pair : pairData?.pair
+            if (!pair || seen.has(pair)) continue
+            seen.add(pair)
+
+            const rawData = row.raw_data as Record<string, unknown> | null
+            if (!rawData) continue
+
+            const tf = rawData.trueFractal as Record<string, unknown> | undefined
+            if (!tf) continue
+
+            const p1 = tf.phase1 as Record<string, unknown> | undefined
+            const p2 = tf.phase2 as Record<string, unknown> | undefined
+            const p3 = tf.phase3 as Record<string, unknown> | undefined
+            const p4 = tf.phase4 as Record<string, unknown> | undefined
+
+            setups.push({
+                pair,
+                overallPhase: (tf.overallPhase as number) || 0,
+                overallScore: (tf.overallScore as number) || 0,
+                direction: (tf.direction as string) || 'none',
+                narrative: (tf.narrative as string) || '',
+                phase1Status: (p1?.status as string) || 'not_detected',
+                phase2Status: (p2?.status as string) || 'not_detected',
+                phase3Status: (p3?.status as string) || 'not_detected',
+                riskRewardRatio: (p4?.riskRewardRatio as number) ?? null,
+            })
+        }
+
         return setups
     } catch {
         return []

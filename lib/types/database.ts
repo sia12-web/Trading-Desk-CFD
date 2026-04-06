@@ -1160,7 +1160,7 @@ export interface StrategyTemplate {
 export interface ChecklistItem {
     id: string
     label: string
-    category: "trend" | "indicator" | "level" | "pattern" | "confirmation"
+    category: "trend" | "indicator" | "level" | "pattern" | "confirmation" | "phase1" | "phase2" | "phase3" | "phase4"
     logical_condition?: string
 }
 

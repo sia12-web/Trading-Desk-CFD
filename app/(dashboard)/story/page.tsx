@@ -9,6 +9,7 @@ import { PairSelector } from './_components/PairSelector'
 interface Subscription {
     id: string
     pair: string
+    last_viewed_at: string
 }
 
 interface PairInfo {
@@ -20,6 +21,8 @@ interface PairInfo {
         created_at: string
     } | null
     activeScenarios: number
+    lastViewedAt: string
+    hasNewEpisode: boolean
 }
 
 export default function StoryPage() {
@@ -50,15 +53,29 @@ export default function StoryPage() {
 
                     const { episodes } = await episodesRes.json()
                     const { scenarios } = await scenariosRes.json()
+                    
+                    const latestEpisode = episodes?.[0] || null
+                    const hasNewEpisode = latestEpisode && new Date(latestEpisode.created_at) > new Date(sub.last_viewed_at)
 
                     return {
                         pair: sub.pair,
-                        latestEpisode: episodes?.[0] || null,
+                        latestEpisode,
                         activeScenarios: scenarios?.length || 0,
+                        lastViewedAt: sub.last_viewed_at,
+                        hasNewEpisode: !!hasNewEpisode,
                     }
                 })
             )
-            setPairInfos(infos)
+            // Sort: hasNewEpisode first, then by latest episode date
+            const sortedInfos = infos.sort((a, b) => {
+                if (a.hasNewEpisode && !b.hasNewEpisode) return -1
+                if (!a.hasNewEpisode && b.hasNewEpisode) return 1
+                
+                const timeA = a.latestEpisode ? new Date(a.latestEpisode.created_at).getTime() : 0
+                const timeB = b.latestEpisode ? new Date(b.latestEpisode.created_at).getTime() : 0
+                return timeB - timeA
+            })
+            setPairInfos(sortedInfos)
         } catch (err) {
             console.error('Failed to load story data:', err)
         } finally {
@@ -141,10 +158,10 @@ export default function StoryPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {pairInfos.map(info => (
                         <PairCard
-                            key={info.pair}
                             pair={info.pair}
                             latestEpisode={info.latestEpisode}
                             activeScenarios={info.activeScenarios}
+                            hasNewEpisode={info.hasNewEpisode}
                             onDelete={handleDelete}
                         />
                     ))}

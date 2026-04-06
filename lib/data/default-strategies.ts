@@ -1,87 +1,56 @@
 import { ChecklistItem } from '@/lib/types/database'
 
-export const SMC_REVERSAL_STRATEGY = {
-    name: "Institutional Reversal (SMC)",
-    description: "",
+export const TRUE_FRACTAL_STRATEGY = {
+    name: "True Fractal",
+    description: "Multi-timeframe Wave 3 hunter — 4-phase system combining Elliott Wave, Fibonacci, momentum divergence, Bill Williams fractals, and volume confirmation. Hunt the most explosive move in the market with surgical precision.",
     checklist_items: [
         {
-            id: "smc-1",
-            category: "trend",
-            label: "HTF Bias Alignment",
-            logical_condition: "1H or 4H trend should ideally favor the reversal direction."
+            id: "tf-1",
+            category: "phase1",
+            label: "Daily Wave 1 Complete (5-wave impulsive structure)",
+            logical_condition: "Elliott Wave detector must identify a completed impulsive 5-wave structure on the Daily timeframe. This is the macro foundation — no trade without it."
         },
         {
-            id: "smc-2",
-            category: "level",
-            label: "Major Liquidity Pool",
-            logical_condition: "Price must be interacting with a Daily High/Low, Weekly High/Low, or Session High/Low."
+            id: "tf-2",
+            category: "phase1",
+            label: "Wave 2 Retracement in 50-61.8% Fibonacci Zone",
+            logical_condition: "Wave 2 must retrace between 50% and 61.8% of Wave 1 range. This is the golden zone — where smart money loads up. Retracement outside this zone weakens the setup."
         },
         {
-            id: "smc-3",
-            category: "indicator",
-            label: "RSI/Stochastic Divergence",
-            logical_condition: "Look for a 'Lower Low' in price but a 'Higher Low' in momentum to spot exhaustion."
+            id: "tf-3",
+            category: "phase2",
+            label: "RSI Bullish Divergence on 4H",
+            logical_condition: "Price makes a lower low but RSI makes a higher low on the 4H timeframe. This is exhaustion — sellers are losing steam even as price drops."
         },
         {
-            id: "smc-4",
-            category: "pattern",
-            label: "SFP (Swing Failure Pattern)",
-            logical_condition: "Price wicks beyond the level and closes back inside the previous candle's range."
+            id: "tf-4",
+            category: "phase2",
+            label: "MACD Histogram Divergence + Structure Shift on 4H",
+            logical_condition: "MACD histogram shows divergence AND price breaks above the most recent 4H swing high (structure shift). The trend is turning."
         },
         {
-            id: "smc-5",
-            category: "confirmation",
-            label: "Market Structure Shift (MSS)",
-            logical_condition: "A 1m or 5m candle must break the most recent swing point in the new direction."
+            id: "tf-5",
+            category: "phase2",
+            label: "Alligator Awakening (Lips > Teeth > Jaw, spreading)",
+            logical_condition: "Bill Williams Alligator lines must be diverging in the correct order: Lips above Teeth above Jaw for longs. State must be 'awakening' or 'eating'. The beast is hungry."
         },
         {
-            id: "smc-6",
-            category: "indicator",
-            label: "Fair Value Gap (FVG)",
-            logical_condition: "The reversal move should be energetic, leaving an imbalance behind."
-        }
-    ] as ChecklistItem[]
-}
-
-export const BILL_WILLIAMS_FRACTAL_STRATEGY = {
-    name: "Bill Williams Fractal Strategy",
-    description: "Complete Bill Williams trading system using Alligator, Fractals, AO, and AC indicators. Wait for the Alligator to wake up, confirm with fractals beyond the teeth, and ride the trend with AO/AC momentum.",
-    checklist_items: [
-        {
-            id: "bw-1",
-            category: "trend",
-            label: "Alligator Awake",
-            logical_condition: "Alligator lines are diverging and ordered: Lips > Teeth > Jaw (longs) or Lips < Teeth < Jaw (shorts). State must be 'eating' or 'awakening', NOT 'sleeping'."
+            id: "tf-6",
+            category: "phase3",
+            label: "Sub-Wave 1 Detected on 1H Timeframe",
+            logical_condition: "Elliott Wave detector must identify an impulsive sub-wave structure on the 1H chart within the larger Wave 3 context. This is the first sign Wave 3 is launching."
         },
         {
-            id: "bw-2",
-            category: "level",
-            label: "Price Beyond Alligator",
-            logical_condition: "Price must be above ALL 3 Alligator lines for longs, or below ALL 3 for shorts. If price is between the lines, the setup is invalid."
+            id: "tf-7",
+            category: "phase3",
+            label: "Entry at 50-61.8% Micro Fib with Volume + Fractal Signal",
+            logical_condition: "Price must retrace to the 50-61.8% Fibonacci zone of the 1H sub-wave, with volume confirmation (above average) and a Bill Williams fractal signal at the entry zone. Triple confluence = sniper entry."
         },
         {
-            id: "bw-3",
-            category: "pattern",
-            label: "Valid Fractal Signal",
-            logical_condition: "A bullish fractal (5-bar low) must form ABOVE the Teeth line for longs. A bearish fractal (5-bar high) must form BELOW the Teeth line for shorts. Fractals inside the mouth are invalid."
-        },
-        {
-            id: "bw-4",
-            category: "indicator",
-            label: "AO Confirmation",
-            logical_condition: "Awesome Oscillator must be positive (green, above zero) for longs or negative (red, below zero) for shorts. Saucer pattern (momentum resumption) is the strongest signal."
-        },
-        {
-            id: "bw-5",
-            category: "indicator",
-            label: "AC Green/Red Bars",
-            logical_condition: "Accelerator Oscillator must show 2+ consecutive green (rising) bars for longs, or 2+ consecutive red (falling) bars for shorts. This confirms momentum is accelerating."
-        },
-        {
-            id: "bw-6",
-            category: "confirmation",
-            label: "ATR-Based Stop Placement",
-            logical_condition: "Stop loss placed below the most recent bullish fractal or the Alligator's Jaw (whichever is more conservative for longs). Position sized using ATR for proper risk management."
+            id: "tf-8",
+            category: "phase4",
+            label: "SL Below Wave 2 Bottom, TP at 161.8% Extension, R:R >= 3:1",
+            logical_condition: "Stop loss placed below Wave 2 bottom (+ buffer). Take profit at 161.8% Fibonacci extension of Wave 1 range from Wave 2 bottom. Risk no more than 2% of account. Minimum R:R ratio of 3:1."
         }
     ] as ChecklistItem[]
 }

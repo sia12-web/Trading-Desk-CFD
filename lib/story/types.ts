@@ -3,6 +3,45 @@ import type { CalculatedIndicators } from '@/lib/strategy/types'
 import type { TrendAssessment } from '@/lib/utils/trend-detector'
 import type { ElliottWaveAnalysis } from './elliott-wave-detector'
 
+// ── True Fractal — 4-Phase Wave 3 Hunting System ──
+
+export interface TrueFractalPhase {
+    status: 'not_detected' | 'forming' | 'confirmed'
+    confidence: number // 0-100
+    details: string
+}
+
+export interface TrueFractalSetup {
+    overallPhase: 0 | 1 | 2 | 3 | 4  // 0 = no setup detected
+    overallScore: number               // 0-100 composite
+    direction: 'bullish' | 'bearish' | 'none'
+    phase1: TrueFractalPhase & {
+        wave1Complete: boolean
+        wave2Depth: number | null       // Fib retracement % (e.g. 0.618)
+        wave2InZone: boolean            // Is retracement between 50-61.8%?
+        keyLevels: { wave1Top: number | null; wave2Bottom: number | null }
+    }
+    phase2: TrueFractalPhase & {
+        rsiDivergence: boolean
+        macdDivergence: boolean
+        structureShift: boolean         // Break of recent swing high
+        alligatorAwakening: boolean     // BW Alligator opening up
+    }
+    phase3: TrueFractalPhase & {
+        subWave1Detected: boolean
+        microFibEntry: number | null    // Price level for 50-61.8% of sub-wave
+        volumeConfirmed: boolean
+        fractalSignal: boolean          // BW fractal at entry zone
+    }
+    phase4: {
+        stopLoss: number | null         // Below Wave 2 bottom
+        takeProfit: number | null       // 161.8% Fib extension
+        riskRewardRatio: number | null
+        positionSizeUnits: number | null
+    }
+    narrative: string                   // One-line summary for AI prompts
+}
+
 // ── Data Payload (raw data collected for AI) ──
 
 export interface TimeframeData {
@@ -76,6 +115,7 @@ export interface StoryDataPayload {
     atr14: number
     atr50: number
     atrRatio: number  // atr14/atr50 — >1 = expanding, <1 = contracting
+    trueFractal?: TrueFractalSetup            // Cross-timeframe True Fractal phase analysis
     correlationInsights?: CorrelationInsight  // Hedge fund grade: multi-currency pattern analysis
     recent_trades?: Array<{
         direction: string

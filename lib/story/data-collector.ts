@@ -6,6 +6,7 @@ import { detectAMDPhase } from './amd-detector'
 import { mapLiquidityZones } from './liquidity-mapper'
 import { detectFractalSetup } from './fractal-detector'
 import { detectElliottWave } from './elliott-wave-detector'
+import { detectTrueFractal } from './true-fractal-detector'
 import { getCorrelationInsights } from './correlation-integrator'
 import type { OandaCandle } from '@/lib/types/oanda'
 import type { StoryDataPayload, TimeframeData, PriceLevel } from './types'
@@ -123,6 +124,19 @@ export async function collectStoryData(
         return { timeframe: tf, candles, indicators, trend, patterns, swingHighs, swingLows, fractalAnalysis, elliottWave }
     })
 
+    // ── True Fractal: cross-timeframe Wave 3 hunting ──
+    const dailyTF = timeframes.find(t => t.timeframe === 'D')
+    const h4TF = timeframes.find(t => t.timeframe === 'H4')
+    const h1TF = timeframes.find(t => t.timeframe === 'H1')
+    const trueFractal = (dailyTF && h4TF && h1TF)
+        ? detectTrueFractal(
+            dailyTF.candles, dailyTF.indicators, dailyTF.elliottWave,
+            h4TF.candles, h4TF.indicators,
+            h1TF.candles, h1TF.indicators, h1TF.elliottWave,
+            dailyTF.fractalAnalysis, pipLocation
+        )
+        : undefined
+
     // Detect AMD phases per timeframe
     const amdPhases: StoryDataPayload['amdPhases'] = {}
     for (const tfd of timeframes) {
@@ -150,6 +164,7 @@ export async function collectStoryData(
         pipLocation,
         currentPrice,
         timeframes,
+        trueFractal,
         amdPhases,
         liquidityZones,
         volatilityStatus,

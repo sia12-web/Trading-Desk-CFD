@@ -240,6 +240,18 @@ export interface FractalSetupSummary {
     signals: string[]
 }
 
+export interface TrueFractalSummary {
+    pair: string
+    overallPhase: number
+    overallScore: number
+    direction: string
+    narrative: string
+    phase1Status: string
+    phase2Status: string
+    phase3Status: string
+    riskRewardRatio: number | null
+}
+
 export interface DeskContext {
     openPositions: OpenPosition[]
     todayClosedTrades: ClosedTrade[]
@@ -280,6 +292,7 @@ export interface DeskContext {
     recentProcessScores: ProcessScore[]
     marketContext: MarketContext
     fractalSetups: FractalSetupSummary[]
+    trueFractalSetups?: TrueFractalSummary[]
     correlationInsights?: {
         activePatterns: Array<{
             description: string

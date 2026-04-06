@@ -33,6 +33,16 @@ export interface StoryReactionContext {
         setupDirection: 'buy' | 'sell' | 'none'
         signals: string[]
     }
+    trueFractal?: {
+        overallPhase: number
+        overallScore: number
+        direction: string
+        narrative: string
+        phase1Status: string
+        phase2Status: string
+        phase3Status: string
+        riskRewardRatio: number | null
+    }
 }
 
 // ── AI Output Types ──
@@ -70,7 +80,7 @@ export async function generatePositionEntryReaction(
         // 2. Build prompt
         const prompt = buildPositionEntryReactionPrompt(
             ctx.pair, guidance, storyTitle, psychology, ctx.currentPrice, ctx.atr14,
-            ctx.atr50, ctx.volatilityStatus, ctx.fractalAnalysis,
+            ctx.atr50, ctx.volatilityStatus, ctx.fractalAnalysis, ctx.trueFractal,
         )
 
         // 3. Call Gemini

@@ -59,6 +59,12 @@ Your job is to validate the structural analysis with hard numbers and compute pr
 - Cross-check fractal levels against Alligator teeth position — fractals inside the "mouth" (between jaw and teeth) are NOT valid Bill Williams signals.
 - **Elliott Wave Validation**: Verify that proposed entry/exit levels align with Elliott Wave Fibonacci retracements/extensions. If entering on a "Wave 3" setup, confirm we're bouncing off 38.2-61.8% retracement. If targeting, use 127.2-161.8% extensions.
 - **Wave Structure Confirmation**: If Elliott Wave shows "corrective" pattern but Gemini suggests trend continuation, flag this as conflicting signals. Corrective waves (A-B-C) move counter-trend.
+- **TRUE FRACTAL VALIDATION (MANDATORY)**: Cross-check all 4 True Fractal phases against raw indicator data:
+  - Phase 1: Verify Daily wave count matches actual pivot structure. Is the Wave 2 retracement depth mathematically correct?
+  - Phase 2: Verify RSI divergence by comparing actual RSI lows vs price lows on 4H. Verify MACD histogram divergence from raw values.
+  - Phase 3: Verify 1H sub-wave structure exists in pivot data. Confirm micro Fib entry is within actual swing range.
+  - Phase 4: Verify SL/TP/R:R math is correct. Flag if R:R < 2:1.
+  - If any True Fractal phase has confidence < 50, flag it as "unconfirmed" in your validation.
 - Include a "flagged_levels" array in your output listing any suspicious levels with reasons.
 - Your own precise_levels must ONLY use prices derivable from actual candle data.
 
@@ -85,6 +91,13 @@ ${rsiByTF.map(r => `${r.tf}: RSI=${r.rsi.toFixed(1)}, MACD Hist=${r.macdHist.toF
 
 ## AMD ALGORITHMIC ASSESSMENT
 ${Object.entries(data.amdPhases).map(([tf, p]) => `${tf}: ${p.phase} (${p.confidence}%)`).join('\n')}
+
+## TRUE FRACTAL STATUS (Cross-Timeframe Wave 3 Hunter)
+${data.trueFractal ? `Overall Phase: ${data.trueFractal.overallPhase}/4 | Score: ${data.trueFractal.overallScore}/100 | Direction: ${data.trueFractal.direction}
+Phase 1: ${data.trueFractal.phase1.status} (${data.trueFractal.phase1.confidence}%) — Wave1Complete=${data.trueFractal.phase1.wave1Complete}, Wave2Depth=${data.trueFractal.phase1.wave2Depth !== null ? (data.trueFractal.phase1.wave2Depth * 100).toFixed(1) + '%' : 'N/A'}, InZone=${data.trueFractal.phase1.wave2InZone}
+Phase 2: ${data.trueFractal.phase2.status} (${data.trueFractal.phase2.confidence}%) — RSI_div=${data.trueFractal.phase2.rsiDivergence}, MACD_div=${data.trueFractal.phase2.macdDivergence}, StructShift=${data.trueFractal.phase2.structureShift}, Alligator=${data.trueFractal.phase2.alligatorAwakening}
+Phase 3: ${data.trueFractal.phase3.status} (${data.trueFractal.phase3.confidence}%) — SubWave1=${data.trueFractal.phase3.subWave1Detected}, MicroEntry=${data.trueFractal.phase3.microFibEntry?.toFixed(6) ?? 'N/A'}, Vol=${data.trueFractal.phase3.volumeConfirmed}, Fractal=${data.trueFractal.phase3.fractalSignal}
+Phase 4: SL=${data.trueFractal.phase4.stopLoss?.toFixed(6) ?? 'N/A'}, TP=${data.trueFractal.phase4.takeProfit?.toFixed(6) ?? 'N/A'}, R:R=${data.trueFractal.phase4.riskRewardRatio ?? 'N/A'}` : 'True Fractal unavailable.'}
 
 ## CROSS-MARKET DIVERGENCE CHECK
 ${buildCrossMarketCheck(crossMarket)}

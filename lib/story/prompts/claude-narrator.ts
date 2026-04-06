@@ -275,7 +275,19 @@ Finding **Value** is the first step. We don't chase price; we wait for the marke
 2. **Momentum Confirmation**: Momentum tells us if we are exiting the extreme and starting the real move.
 3. **Smart Patience**: If the price pulls back in a trend but the "Value" (RSI/Momentum regime) hasn't changed, we STAY. Exiting because of a small candle wiggle is a **"Pussy Move"**. The smart player knows the "Pretty Girl" will be back.
 4. **Mindset Inversion**: Fear is common in both winning and losing. Winning triggers fear of losing gains (greed/fear). Losing triggers hope of a turnaround (hope/fear). We invert this: Be strict on risk (no hope), be optimistic on winners (no fear).
-5. **Bill Williams Fractal Confluence**: When the Alligator is "eating" and fractals confirm the direction, this is a high-confluence Value zone. The Alligator sleeping = the "Pretty Girl" isn't interested (no trend, no trade). The Alligator awakening = she's starting to flirt. The Alligator eating = she's fully engaged, ride the momentum. Use fractal levels for precise entry/SL placement.
+
+## THE TRUE FRACTAL DOCTRINE (OUR EDGE)
+The True Fractal is our unified strategy — a 4-phase system designed to hunt the most explosive move in any market: **Wave 3**.
+
+**Phase 1 — Macro Scanner (Daily)**: Identify a completed 5-wave impulsive Wave 1 on the Daily chart. Then track Wave 2 as it retraces into the 50-61.8% Fibonacci golden zone. This is where smart money loads up. Without Phase 1, there is no trade.
+
+**Phase 2 — Momentum Validator (4H)**: Confirm the reversal is real with: RSI bullish divergence (price lower low, RSI higher low), MACD histogram divergence, a structure shift (break of recent swing high), and Bill Williams Alligator awakening. The beast is hungry — the trend is turning.
+
+**Phase 3 �� Sniper Trigger (1H)**: Find the sub-Wave 1 forming on the 1H chart (the first sign Wave 3 is launching). Wait for price to retrace to the 50-61.8% micro Fibonacci zone of that sub-wave, confirmed by volume above average AND a Bill Williams fractal signal. Triple confluence = sniper entry.
+
+**Phase 4 — Risk/Reward**: Stop loss below Wave 2 bottom (+ buffer). Take profit at 161.8% Fibonacci extension of Wave 1 range. Risk no more than 2% of capital. Minimum R:R of 3:1. Execute the plan — no second-guessing.
+
+**In the narrative**: Always reference which True Fractal phase the pair is in. Frame scenarios through phase advancement: "If Phase 2 confirms with 4H structure shift, we advance to Phase 3 sniper entry." The True Fractal phase IS the story arc.
 
 
 ${archiveBlock}
@@ -321,6 +333,16 @@ ${news.avoidTrading ? '\n⚠️ HIGH-IMPACT NEWS IMMINENT — factor this into t
 
 ### AMD Phase Summary
 ${Object.entries(data.amdPhases).map(([tf, p]) => `- ${tf}: ${p.phase} (${p.confidence}%)`).join('\n')}
+
+### TRUE FRACTAL STATUS (Cross-Timeframe Wave 3 Hunter — OUR PRIMARY STRATEGY)
+${data.trueFractal ? `**Phase ${data.trueFractal.overallPhase}/4** | Score: ${data.trueFractal.overallScore}/100 | Direction: **${data.trueFractal.direction.toUpperCase()}**
+- Phase 1 (Daily Macro): **${data.trueFractal.phase1.status.toUpperCase()}** (${data.trueFractal.phase1.confidence}%) — ${data.trueFractal.phase1.details}
+  Wave 1 Top: ${data.trueFractal.phase1.keyLevels.wave1Top?.toFixed(5) ?? 'N/A'} | Wave 2 Bottom: ${data.trueFractal.phase1.keyLevels.wave2Bottom?.toFixed(5) ?? 'N/A'} | Depth: ${data.trueFractal.phase1.wave2Depth !== null ? (data.trueFractal.phase1.wave2Depth * 100).toFixed(1) + '%' : 'N/A'} | In Golden Zone: ${data.trueFractal.phase1.wave2InZone ? 'YES' : 'NO'}
+- Phase 2 (4H Momentum): **${data.trueFractal.phase2.status.toUpperCase()}** (${data.trueFractal.phase2.confidence}%) — ${data.trueFractal.phase2.details}
+- Phase 3 (1H Sniper): **${data.trueFractal.phase3.status.toUpperCase()}** (${data.trueFractal.phase3.confidence}%) — ${data.trueFractal.phase3.details}
+  Micro Entry: ${data.trueFractal.phase3.microFibEntry?.toFixed(5) ?? 'N/A'} | Fractal Signal: ${data.trueFractal.phase3.fractalSignal ? 'YES' : 'NO'}
+- Phase 4 (R:R): SL=${data.trueFractal.phase4.stopLoss?.toFixed(5) ?? 'N/A'} | TP=${data.trueFractal.phase4.takeProfit?.toFixed(5) ?? 'N/A'} | R:R=${data.trueFractal.phase4.riskRewardRatio?.toFixed(1) ?? 'N/A'}:1
+- **${data.trueFractal.narrative}**` : 'True Fractal detection unavailable (missing D/H4/H1 data).'}
 
 ### Bill Williams Fractal Analysis (Algorithmic)
 ${data.timeframes.map(tf => {

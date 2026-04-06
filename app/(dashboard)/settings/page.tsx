@@ -71,6 +71,11 @@ export default function SettingsPage() {
     const [memoryResetConfirm, setMemoryResetConfirm] = useState('')
     const [resettingMemory, setResettingMemory] = useState(false)
 
+    // Great Reset state
+    const [showGreatResetDialog, setShowGreatResetDialog] = useState(false)
+    const [greatResetConfirm, setGreatResetConfirm] = useState('')
+    const [resettingGreat, setResettingGreat] = useState(false)
+
 
 
 
@@ -239,6 +244,29 @@ export default function SettingsPage() {
             alert('Failed to reset AI memory')
         } finally {
             setResettingMemory(false)
+        }
+    }
+
+    const handleGreatReset = async () => {
+        if (greatResetConfirm !== 'RESET') return
+
+        setResettingGreat(true)
+        try {
+            const res = await fetch('/api/system/great-reset', { method: 'POST' })
+            const data = await res.json()
+
+            if (res.ok) {
+                alert(`🔥 Great Reset complete! ${data.totalDeleted} records deleted.\n\nYour system is now completely fresh — all trading history and AI memory wiped. OANDA positions from today onwards will be synced.`)
+                setShowGreatResetDialog(false)
+                setGreatResetConfirm('')
+                window.location.reload()
+            } else {
+                alert(`Error: ${data.error}`)
+            }
+        } catch (err) {
+            alert('Failed to perform Great Reset')
+        } finally {
+            setResettingGreat(false)
         }
     }
 
@@ -872,6 +900,68 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
+                {/* Great Reset — Nuclear Option */}
+                <section className="bg-red-950/20 border-2 border-red-900/50 rounded-[2.5rem] overflow-hidden">
+                    <div className="p-10 border-b border-red-900/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-6">
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-red-500/10 text-red-500 flex items-center justify-center">
+                                <Zap size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold text-red-400">Great Reset</h3>
+                                <p className="text-neutral-500 text-sm mt-1">Nuclear option — wipe ALL trading history and AI memory.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-10 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="p-5 rounded-2xl bg-red-950/30 border border-red-900/30">
+                                <h4 className="text-sm font-bold text-red-400 mb-3">Will be deleted</h4>
+                                <ul className="text-xs text-neutral-400 space-y-1.5">
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-red-500 flex-shrink-0" /> All trades &amp; positions (manual + story-driven)</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-red-500 flex-shrink-0" /> All journals &amp; screenshots</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-red-500 flex-shrink-0" /> Execution log</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-red-500 flex-shrink-0" /> All AI memory (desk state, messages, meetings, trader profile, process scores)</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-red-500 flex-shrink-0" /> All story content (episodes, bible, scenarios, seasons)</li>
+                                    <li className="flex items-center gap-2"><Trash2 size={10} className="text-red-500 flex-shrink-0" /> All CMS results &amp; analysis caches</li>
+                                </ul>
+                            </div>
+                            <div className="p-5 rounded-2xl bg-green-950/20 border border-green-900/30">
+                                <h4 className="text-sm font-bold text-green-400 mb-3">Will be preserved</h4>
+                                <ul className="text-xs text-neutral-400 space-y-1.5">
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Trading Gurus (system-level)</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Indicator Calibrations (optimization results)</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Strategy Templates (True Fractal)</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Risk Rules (user preferences)</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Story Subscriptions (which pairs to watch)</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> OANDA Connection</li>
+                                    <li className="flex items-center gap-2"><CheckCircle2 size={10} className="text-green-500 flex-shrink-0" /> Correlation Patterns &amp; Calendar Events</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 bg-red-950/30 rounded-2xl border border-red-900/30">
+                            <div className="flex-1">
+                                <h4 className="text-lg font-bold text-white mb-2">🔥 The Great Reset</h4>
+                                <p className="text-sm text-neutral-400 leading-relaxed">
+                                    Start completely fresh as if you just installed the system. All your trading history (trades, journals, P&L) and all AI memory (desk characters, story episodes, trader profile) will be permanently deleted. OANDA will sync positions from today onwards.
+                                </p>
+                                <div className="mt-3 text-xs text-red-400 font-medium">
+                                    ⚠️ This is the nuclear option — everything goes except system config
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowGreatResetDialog(true)}
+                                className="flex items-center gap-2 px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-red-500/30 transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-red-900/10"
+                            >
+                                <Zap size={16} />
+                                Great Reset
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Danger Zone - Demo Only */}
                 {isDemo && (
                     <section className="bg-red-950/20 border-2 border-red-900/50 rounded-[2.5rem] overflow-hidden">
@@ -1029,6 +1119,73 @@ export default function SettingsPage() {
                                 className="flex-1 px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-red-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-900/10"
                             >
                                 {resetting ? 'Resetting...' : 'Reset Account'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Great Reset Confirmation Dialog */}
+            {showGreatResetDialog && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-neutral-900 border-2 border-red-900/50 rounded-3xl max-w-lg w-full p-8 shadow-2xl">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
+                                <Zap size={24} />
+                            </div>
+                            <h3 className="text-2xl font-bold text-white">🔥 Great Reset</h3>
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                            <p className="text-neutral-300 leading-relaxed font-bold">
+                                This is the nuclear option. Everything goes:
+                            </p>
+                            <ul className="text-sm text-neutral-400 space-y-2 list-disc list-inside">
+                                <li>All trades, positions, journals &amp; screenshots</li>
+                                <li>All execution logs</li>
+                                <li>All AI memory (desk state, messages, meetings, trader profile, process scores)</li>
+                                <li>All story content (episodes, bible, scenarios, seasons)</li>
+                                <li>All CMS results &amp; analysis caches</li>
+                            </ul>
+                            <p className="text-xs text-green-400 font-medium pt-2">
+                                ✓ Trading Gurus, Indicator Calibrations, True Fractal strategy, Risk Rules, and OANDA connection are preserved.
+                            </p>
+                            <p className="text-xs text-red-400 font-medium pt-2 font-bold">
+                                ⚠️ This action is IRREVERSIBLE — you'll start from day 1
+                            </p>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="block text-sm font-bold text-neutral-400 mb-2">
+                                Type <span className="text-red-400">RESET</span> to confirm:
+                            </label>
+                            <input
+                                type="text"
+                                value={greatResetConfirm}
+                                onChange={(e) => setGreatResetConfirm(e.target.value)}
+                                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white font-mono focus:outline-none focus:border-red-500"
+                                placeholder="Type RESET"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => {
+                                    setShowGreatResetDialog(false)
+                                    setGreatResetConfirm('')
+                                }}
+                                className="flex-1 px-8 py-4 bg-neutral-800 hover:bg-neutral-700 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-neutral-700/50 transition-all active:scale-95"
+                                disabled={resettingGreat}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleGreatReset}
+                                disabled={greatResetConfirm !== 'RESET' || resettingGreat}
+                                className="flex-1 px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-red-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-900/10"
+                            >
+                                {resettingGreat ? 'Resetting...' : '🔥 Execute Great Reset'}
                             </button>
                         </div>
                     </div>

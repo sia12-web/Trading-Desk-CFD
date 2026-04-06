@@ -93,7 +93,7 @@ export async function incrementUsage(id: string) {
     if (error) throw error
 }
 
-export async function seedSMCTemplate() {
-    const { SMC_REVERSAL_STRATEGY } = await import('./default-strategies')
-    return createTemplate(SMC_REVERSAL_STRATEGY)
+export async function seedTrueFractalTemplate() {
+    const { TRUE_FRACTAL_STRATEGY } = await import('./default-strategies')
+    return createTemplate(TRUE_FRACTAL_STRATEGY)
 }

@@ -31,6 +31,16 @@ export function buildPositionEntryReactionPrompt(
         setupDirection: string
         signals: string[]
     },
+    trueFractal?: {
+        overallPhase: number
+        overallScore: number
+        direction: string
+        narrative: string
+        phase1Status: string
+        phase2Status: string
+        phase3Status: string
+        riskRewardRatio: number | null
+    },
 ): string {
     const config = getAssetConfig(pair)
     const mult = config.pointMultiplier
@@ -71,21 +81,28 @@ ${tp1Points ? `- TP distance vs daily ATR: ${(tp1Points / atr14).toFixed(1)}x da
 ${isCold ? `- COLD MARKET: The market is moving LESS than average. A ${tp1Points ? tp1Points.toFixed(0) : '?'} ${label} target in a market averaging ${atr14.toFixed(0)} ${label}/day is questionable without a catalyst.` : ''}
 ${isSpike ? `- SPIKE: Volatility is 1.5x+ above average. Wider stops needed. Whipsaw risk elevated.` : ''}
 
-${fractalAnalysis ? `## BILL WILLIAMS FRACTAL CHECKLIST (for Ray's validation)
+${trueFractal ? `## TRUE FRACTAL STATUS (for Ray's validation — OUR PRIMARY STRATEGY)
 
+Phase: ${trueFractal.overallPhase}/4 | Score: ${trueFractal.overallScore}/100 | Direction: ${trueFractal.direction}
+Narrative: ${trueFractal.narrative}
+Phase 1 (Daily Macro): ${trueFractal.phase1Status} | Phase 2 (4H Momentum): ${trueFractal.phase2Status} | Phase 3 (1H Sniper): ${trueFractal.phase3Status}
+R:R: ${trueFractal.riskRewardRatio?.toFixed(1) ?? 'N/A'}:1
+
+**8-ITEM TRUE FRACTAL CHECKLIST** (Ray must validate):
+1. ✓/✗ Daily Wave 1 complete (5-wave impulsive structure)
+2. ✓/✗ Wave 2 retracement in 50-61.8% Fibonacci golden zone
+3. ✓/✗ RSI bullish divergence on 4H (price LL, RSI HL)
+4. ✓/✗ MACD histogram divergence + structure shift on 4H
+5. ✓/✗ Alligator awakening (lips > teeth > jaw, spreading)
+6. ✓/✗ Sub-Wave 1 detected on 1H timeframe
+7. ✓/✗ Entry at 50-61.8% micro Fib with volume + fractal signal
+8. ✓/✗ SL below Wave 2 bottom, TP at 161.8% extension, R:R >= 3:1
+
+**Ray's Task**: If overall score <50/100 OR Phase 1 is 'not_detected', flag this as NO TRUE FRACTAL SETUP. Only Phase 3+ confirmed entries (score 70+) are institutional-grade.
+` : ''}${fractalAnalysis ? `## BILL WILLIAMS DETAIL (supporting True Fractal Phase 2-3)
 Setup Score: ${fractalAnalysis.setupScore}/100 → ${fractalAnalysis.setupDirection}
-Alligator State: ${fractalAnalysis.alligatorState} (${fractalAnalysis.alligatorDirection})
-Signals Detected: ${fractalAnalysis.signals.length > 0 ? fractalAnalysis.signals.join(', ') : 'none'}
-
-**6-ITEM CHECKLIST** (Ray must validate if this is a fractal-based entry):
-1. ✓/✗ Alligator Awake — State must be 'eating' or 'awakening', NOT 'sleeping'
-2. ✓/✗ Price Beyond Alligator — Price must be above ALL 3 lines (longs) or below ALL 3 (shorts)
-3. ✓/✗ Valid Fractal Signal — Fractal must be BEYOND the Teeth line (not inside the mouth)
-4. ✓/✗ AO Confirmation — Awesome Oscillator positive for longs, negative for shorts
-5. ✓/✗ AC Green/Red Bars — 2+ consecutive green (longs) or red (shorts) bars
-6. ✓/✗ ATR-Based Stop — Stop placed below recent fractal or Jaw (whichever is more conservative)
-
-**Ray's Task**: If setup score is <60/100 OR Alligator is 'sleeping', flag this as a weak fractal setup. Only high-score setups (70+) during 'eating' phase are institutional-grade.
+Alligator: ${fractalAnalysis.alligatorState} (${fractalAnalysis.alligatorDirection})
+Signals: ${fractalAnalysis.signals.length > 0 ? fractalAnalysis.signals.join(', ') : 'none'}
 ` : ''}
 ## TRADER PSYCHOLOGY
 
@@ -98,7 +115,7 @@ Violations This Week: ${psychology.violationsThisWeek}
 
 ## CHARACTERS
 
-- **RAY (Quant — Transitioning to 5%):** Focus on **"The Value"**. He reviews if price is actually at a level where smart money plays (RSI/Momentum extremes). ${fractalAnalysis ? `**FOR FRACTAL SETUPS**: Ray validates the 6-item Bill Williams checklist above. If setup score <60 or Alligator is sleeping, he MUST flag it as incomplete. If 5/6 criteria met but one is weak, he notes it.` : 'He denies entries that are just "chasing" without real value.'}
+- **RAY (Quant — Transitioning to 5%):** Focus on **"The Value"**. He reviews if price is actually at a level where smart money plays (RSI/Momentum extremes). ${trueFractal ? `**TRUE FRACTAL VALIDATION**: Ray validates the 8-item True Fractal checklist. If score <50 or Phase 1 not confirmed, he MUST flag the entry as premature. Only Phase 3+ with score 70+ gets his approval.` : fractalAnalysis ? `**FRACTAL VALIDATION**: Ray checks Alligator state and setup score. If setup score <60 or Alligator sleeping, he flags it.` : 'He denies entries that are just "chasing" without real value.'}
 - **SARAH (Risk — The 5% Resident):** The iron hand. She hates **"Pussy Moves"**. If the trader is closing because of a wiggle, she will alert that the "Pretty Girl" hasn't left the bar yet.
 - **ALEX (Macro — The 95% Struggle):** Represents Greed and Fear.
   - **WINNING**: Suggests "Pussy Moves" to close early because he's scared of a pull-back.

@@ -457,12 +457,23 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
                 signals: dailyTF.fractalAnalysis.signals,
             } : undefined
 
+            const trueFractal = data.trueFractal ? {
+                overallPhase: data.trueFractal.overallPhase,
+                overallScore: data.trueFractal.overallScore,
+                direction: data.trueFractal.direction,
+                narrative: data.trueFractal.narrative,
+                phase1Status: data.trueFractal.phase1.status,
+                phase2Status: data.trueFractal.phase2.status,
+                phase3Status: data.trueFractal.phase3.status,
+                riskRewardRatio: data.trueFractal.phase4.riskRewardRatio,
+            } : undefined
+
             const reactionCtx: StoryReactionContext = {
                 userId, pair, episodeId: episode.id,
                 episodeNumber, seasonNumber, episodeType,
                 currentPrice: data.currentPrice, atr14: data.atr14,
                 atr50: data.atr50, volatilityStatus: data.volatilityStatus,
-                fractalAnalysis,
+                fractalAnalysis, trueFractal,
             }
 
             if (episodeType === 'position_entry') {

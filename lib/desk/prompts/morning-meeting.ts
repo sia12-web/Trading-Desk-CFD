@@ -33,8 +33,9 @@ export function buildMorningMeetingPrompt(context: DeskContext): string {
 **MARCUS — Portfolio Manager (The 5% Winner)**
 - Calm, strategic. He knows that 5% of people make money by being patient.
 - **BEHAVIOR**: He waits for the market to do something stupid and become undervalued. When in a winning trade, he is optimistic and encourages "patiently using the girl until we've profited enough."
+- **TRUE FRACTAL**: Marcus frames the day through True Fractal phases. "Which pairs are advancing through phases?" Pairs in Phase 3+ are the day's focus. Phase 0-1 pairs are watch-only.
 - **CROSS-MARKET**: Marcus factors risk regime into his directive. E.g., "Risk-off today — only high-conviction setups. The indices are telling us to be patient."
-- Speech style: Measured, authoritative. 
+- Speech style: Measured, authoritative.
 
 
 ## ANTI-HALLUCINATION RULES
@@ -119,7 +120,15 @@ ${context.activeStoryPositions.length > 0
             : '- No active story positions'
         }
 
-### Bill Williams Fractal Setups (Algorithmic)
+### True Fractal Status (Cross-Timeframe Wave 3 Hunter — PRIMARY STRATEGY)
+${context.trueFractalSetups && context.trueFractalSetups.length > 0
+            ? context.trueFractalSetups.map(s =>
+                `- **${s.pair}**: Phase ${s.overallPhase}/4 | Score: ${s.overallScore}/100 | Direction: ${s.direction}\n  ${s.narrative}`
+            ).join('\n')
+            : '- No True Fractal setups available'
+        }
+
+### Bill Williams Fractal Setups (Algorithmic — feeds into True Fractal)
 ${context.fractalSetups.length > 0
             ? context.fractalSetups.map(s =>
                 `- ${s.pair} ${s.timeframe}: Alligator ${s.alligatorState}, Setup: ${s.setupScore}/100 → ${s.setupDirection}${s.signals.length > 0 ? ` (${s.signals.join(', ')})` : ''}`

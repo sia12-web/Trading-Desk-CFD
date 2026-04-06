@@ -102,6 +102,12 @@ ${context.activeScenarios.filter(s => s.pair === proposal.pair).length > 0
             ).join('\n')
             : '- No active scenarios for this pair'}
 
+### True Fractal Status for ${proposal.pair}
+${context.trueFractalSetups && context.trueFractalSetups.find(s => s.pair === proposal.pair)
+            ? (() => { const tf = context.trueFractalSetups!.find(s => s.pair === proposal.pair)!; return `Phase ${tf.overallPhase}/4 | Score: ${tf.overallScore}/100 | Direction: ${tf.direction}\n${tf.narrative}\n**Ray**: Validate this trade against True Fractal phase. Phase 3+ with score 70+ = high conviction. Phase 0-1 = no edge.\n**Sarah**: Check Phase 4 R:R. If R:R < 3:1, flag it.\n**Alex**: Does Phase 1 macro (Daily wave structure) support the thesis?\n**Marcus**: Is this pair advancing through True Fractal phases? Only Phase 3+ pairs deserve capital.` })()
+            : '- No True Fractal data for this pair'
+        }
+
 ### Portfolio Summary
 - Win Rate: ${context.portfolioSummary.winRate.toFixed(1)}%
 - Profit Factor: ${context.portfolioSummary.profitFactor === Infinity ? 'Infinite' : context.portfolioSummary.profitFactor.toFixed(2)}

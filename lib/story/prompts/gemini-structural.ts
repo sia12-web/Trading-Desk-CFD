@@ -91,6 +91,18 @@ ${amdSummary}
 ## LIQUIDITY ZONES
 ${liquiditySummary}
 
+## TRUE FRACTAL STATUS (Cross-Timeframe Wave 3 Hunter)
+${data.trueFractal ? `**Overall Phase**: ${data.trueFractal.overallPhase}/4 | Score: ${data.trueFractal.overallScore}/100 | Direction: ${data.trueFractal.direction}
+- Phase 1 (Daily Macro): ${data.trueFractal.phase1.status} (${data.trueFractal.phase1.confidence}%) — ${data.trueFractal.phase1.details}
+  Wave 1 Complete: ${data.trueFractal.phase1.wave1Complete} | Wave 2 Depth: ${data.trueFractal.phase1.wave2Depth !== null ? (data.trueFractal.phase1.wave2Depth * 100).toFixed(1) + '%' : 'N/A'} | In Zone: ${data.trueFractal.phase1.wave2InZone}
+  Key Levels: Wave 1 Top=${data.trueFractal.phase1.keyLevels.wave1Top?.toFixed(5) ?? 'N/A'}, Wave 2 Bottom=${data.trueFractal.phase1.keyLevels.wave2Bottom?.toFixed(5) ?? 'N/A'}
+- Phase 2 (4H Momentum): ${data.trueFractal.phase2.status} (${data.trueFractal.phase2.confidence}%) — ${data.trueFractal.phase2.details}
+  RSI Div: ${data.trueFractal.phase2.rsiDivergence} | MACD Div: ${data.trueFractal.phase2.macdDivergence} | Structure Shift: ${data.trueFractal.phase2.structureShift} | Alligator: ${data.trueFractal.phase2.alligatorAwakening}
+- Phase 3 (1H Sniper): ${data.trueFractal.phase3.status} (${data.trueFractal.phase3.confidence}%) — ${data.trueFractal.phase3.details}
+  Sub-Wave 1: ${data.trueFractal.phase3.subWave1Detected} | Micro Entry: ${data.trueFractal.phase3.microFibEntry?.toFixed(5) ?? 'N/A'} | Volume: ${data.trueFractal.phase3.volumeConfirmed} | Fractal: ${data.trueFractal.phase3.fractalSignal}
+- Phase 4 (R:R): SL=${data.trueFractal.phase4.stopLoss?.toFixed(5) ?? 'N/A'}, TP=${data.trueFractal.phase4.takeProfit?.toFixed(5) ?? 'N/A'}, R:R=${data.trueFractal.phase4.riskRewardRatio?.toFixed(1) ?? 'N/A'}:1
+- **Narrative**: ${data.trueFractal.narrative}` : 'True Fractal detection unavailable (missing D/H4/H1 data).'}
+
 ## YOUR TASK
 Analyze ALL the data above and produce a JSON response:
 {
@@ -108,25 +120,29 @@ Analyze ALL the data above and produce a JSON response:
   "optimization_suggestions": ["What indicators are most relevant given current structure?"]
 }
 
-**Bill Williams Fractal Analysis**: When the Alligator is 'eating' or 'awakening', note the direction and nearest valid fractals (those beyond the Teeth line). These are high-probability confluence zones. When the Alligator is 'sleeping', flag it as a compression/range phase — a breakout setup is building. If a fractal breakout has a VOLUME TRAP WARNING, flag it as a likely fake breakout regardless of other signals.
+**TRUE FRACTAL ASSESSMENT (PRIMARY FRAMEWORK)**: Frame your entire structural analysis through the True Fractal 4-phase system:
+- **Phase 1 (Macro Scanner)**: Is there a completed 5-wave impulsive Wave 1 on Daily? Is Wave 2 retracing into the 50-61.8% golden zone? This is THE setup precondition.
+- **Phase 2 (Momentum Validator)**: Does 4H show RSI/MACD divergence + structure shift + Alligator awakening? This confirms the reversal is real.
+- **Phase 3 (Sniper Trigger)**: Does 1H show a sub-wave 1 forming? Is there a micro Fib entry at 50-61.8% with volume + fractal confluence?
+- **Phase 4 (Risk/Reward)**: What are the calculated SL (below Wave 2 bottom), TP (161.8% extension), and R:R ratio?
+- State which True Fractal phase this pair is currently in and what needs to happen to advance to the next phase.
+- If no True Fractal setup is active, state "Phase 0 — monitoring for Wave 1 impulse on Daily."
 
-**Elliott Wave Structure**: Use wave analysis to validate structural levels and projections:
-- **IMPULSIVE waves (5-wave)**: Identify if market is in trending phase. Wave 3 is strongest, Wave 5 signals potential reversal.
-- **CORRECTIVE waves (3-wave)**: Counter-trend A-B-C patterns. Zigzag/Flat/Triangle shapes indicate correction type.
-- **Fibonacci levels**: Use 38.2%, 50%, 61.8% retracements for entry zones. Use 127.2%, 161.8% extensions for targets.
-- **Wave confluence**: When Elliott Wave analysis confirms fractal direction and AMD phase, this is HIGH-CONFIDENCE structural alignment.
-- **Current wave position**: If in Wave 5 or Wave C, expect completion/reversal. If in Wave 3, expect strongest momentum.
+**Bill Williams Fractal Analysis**: When the Alligator is 'eating' or 'awakening', note the direction and nearest valid fractals (those beyond the Teeth line). These are high-probability confluence zones within the True Fractal framework. If a fractal breakout has a VOLUME TRAP WARNING, flag it as a likely fake breakout regardless of other signals.
 
-**Volume Flow Intelligence**: Use volume data as the SECOND LAYER of S/R validation:
-- **VPOC** is the single strongest price level — where the most business was done. Treat it as the most important S/R level on each timeframe.
-- **HVN (High Volume Nodes)** are the "real" support/resistance — where big money has been placed. Price approaching an HVN will likely bounce or stall.
-- **LVN (Low Volume Nodes)** are "thin air" zones — price moves fast through these. They are weak S/R.
-- **Value Area** (70% of volume) is the "fair value" range. Price outside the VA is overextended and likely to revert.
-- **VWAP** is the institutional average price — it acts as dynamic S/R. Price below VWAP = undervalued, above = overvalued.
-- **Volume Exhaustion**: If detected, it means the current trend is losing steam. Flag this in your structural narrative.
-- When citing key_levels, PRIORITIZE levels that align with HVN over traditional swing highs/lows. A swing high that also sits at an HVN is far more significant than one at an LVN.
+**Elliott Wave Structure**: Use wave analysis as the backbone of True Fractal Phase 1:
+- **IMPULSIVE waves (5-wave)**: Identify completed Wave 1 structures. Wave 3 is our TARGET — the explosive move we're hunting.
+- **CORRECTIVE waves (3-wave)**: Wave 2 corrections into the 50-61.8% zone are our ENTRY ZONE.
+- **Fibonacci levels**: 50-61.8% retracements for entry (Phase 1/3 golden zones). 161.8% extensions for TP (Phase 4).
+- **Wave confluence**: When EW + BW fractals + volume all align, this is TRUE FRACTAL CONFIRMED.
 
-**Cross-Market Validation**: If your structural bias contradicts the cross-market risk appetite (e.g., you're bullish but risk is off and equities are dumping), note this tension explicitly. Cross-market divergences often precede reversals.
+**Volume Flow Intelligence**: Use volume data to validate True Fractal entries:
+- **VPOC** = strongest S/R level. If it aligns with the Phase 3 micro Fib entry, that's triple confluence.
+- **HVN** = real S/R where big money sits. Phase 1 Wave 2 bottoming at an HVN = highest conviction.
+- **LVN** = thin zones. If Phase 3 entry sits at an LVN, it's weaker.
+- **Volume Exhaustion** in the direction of Wave 2 = Phase 2 confirmation (sellers running out of steam).
+
+**Cross-Market Validation**: If your True Fractal thesis contradicts the cross-market risk appetite, note this tension explicitly. Cross-market divergences can invalidate even high-scoring True Fractal setups.
 
 Be precise with price levels. Reference specific timeframes. Look for confluences where multiple TFs tell the same story.`
 }
