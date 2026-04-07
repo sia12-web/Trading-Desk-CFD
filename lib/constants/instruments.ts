@@ -19,7 +19,7 @@ export const ALLOWED_INSTRUMENTS = [
     // Indices
     'NAS100_USD', 'SPX500_USD', 'US30_USD', 'DE30_EUR',
 
-    // Cryptocurrencies (via CoinGecko API - Free)
+    // Cryptocurrencies (via Kraken API)
     'CRYPTO_BTC_USD',   // Bitcoin
     'CRYPTO_ETH_USD',   // Ethereum
     'CRYPTO_BNB_USD',   // Binance Coin
