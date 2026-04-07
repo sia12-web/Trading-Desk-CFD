@@ -219,13 +219,9 @@ function evaluateWave2Scenario(
     let wave1High: number | null = null
     let wave1Low: number | null = null
 
-    if (m15ElliottWave?.waves?.length) {
-        // Look for a completed impulse wave
-        const impulse = m15ElliottWave.waves.find(w => w.label === '1' || w.label === 'i')
-        if (impulse) {
-            wave1High = impulse.end_price > impulse.start_price ? impulse.end_price : impulse.start_price
-            wave1Low = impulse.end_price > impulse.start_price ? impulse.start_price : impulse.end_price
-        }
+    if (m15ElliottWave?.waveStructure?.phase?.includes('Wave 1')) {
+        // We know we're in wave 1, but the type doesn't give us the specific prices easily.
+        // We'll rely on the fallback swing structure below for precise levels.
     }
 
     // Fallback: use recent swing extremes on H1 for the impulse
@@ -268,8 +264,8 @@ function evaluateWave2Scenario(
     const volClimax = m1Candles.length > 20 ? detectVolumeClimax(m1Candles) : base.volumeClimax
     const choch = m1Candles.length > 20 ? detectCHoCH(m1Candles, isBullish) : base.choch
 
-    const stochK = m1Indicators.stochastic?.kLine ?? []
-    const stochD = m1Indicators.stochastic?.dLine ?? []
+    const stochK = m1Indicators.stochastic?.k ?? []
+    const stochD = m1Indicators.stochastic?.d ?? []
     const m1Times = m1Candles.map(c => c.time)
     const stochReload = stochK.length > 3 ? detectStochReload(stochK, stochD, isBullish, m1Times) : base.stochasticReload
 
@@ -333,7 +329,7 @@ function evaluateWave2Scenario(
 
     return {
         ...base,
-        active: status !== 'inactive',
+        active: score > 0,
         goldenPocket,
         rsiDivergence: rsiDiv,
         macdDivergence: macdDiv,
@@ -422,8 +418,8 @@ function evaluateWave4Scenario(
     const volClimax = m1Candles.length > 20 ? detectVolumeClimax(m1Candles) : base.volumeClimax
     const choch = m1Candles.length > 20 ? detectCHoCH(m1Candles, isBullish) : base.choch
 
-    const stochK = m1Indicators.stochastic?.kLine ?? []
-    const stochD = m1Indicators.stochastic?.dLine ?? []
+    const stochK = m1Indicators.stochastic?.k ?? []
+    const stochD = m1Indicators.stochastic?.d ?? []
     const m1Times = m1Candles.map(c => c.time)
     const stochReload = stochK.length > 3 ? detectStochReload(stochK, stochD, isBullish, m1Times) : base.stochasticReload
 
@@ -488,7 +484,7 @@ function evaluateWave4Scenario(
 
     return {
         ...base,
-        active: status !== 'inactive',
+        active: score > 0,
         diamondBox,
         rsiDivergence: rsiDiv,
         macdDivergence: macdDiv,

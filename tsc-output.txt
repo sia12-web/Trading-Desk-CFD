@@ -1,0 +1,17 @@
+﻿.next/dev/types/validator.ts(215,39): error TS2306: File 'C:/Users/shahb/myApplications/Trade Desk-CFD/app/(dashboard)/trade/page.tsx' is not a module.
+.next/dev/types/validator.ts(503,39): error TS2306: File 'C:/Users/shahb/myApplications/Trade Desk-CFD/app/api/oanda/prices/route.ts' is not a module.
+.next/dev/types/validator.ts(719,39): error TS2306: File 'C:/Users/shahb/myApplications/Trade Desk-CFD/app/api/trade/execute-planned/route.ts' is not a module.
+.next/dev/types/validator.ts(728,39): error TS2306: File 'C:/Users/shahb/myApplications/Trade Desk-CFD/app/api/trade/execute/route.ts' is not a module.
+.next/types/validator.ts(251,39): error TS2306: File 'C:/Users/shahb/myApplications/Trade Desk-CFD/app/(dashboard)/trade/page.tsx' is not a module.
+.next/types/validator.ts(710,39): error TS2306: File 'C:/Users/shahb/myApplications/Trade Desk-CFD/app/api/oanda/prices/route.ts' is not a module.
+.next/types/validator.ts(962,39): error TS2306: File 'C:/Users/shahb/myApplications/Trade Desk-CFD/app/api/trade/execute-planned/route.ts' is not a module.
+.next/types/validator.ts(971,39): error TS2306: File 'C:/Users/shahb/myApplications/Trade Desk-CFD/app/api/trade/execute/route.ts' is not a module.
+lib/story/true-fractal-detector.ts(222,25): error TS2339: Property 'waves' does not exist on type 'ElliottWaveAnalysis'.
+lib/story/true-fractal-detector.ts(224,40): error TS2339: Property 'waves' does not exist on type 'ElliottWaveAnalysis'.
+lib/story/true-fractal-detector.ts(224,51): error TS7006: Parameter 'w' implicitly has an 'any' type.
+lib/story/true-fractal-detector.ts(271,45): error TS2339: Property 'kLine' does not exist on type '{ k: number[]; d: number[]; }'.
+lib/story/true-fractal-detector.ts(272,45): error TS2339: Property 'dLine' does not exist on type '{ k: number[]; d: number[]; }'.
+lib/story/true-fractal-detector.ts(336,17): error TS2367: This comparison appears to be unintentional because the types '"triggered" | "watching" | "confirming"' and '"inactive"' have no overlap.
+lib/story/true-fractal-detector.ts(425,45): error TS2339: Property 'kLine' does not exist on type '{ k: number[]; d: number[]; }'.
+lib/story/true-fractal-detector.ts(426,45): error TS2339: Property 'dLine' does not exist on type '{ k: number[]; d: number[]; }'.
+lib/story/true-fractal-detector.ts(491,17): error TS2367: This comparison appears to be unintentional because the types '"triggered" | "watching" | "confirming"' and '"inactive"' have no overlap.

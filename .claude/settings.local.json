@@ -88,7 +88,9 @@
       "Bash(git rm:*)",
       "WebFetch(domain:docs.cdp.coinbase.com)",
       "WebFetch(domain:vezgo.com)",
-      "WebFetch(domain:apidog.com)"
+      "WebFetch(domain:apidog.com)",
+      "Bash(python:*)",
+      "Bash(node:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
