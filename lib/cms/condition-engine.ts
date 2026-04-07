@@ -8,26 +8,49 @@ import type {
     SessionAnnotatedH1,
     ProgrammaticCondition,
 } from './types'
+import { getAssetConfig } from '@/lib/story/asset-config'
 
 const MIN_SAMPLE = 15
 const MIN_PROBABILITY = 55
 
+// Forex-specific condition IDs to skip for crypto (session-based, forex market structure)
+const FOREX_ONLY_CONDITION_IDS = new Set([
+    'd1',   // Friday/Thursday/Monday structure (forex week)
+    'd9',   // Pre-weekend positioning
+    'd10',  // Monday gap patterns
+    'w1',   // Weekly open/close forex structure
+    'w2',   // Weekly range forex structure
+    'cm5',  // DAX → EUR correlation
+    'cm6',  // FTSE → GBP correlation
+    'cm7',  // Nikkei → JPY correlation
+])
+
 /**
  * Compute all conditional patterns programmatically from pre-collected data.
  * Returns only conditions meeting minimum sample + probability thresholds.
+ * For crypto: skips session conditions and forex-specific day/cross-market patterns.
  */
 export function computeAllConditions(data: CMSDataPayload): ProgrammaticCondition[] {
+    const assetConfig = getAssetConfig(data.pair)
+    const isCryptoPair = assetConfig.type === 'crypto'
+
     const all = [
         ...computeDailyConditions(data.dailyRelationships, data.volatilityProfile.atr14_daily, data.pipMultiplier),
         ...computeWeeklyConditions(data.weeklyRelationships),
-        ...computeSessionConditions(data.sessionAnnotated, data.volatilityProfile.atr14_daily),
+        // Crypto trades 24/7 — session conditions are meaningless
+        ...(isCryptoPair ? [] : computeSessionConditions(data.sessionAnnotated, data.volatilityProfile.atr14_daily)),
         ...computeVolatilityConditions(data.dailyRelationships, data.weeklyRelationships, data.volatilityProfile.atr14_daily),
         ...computeCrossMarketConditions(data.dailyRelationships, data.crossMarketCorrelations, data.pipMultiplier, data.pair),
         ...computeFractalConditions(data.dailyRelationships, data.volatilityProfile.atr14_daily, data.pipMultiplier),
         ...computeElliottWaveConditions(data.dailyRelationships, data.volatilityProfile.atr14_daily, data.pipMultiplier),
     ]
 
-    return all.filter(c => c.sample_size >= MIN_SAMPLE && c.probability >= MIN_PROBABILITY)
+    return all.filter(c => {
+        if (c.sample_size < MIN_SAMPLE || c.probability < MIN_PROBABILITY) return false
+        // Filter out forex-specific conditions for crypto
+        if (isCryptoPair && FOREX_ONLY_CONDITION_IDS.has(c.id)) return false
+        return true
+    })
 }
 
 // ── Helpers ──

@@ -449,3 +449,178 @@ export function calculateGatorOscillator(highs: number[], lows: number[]): Gator
     const lower = teeth.map((t, i) => isNaN(t) || isNaN(lips[i]) ? NaN : -Math.abs(t - lips[i]))
     return { upper, lower }
 }
+
+// ── Fast Matrix: Divergence, Stochastic Reload, Golden Pocket ──
+
+import type { RSIDivergence, MACDDivergence, StochasticReload, GoldenPocket } from '@/lib/story/types'
+
+/**
+ * Detect RSI divergence — compares last 2 swing extremes in price vs RSI.
+ * Bullish: price makes Lower Low, RSI makes Higher Low.
+ * Bearish: price makes Higher High, RSI makes Lower High.
+ */
+export function detectRSIDivergence(
+    prices: number[],
+    rsi: number[],
+    isBullish: boolean,
+    swingLookback: number = 5
+): RSIDivergence {
+    const none: RSIDivergence = { detected: false, type: 'none', priceSwing1: null, priceSwing2: null, rsiSwing1: null, rsiSwing2: null, details: 'Insufficient data' }
+    if (prices.length < swingLookback * 3 || rsi.length < swingLookback * 3) return none
+
+    const len = Math.min(prices.length, rsi.length)
+    const swings: Array<{ index: number; price: number; rsiVal: number }> = []
+
+    if (isBullish) {
+        // Find swing lows (local minima)
+        for (let i = len - 2; i >= swingLookback; i--) {
+            let isLow = true
+            for (let j = 1; j <= swingLookback; j++) {
+                if (prices[i] > prices[i - j] || prices[i] > prices[i + j]) { isLow = false; break }
+            }
+            if (isLow && !isNaN(rsi[i])) swings.push({ index: i, price: prices[i], rsiVal: rsi[i] })
+            if (swings.length >= 2) break
+        }
+        if (swings.length < 2) return { ...none, details: 'Not enough swing lows found' }
+        const [recent, prior] = swings
+        // Bullish divergence: price LL, RSI HL
+        if (recent.price < prior.price && recent.rsiVal > prior.rsiVal) {
+            return {
+                detected: true, type: 'bullish',
+                priceSwing1: prior.price, priceSwing2: recent.price,
+                rsiSwing1: prior.rsiVal, rsiSwing2: recent.rsiVal,
+                details: `Bullish divergence: price ${prior.price.toFixed(5)}→${recent.price.toFixed(5)} (LL), RSI ${prior.rsiVal.toFixed(1)}→${recent.rsiVal.toFixed(1)} (HL)`
+            }
+        }
+    } else {
+        // Find swing highs (local maxima)
+        for (let i = len - 2; i >= swingLookback; i--) {
+            let isHigh = true
+            for (let j = 1; j <= swingLookback; j++) {
+                if (prices[i] < prices[i - j] || prices[i] < prices[i + j]) { isHigh = false; break }
+            }
+            if (isHigh && !isNaN(rsi[i])) swings.push({ index: i, price: prices[i], rsiVal: rsi[i] })
+            if (swings.length >= 2) break
+        }
+        if (swings.length < 2) return { ...none, details: 'Not enough swing highs found' }
+        const [recent, prior] = swings
+        // Bearish divergence: price HH, RSI LH
+        if (recent.price > prior.price && recent.rsiVal < prior.rsiVal) {
+            return {
+                detected: true, type: 'bearish',
+                priceSwing1: prior.price, priceSwing2: recent.price,
+                rsiSwing1: prior.rsiVal, rsiSwing2: recent.rsiVal,
+                details: `Bearish divergence: price ${prior.price.toFixed(5)}→${recent.price.toFixed(5)} (HH), RSI ${prior.rsiVal.toFixed(1)}→${recent.rsiVal.toFixed(1)} (LH)`
+            }
+        }
+    }
+
+    return { ...none, details: 'No divergence pattern found' }
+}
+
+/**
+ * Detect MACD histogram divergence.
+ * Bullish: price LL, histogram HL (shallowing red).
+ * Bearish: price HH, histogram LH (weakening green).
+ */
+export function detectMACDDivergence(
+    prices: number[],
+    histogram: number[],
+    isBullish: boolean,
+    swingLookback: number = 5
+): MACDDivergence {
+    const none: MACDDivergence = { detected: false, type: 'none', histogramShallowing: false, details: 'Insufficient data' }
+    if (prices.length < swingLookback * 3 || histogram.length < swingLookback * 3) return none
+
+    const len = Math.min(prices.length, histogram.length)
+    const swings: Array<{ price: number; histVal: number }> = []
+
+    if (isBullish) {
+        for (let i = len - 2; i >= swingLookback; i--) {
+            let isLow = true
+            for (let j = 1; j <= swingLookback; j++) {
+                if (prices[i] > prices[i - j] || prices[i] > prices[i + j]) { isLow = false; break }
+            }
+            if (isLow && !isNaN(histogram[i])) swings.push({ price: prices[i], histVal: histogram[i] })
+            if (swings.length >= 2) break
+        }
+        if (swings.length < 2) return { ...none, details: 'Not enough swing lows' }
+        const [recent, prior] = swings
+        const shallowing = recent.histVal > prior.histVal
+        if (recent.price < prior.price && shallowing) {
+            return { detected: true, type: 'bullish', histogramShallowing: true, details: `MACD bullish divergence: price LL, histogram shallowing (${prior.histVal.toFixed(5)}→${recent.histVal.toFixed(5)})` }
+        }
+    } else {
+        for (let i = len - 2; i >= swingLookback; i--) {
+            let isHigh = true
+            for (let j = 1; j <= swingLookback; j++) {
+                if (prices[i] < prices[i - j] || prices[i] < prices[i + j]) { isHigh = false; break }
+            }
+            if (isHigh && !isNaN(histogram[i])) swings.push({ price: prices[i], histVal: histogram[i] })
+            if (swings.length >= 2) break
+        }
+        if (swings.length < 2) return { ...none, details: 'Not enough swing highs' }
+        const [recent, prior] = swings
+        const weakening = recent.histVal < prior.histVal
+        if (recent.price > prior.price && weakening) {
+            return { detected: true, type: 'bearish', histogramShallowing: false, details: `MACD bearish divergence: price HH, histogram weakening (${prior.histVal.toFixed(5)}→${recent.histVal.toFixed(5)})` }
+        }
+    }
+
+    return { ...none, details: 'No MACD divergence found' }
+}
+
+/**
+ * Detect Stochastic reload from extreme zone.
+ * Bullish: K crosses D upward from below 20.
+ * Bearish: K crosses D downward from above 80.
+ */
+export function detectStochasticReload(
+    kLine: number[],
+    dLine: number[],
+    isBullish: boolean,
+    timestamps?: string[]
+): StochasticReload {
+    const none: StochasticReload = { detected: false, direction: 'none', kValue: null, dValue: null, crossTime: null }
+    if (kLine.length < 3 || dLine.length < 3) return none
+
+    const len = Math.min(kLine.length, dLine.length)
+    // Scan recent candles (last 10) for the cross
+    for (let i = len - 1; i >= Math.max(0, len - 10); i--) {
+        const k = kLine[i], d = dLine[i]
+        const prevK = kLine[i - 1], prevD = dLine[i - 1]
+        if (isNaN(k) || isNaN(d) || isNaN(prevK) || isNaN(prevD)) continue
+
+        if (isBullish) {
+            // K crosses above D from oversold (K was below 20)
+            if (prevK <= prevD && k > d && (prevK < 20 || k < 30)) {
+                return { detected: true, direction: 'bullish', kValue: k, dValue: d, crossTime: timestamps?.[i] ?? null }
+            }
+        } else {
+            // K crosses below D from overbought (K was above 80)
+            if (prevK >= prevD && k < d && (prevK > 80 || k > 70)) {
+                return { detected: true, direction: 'bearish', kValue: k, dValue: d, crossTime: timestamps?.[i] ?? null }
+            }
+        }
+    }
+
+    return none
+}
+
+/**
+ * Calculate the Golden Pocket (50% to 61.8% Fibonacci retracement zone).
+ * For Wave 2: draw from Wave 1 low to Wave 1 high (bullish) or high to low (bearish).
+ */
+export function calculateGoldenPocket(swingLow: number, swingHigh: number): GoldenPocket {
+    const range = swingHigh - swingLow
+    const fib50 = swingHigh - range * 0.5
+    const fib618 = swingHigh - range * 0.618
+    return {
+        fib50,
+        fib618,
+        goldenPocketHigh: Math.max(fib50, fib618),
+        goldenPocketLow: Math.min(fib50, fib618),
+        waveSwingHigh: swingHigh,
+        waveSwingLow: swingLow,
+    }
+}

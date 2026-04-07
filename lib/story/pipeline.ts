@@ -457,15 +457,26 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
                 signals: dailyTF.fractalAnalysis.signals,
             } : undefined
 
-            const trueFractal = data.trueFractal ? {
-                overallPhase: data.trueFractal.overallPhase,
-                overallScore: data.trueFractal.overallScore,
-                direction: data.trueFractal.direction,
-                narrative: data.trueFractal.narrative,
-                phase1Status: data.trueFractal.phase1.status,
-                phase2Status: data.trueFractal.phase2.status,
-                phase3Status: data.trueFractal.phase3.status,
-                riskRewardRatio: data.trueFractal.phase4.riskRewardRatio,
+            const harmonicConvergence = data.harmonicConvergence ? {
+                overallPhase: data.harmonicConvergence.overallPhase,
+                overallScore: data.harmonicConvergence.overallScore,
+                direction: data.harmonicConvergence.direction,
+                narrative: data.harmonicConvergence.narrative,
+                primaryTrend: data.harmonicConvergence.phase1.primaryTrend,
+                directionalFilter: data.harmonicConvergence.phase1.directionalFilter,
+                m45CorrectionDetected: data.harmonicConvergence.phase2.m45CorrectionDetected,
+                temporalExhaustionReached: data.harmonicConvergence.phase2.temporalExhaustionReached,
+                bowtieApexDetected: data.harmonicConvergence.phase3.bowtieApexAtEquilibrium,
+                wyckoffSpringDetected: data.harmonicConvergence.phase3.wyckoffSpringDetected,
+                entryTriggered: data.harmonicConvergence.phase4.entryTrigger,
+                riskRewardToTP2: data.harmonicConvergence.phase4.riskRewardToTP2,
+                eulerianEquilibrium: data.harmonicConvergence.keyLevels.eulerianEquilibrium,
+                bowtieApex: data.harmonicConvergence.keyLevels.bowtieApex,
+                springPrice: data.harmonicConvergence.keyLevels.springPrice,
+                entryPrice: data.harmonicConvergence.keyLevels.entryPrice,
+                stopLoss: data.harmonicConvergence.keyLevels.stopLoss,
+                tp1: data.harmonicConvergence.keyLevels.tp1,
+                tp2: data.harmonicConvergence.keyLevels.tp2,
             } : undefined
 
             const reactionCtx: StoryReactionContext = {
@@ -473,7 +484,7 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
                 episodeNumber, seasonNumber, episodeType,
                 currentPrice: data.currentPrice, atr14: data.atr14,
                 atr50: data.atr50, volatilityStatus: data.volatilityStatus,
-                fractalAnalysis, trueFractal,
+                fractalAnalysis, harmonicConvergence,
             }
 
             if (episodeType === 'position_entry') {

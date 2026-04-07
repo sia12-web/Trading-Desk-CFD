@@ -13,7 +13,11 @@ const CFD_INDICES = [
     'NAS100/USD', 'SPX500/USD', 'US30/USD', 'DE30/EUR',
 ]
 
-const ALL_INSTRUMENTS = [...FOREX_PAIRS, ...CFD_INDICES]
+const CRYPTO_PAIRS = [
+    'BTC/USD', 'ETH/USD', 'SOL/USD', 'XRP/USD', 'DOGE/USD',
+]
+
+const ALL_INSTRUMENTS = [...FOREX_PAIRS, ...CFD_INDICES, ...CRYPTO_PAIRS]
 
 interface PairSelectorProps {
     subscribedPairs: string[]
@@ -38,7 +42,7 @@ export function PairSelector({ subscribedPairs, onSubscribe, onClose }: PairSele
                 </div>
 
                 <p className="text-xs text-neutral-500 mb-4">
-                    Choose a forex pair or index to follow. Each instrument is like a TV show — you&apos;ll get ongoing narrative analysis.
+                    Choose a forex pair, index, or cryptocurrency to follow. Each instrument is like a TV show — you&apos;ll get ongoing narrative analysis.
                 </p>
 
                 <div className="relative mb-4">
@@ -70,6 +74,9 @@ export function PairSelector({ subscribedPairs, onSubscribe, onClose }: PairSele
                                     {pair}
                                     {CFD_INDICES.includes(pair) && (
                                         <span className="text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-amber-500/10 text-amber-400 rounded-md border border-amber-500/20">IDX</span>
+                                    )}
+                                    {CRYPTO_PAIRS.includes(pair) && (
+                                        <span className="text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-purple-500/10 text-purple-400 rounded-md border border-purple-500/20">CRYPTO</span>
                                     )}
                                 </span>
                                 <Plus size={16} className="text-blue-400" />

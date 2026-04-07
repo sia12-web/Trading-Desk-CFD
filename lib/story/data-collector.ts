@@ -1,4 +1,5 @@
-import { getCandles, getCurrentPrices } from '@/lib/oanda/client'
+import { getCandles as getOandaCandles, getCurrentPrices } from '@/lib/oanda/client'
+import { getCandles as getUnifiedCandles } from '@/lib/data/candle-fetcher'
 import { calculateAllIndicators } from '@/lib/strategy/calculators'
 import { assessTrend } from '@/lib/utils/trend-detector'
 import { calculateATR } from '@/lib/utils/atr'
@@ -6,8 +7,9 @@ import { detectAMDPhase } from './amd-detector'
 import { mapLiquidityZones } from './liquidity-mapper'
 import { detectFractalSetup } from './fractal-detector'
 import { detectElliottWave } from './elliott-wave-detector'
-import { detectTrueFractal } from './true-fractal-detector'
+import { detectFastMatrix } from './true-fractal-detector'
 import { getCorrelationInsights } from './correlation-integrator'
+import { displayToInternalPair, isCrypto } from './asset-config'
 import type { OandaCandle } from '@/lib/types/oanda'
 import type { StoryDataPayload, TimeframeData, PriceLevel } from './types'
 
@@ -17,6 +19,8 @@ const TIMEFRAME_CONFIG: { tf: TimeframeData['timeframe']; granularity: string; c
     { tf: 'D', granularity: 'D', count: 200 },
     { tf: 'H4', granularity: 'H4', count: 200 },
     { tf: 'H1', granularity: 'H1', count: 300 },
+    { tf: 'M15', granularity: 'M15', count: 500 },
+    { tf: 'M1', granularity: 'M1', count: 300 },
 ]
 
 import { getAssetConfig } from './asset-config'
@@ -24,6 +28,10 @@ import { getAssetConfig } from './asset-config'
 // Standard pip/point locations per pair type
 function getPipLocation(pair: string): number {
     const config = getAssetConfig(pair)
+    if (config.type === 'crypto') {
+        // Crypto: use decimal places from config (BTC/ETH=2dp → -2, XRP=4dp → -4, DOGE=5dp → -5)
+        return -config.decimalPlaces
+    }
     if (config.type === 'cfd_index') return -1 // Indices: 1 decimal (15250.5)
     if (pair.includes('JPY')) return -2 // JPY: 0.01 is 1 pip
     if (pair.includes('XAU')) return -1 // Gold: 0.1 is 1 point
@@ -43,26 +51,37 @@ export async function collectStoryData(
     pair: string,
     client?: SupabaseClient
 ): Promise<StoryDataPayload> {
-    const instrument = pair.replace('/', '_')
+    const instrument = displayToInternalPair(pair)
+    const isCryptoPair = isCrypto(pair)
     const pipLocation = getPipLocation(pair)
     const supabase = client || await createClient()
 
     // Fetch current price, local trades, and LIVE OANDA trades in parallel
-    const [{ data: prices }, { data: tradesRaw }, { data: openTradesRaw }] = await Promise.all([
-        getCurrentPrices([instrument]),
+    // For crypto: skip OANDA pricing and open trades (not available)
+    const [priceResult, { data: tradesRaw }, openTradesResult] = await Promise.all([
+        isCryptoPair
+            ? Promise.resolve({ data: undefined as any }) // Crypto price from candle data below
+            : getCurrentPrices([instrument]),
         supabase
             .from('trades')
             .select('direction, status, entry_price, exit_price, stop_loss, take_profit, closed_at, story_season_number, story_episode_id')
             .eq('user_id', userId)
             .eq('pair', pair)
-            .in('status', ['planned', 'closed']) // Exclude local 'open' — active positions tracked separately
+            .in('status', ['planned', 'closed'])
             .order('created_at', { ascending: false })
             .limit(10),
-        import('@/lib/oanda/client').then(m => m.getOpenTrades())
+        isCryptoPair
+            ? Promise.resolve({ data: [] as any[] })
+            : import('@/lib/oanda/client').then(m => m.getOpenTrades())
     ])
-    
-    // Filter live trades for this instrument
-    const liveOandaTrade = (openTradesRaw || []).find((t: any) => t.instrument === instrument)
+
+    const prices = priceResult.data
+    const openTradesRaw = openTradesResult.data
+
+    // Filter live trades for this instrument (crypto has no OANDA positions)
+    const liveOandaTrade = isCryptoPair
+        ? undefined
+        : (openTradesRaw || []).find((t: any) => t.instrument === instrument)
 
     // Enrich trades with episode numbers for linked trades
     const linkedEpisodeIds = (tradesRaw || [])
@@ -96,17 +115,27 @@ export async function collectStoryData(
         }
     })
 
-    const currentPrice = prices?.[0]
+    // For OANDA pairs, get mid price; for crypto, derive from candle data below
+    let currentPrice = prices?.[0]
         ? (parseFloat(prices[0].asks[0].price) + parseFloat(prices[0].bids[0].price)) / 2
         : 0
 
-    // Fetch all timeframes in parallel
+    // Fetch all timeframes in parallel (unified fetcher routes crypto to CoinGecko)
     const candleResults = await Promise.all(
         TIMEFRAME_CONFIG.map(async ({ tf, granularity, count }) => {
-            const { data } = await getCandles({ instrument, granularity, count })
+            const { data } = await getUnifiedCandles({ instrument, granularity, count })
             return { tf, candles: data || [] }
         })
     )
+
+    // For crypto: derive current price from latest H1 candle close
+    if (isCryptoPair && currentPrice === 0) {
+        const h1Candles = candleResults.find(r => r.tf === 'H1')?.candles
+        const latestCandle = h1Candles?.[h1Candles.length - 1]
+        if (latestCandle) {
+            currentPrice = parseFloat(latestCandle.mid.c)
+        }
+    }
 
     // Find daily candles for indicator calculations that need them
     const dailyCandles = candleResults.find(r => r.tf === 'D')?.candles || []
@@ -124,20 +153,7 @@ export async function collectStoryData(
         return { timeframe: tf, candles, indicators, trend, patterns, swingHighs, swingLows, fractalAnalysis, elliottWave }
     })
 
-    // ── True Fractal: cross-timeframe Wave 3 hunting ──
-    const dailyTF = timeframes.find(t => t.timeframe === 'D')
-    const h4TF = timeframes.find(t => t.timeframe === 'H4')
-    const h1TF = timeframes.find(t => t.timeframe === 'H1')
-    const trueFractal = (dailyTF && h4TF && h1TF)
-        ? detectTrueFractal(
-            dailyTF.candles, dailyTF.indicators, dailyTF.elliottWave,
-            h4TF.candles, h4TF.indicators,
-            h1TF.candles, h1TF.indicators, h1TF.elliottWave,
-            dailyTF.fractalAnalysis, pipLocation
-        )
-        : undefined
-
-    // Detect AMD phases per timeframe
+    // Detect AMD phases per timeframe (needed before Fast Matrix)
     const amdPhases: StoryDataPayload['amdPhases'] = {}
     for (const tfd of timeframes) {
         amdPhases[tfd.timeframe] = detectAMDPhase(tfd.candles, tfd.indicators)
@@ -147,6 +163,19 @@ export async function collectStoryData(
     const liquidityZones = timeframes.flatMap(tfd =>
         mapLiquidityZones(tfd.candles, tfd.timeframe)
     )
+
+    // ── The Fast Matrix: H1 Macro → M15 Geometry → M1 Execution ──
+    const h1TF = timeframes.find(t => t.timeframe === 'H1')
+    const m15TFData = timeframes.find(t => t.timeframe === 'M15')
+    const m1TFData = timeframes.find(t => t.timeframe === 'M1')
+    const fastMatrix = (h1TF && m15TFData && m1TFData)
+        ? detectFastMatrix(
+            h1TF.candles, h1TF.indicators,
+            m15TFData.candles, m15TFData.indicators, m15TFData.elliottWave,
+            m1TFData.candles, m1TFData.indicators,
+            pipLocation
+        )
+        : undefined
 
     // ATR status from daily
     const dailyTFData = timeframes.find(t => t.timeframe === 'D')
@@ -164,7 +193,9 @@ export async function collectStoryData(
         pipLocation,
         currentPrice,
         timeframes,
-        trueFractal,
+        fastMatrix,
+        harmonicConvergence: fastMatrix,
+        trueFractal: fastMatrix,
         amdPhases,
         liquidityZones,
         volatilityStatus,

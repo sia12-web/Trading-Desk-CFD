@@ -552,5 +552,181 @@ export const PAIR_KNOWLEDGE: Record<string, PairKnowledge> = {
             "Avoid holding long-term unless you understand the swap costs",
             "Treat more like a stock than a forex major"
         ]
+    },
+
+    // ── Cryptocurrencies ──
+
+    "BTC/USD": {
+        pair: "BTC/USD",
+        displayName: "Bitcoin / US Dollar",
+        baseCurrency: "BTC",
+        quoteCurrency: "USD",
+        nickname: "Digital Gold",
+        bestSessions: ["US market hours (14:00-21:00 UTC)", "24/7 — highest volume during US/EU overlap"],
+        worstSessions: ["Weekend low-liquidity (Saturday 00:00-Sunday 12:00 UTC)"],
+        avgDailyRange: 2500,
+        avgRangeBySession: { "asia": 800, "london": 1200, "newyork": 1800, "overlap": 2500 },
+        drivers: [
+            "Halving cycles (4-year supply shock)",
+            "Institutional adoption and ETF flows",
+            "Federal Reserve policy (risk appetite proxy)",
+            "On-chain metrics: exchange flows, whale wallets, miner behavior",
+            "Regulatory headlines (SEC, global frameworks)",
+            "Store of value narrative vs risk asset correlation"
+        ],
+        correlations: [
+            { pair: "ETH/USD", type: "positive", strength: "strong", explanation: "ETH follows BTC in macro moves." },
+            { pair: "SPX500/USD", type: "positive", strength: "moderate", explanation: "BTC increasingly correlated with risk assets." },
+            { pair: "Gold (XAU/USD)", type: "positive", strength: "moderate", explanation: "Both compete as inflation hedges." }
+        ],
+        warnings: [
+            "Volatility is 3-5x forex majors — size accordingly",
+            "Weekend gaps and flash crashes are common in low liquidity",
+            "Funding rates on futures can erode positions silently",
+            "Regulatory announcements can cause 10%+ moves in hours"
+        ],
+        tips: [
+            "BTC dominance rising = altcoins underperform, focus on BTC only",
+            "Fear & Greed Index extremes (<20 or >80) are contrarian signals",
+            "Halving cycles provide 4-year macro structure for wave analysis"
+        ],
+        intelligenceSummary: "Bitcoin is the anchor of the crypto market. Its price action drives the entire ecosystem. BTC dominance rising means capital flows FROM alts TO BTC. The 4-year halving cycle provides macro wave structure ideal for Elliott Wave analysis.",
+        strengthNote: "BTC is the crypto market's risk barometer — all altcoins follow its lead."
+    },
+    "ETH/USD": {
+        pair: "ETH/USD",
+        displayName: "Ethereum / US Dollar",
+        baseCurrency: "ETH",
+        quoteCurrency: "USD",
+        nickname: "World Computer",
+        bestSessions: ["US market hours (14:00-21:00 UTC)", "DeFi activity peaks during EU/US overlap"],
+        worstSessions: ["Weekend low-liquidity"],
+        avgDailyRange: 150,
+        avgRangeBySession: { "asia": 50, "london": 80, "newyork": 120, "overlap": 150 },
+        drivers: [
+            "DeFi total value locked (TVL) and protocol revenue",
+            "Gas fees and network congestion (demand proxy)",
+            "Staking yield and validator economics",
+            "L2 adoption (Arbitrum, Optimism, Base)",
+            "Protocol upgrades (EIPs, hard forks)",
+            "BTC price action (ETH/BTC ratio)"
+        ],
+        correlations: [
+            { pair: "BTC/USD", type: "positive", strength: "strong", explanation: "ETH follows BTC macro direction." },
+            { pair: "SOL/USD", type: "positive", strength: "moderate", explanation: "Competing L1s move together in risk-on." }
+        ],
+        warnings: [
+            "ETH/BTC ratio matters — ETH can drop even if BTC is flat",
+            "Gas fee spikes during congestion can signal tops",
+            "Protocol upgrades can cause volatility in both directions"
+        ],
+        tips: [
+            "Watch ETH/BTC ratio for relative strength — rising = alt season signal",
+            "DeFi TVL trends are a leading indicator for ETH demand",
+            "Staking yield creates a floor narrative but doesn't prevent drawdowns"
+        ],
+        intelligenceSummary: "Ethereum is the backbone of DeFi and smart contracts. Its price reflects both crypto market sentiment and specific ecosystem health. The ETH/BTC ratio is the key metric for altcoin rotation.",
+        strengthNote: "ETH leads the altcoin market — when ETH/BTC is rising, altseason is building."
+    },
+    "SOL/USD": {
+        pair: "SOL/USD",
+        displayName: "Solana / US Dollar",
+        baseCurrency: "SOL",
+        quoteCurrency: "USD",
+        nickname: "Speed Chain",
+        bestSessions: ["24/7 — highest volume during US hours"],
+        worstSessions: ["Weekend low-liquidity"],
+        avgDailyRange: 8,
+        avgRangeBySession: { "asia": 3, "london": 5, "newyork": 7, "overlap": 8 },
+        drivers: [
+            "DeFi/NFT ecosystem growth on Solana",
+            "VC backing and institutional interest",
+            "Network reliability (outage history impacts sentiment)",
+            "Meme coin activity on Solana (demand driver)",
+            "BTC correlation (high beta to BTC moves)"
+        ],
+        correlations: [
+            { pair: "BTC/USD", type: "positive", strength: "strong", explanation: "SOL is high-beta BTC — amplifies moves." },
+            { pair: "ETH/USD", type: "positive", strength: "moderate", explanation: "Competing L1 — both move with risk appetite." }
+        ],
+        warnings: [
+            "High beta — SOL can move 2-3x BTC percentage moves",
+            "Network outages have caused 20%+ drops historically",
+            "Meme coin frenzy can cause unsustainable pumps"
+        ],
+        tips: [
+            "SOL is a beta play on BTC — use it when BTC trend is confirmed",
+            "Network health metrics (TPS, uptime) are leading sentiment indicators",
+            "Watch Solana DeFi TVL for ecosystem health"
+        ],
+        intelligenceSummary: "Solana is a high-performance L1 competing with Ethereum. It's a high-beta play — when crypto is bullish, SOL outperforms; when bearish, it drops harder. Network reliability is the key risk.",
+        strengthNote: "SOL amplifies crypto market moves — use as a high-conviction trend vehicle."
+    },
+    "XRP/USD": {
+        pair: "XRP/USD",
+        displayName: "Ripple / US Dollar",
+        baseCurrency: "XRP",
+        quoteCurrency: "USD",
+        nickname: "Banker's Coin",
+        bestSessions: ["24/7 — spikes on regulatory news (any time)"],
+        worstSessions: ["Weekend low-liquidity"],
+        avgDailyRange: 0.03,
+        avgRangeBySession: { "asia": 0.01, "london": 0.015, "newyork": 0.025, "overlap": 0.03 },
+        drivers: [
+            "Regulatory clarity (SEC case outcome, global frameworks)",
+            "Institutional partnerships (banks, payment providers)",
+            "Cross-border remittance adoption (RippleNet)",
+            "BTC correlation (follows macro crypto trend)",
+            "Tokenomics (Ripple's XRP holdings and release schedule)"
+        ],
+        correlations: [
+            { pair: "BTC/USD", type: "positive", strength: "moderate", explanation: "Follows BTC in macro moves but can decouple on regulatory news." }
+        ],
+        warnings: [
+            "Extremely news-driven — one regulatory headline can move it 30%+",
+            "Ripple controls large XRP supply — periodic selling pressure",
+            "Can be illiquid during off-hours — wider spreads"
+        ],
+        tips: [
+            "Monitor SEC and global regulatory news as primary catalyst",
+            "XRP often lags BTC rallies then catches up violently",
+            "Regulatory clarity is THE binary catalyst — position accordingly"
+        ],
+        intelligenceSummary: "XRP is a payment-focused cryptocurrency driven primarily by regulatory outcomes. The SEC case resolution provides binary risk. When regulatory clarity arrives, XRP tends to make explosive moves.",
+        strengthNote: "XRP is a regulatory play — clarity = explosion, uncertainty = stagnation."
+    },
+    "DOGE/USD": {
+        pair: "DOGE/USD",
+        displayName: "Dogecoin / US Dollar",
+        baseCurrency: "DOGE",
+        quoteCurrency: "USD",
+        nickname: "The People's Crypto",
+        bestSessions: ["24/7 — spikes on social media events (unpredictable)"],
+        worstSessions: ["Weekend low-liquidity"],
+        avgDailyRange: 0.008,
+        avgRangeBySession: { "asia": 0.003, "london": 0.005, "newyork": 0.007, "overlap": 0.008 },
+        drivers: [
+            "Social media sentiment (Twitter/X, Reddit)",
+            "Celebrity endorsements (Elon Musk influence)",
+            "Retail trading waves and meme momentum",
+            "BTC correlation (follows macro crypto trend)",
+            "Community events and integration announcements"
+        ],
+        correlations: [
+            { pair: "BTC/USD", type: "positive", strength: "moderate", explanation: "Follows BTC in macro direction, decouples on social media events." }
+        ],
+        warnings: [
+            "Extremely sentiment-driven — fundamentals are minimal",
+            "Pump-and-dump dynamics are common — be cautious of FOMO entries",
+            "Infinite supply (no cap) — long-term inflation pressure",
+            "Social media-driven spikes often retrace 50-80%"
+        ],
+        tips: [
+            "DOGE is a momentum/sentiment trade — True Fractal still applies to structure",
+            "Social media volume is a leading indicator — monitor Twitter trends",
+            "Use tight stops — DOGE reversals are violent and fast"
+        ],
+        intelligenceSummary: "Dogecoin is a meme cryptocurrency driven by social media sentiment and retail enthusiasm. It has minimal fundamental value but strong community momentum. Technical analysis works on the structure, but catalysts are unpredictable.",
+        strengthNote: "DOGE is pure sentiment — trade the structure, not the story."
     }
 };

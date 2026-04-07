@@ -1,7 +1,7 @@
 // ── Asset Type Detection & Configuration ──
-// Detects whether an instrument is forex or CFD index and returns asset-specific config.
+// Detects whether an instrument is forex, CFD index, or crypto and returns asset-specific config.
 
-export type AssetType = 'forex' | 'cfd_index'
+export type AssetType = 'forex' | 'cfd_index' | 'crypto'
 
 export interface IndexMeta {
     displayName: string
@@ -13,12 +13,20 @@ export interface IndexMeta {
     keySectors: string[]
 }
 
+export interface CryptoMeta {
+    displayName: string
+    symbol: string
+    category: 'layer-1' | 'smart-contract' | 'payment' | 'meme'
+    keyDrivers: string[]
+}
+
 export interface AssetConfig {
     type: AssetType
     pointLabel: 'pips' | 'points'
     pointMultiplier: number
     decimalPlaces: number
     indexMeta: IndexMeta | null
+    cryptoMeta: CryptoMeta | null
 }
 
 // Known CFD index instruments (OANDA format → config)
@@ -61,6 +69,40 @@ const INDEX_MAP: Record<string, IndexMeta> = {
     },
 }
 
+// Known crypto instruments (display pair → config)
+const CRYPTO_MAP: Record<string, CryptoMeta> = {
+    'BTC/USD': {
+        displayName: 'Bitcoin',
+        symbol: 'BTC',
+        category: 'layer-1',
+        keyDrivers: ['halving cycles', 'institutional adoption', 'ETF flows', 'store of value narrative', 'on-chain metrics'],
+    },
+    'ETH/USD': {
+        displayName: 'Ethereum',
+        symbol: 'ETH',
+        category: 'smart-contract',
+        keyDrivers: ['DeFi ecosystem', 'gas fees', 'staking yield', 'L2 adoption', 'protocol upgrades'],
+    },
+    'SOL/USD': {
+        displayName: 'Solana',
+        symbol: 'SOL',
+        category: 'layer-1',
+        keyDrivers: ['high-performance L1', 'DeFi/NFT ecosystem', 'VC backing', 'network reliability'],
+    },
+    'XRP/USD': {
+        displayName: 'Ripple',
+        symbol: 'XRP',
+        category: 'payment',
+        keyDrivers: ['payment network', 'regulatory clarity', 'institutional partnerships', 'cross-border remittance'],
+    },
+    'DOGE/USD': {
+        displayName: 'Dogecoin',
+        symbol: 'DOGE',
+        category: 'meme',
+        keyDrivers: ['social media sentiment', 'community momentum', 'meme culture', 'retail trading waves'],
+    },
+}
+
 // Default forex config
 const FOREX_DEFAULT: AssetConfig = {
     type: 'forex',
@@ -68,6 +110,7 @@ const FOREX_DEFAULT: AssetConfig = {
     pointMultiplier: 10000,
     decimalPlaces: 5,
     indexMeta: null,
+    cryptoMeta: null,
 }
 
 /**
@@ -75,33 +118,57 @@ const FOREX_DEFAULT: AssetConfig = {
  * Accepts both formats: "NAS100_USD" or "NAS100/USD"
  */
 export function getAssetConfig(pair: string): AssetConfig {
-    const instrument = pair.replace('/', '_')
-    const meta = INDEX_MAP[instrument]
+    // Check for crypto first (display format: BTC/USD or internal format: CRYPTO_BTC_USD)
+    const cryptoMeta = CRYPTO_MAP[pair]
+    if (cryptoMeta || pair.startsWith('CRYPTO_')) {
+        // Convert internal format to display to find meta
+        const displayPair = pair.startsWith('CRYPTO_')
+            ? pair.replace('CRYPTO_', '').replace('_', '/')
+            : pair
+        const meta = CRYPTO_MAP[displayPair]
+        if (meta) {
+            const decimals = meta.symbol === 'DOGE' ? 5
+                : meta.symbol === 'XRP' ? 4
+                : 2 // BTC, ETH, SOL
+            return {
+                type: 'crypto',
+                pointLabel: 'points',
+                pointMultiplier: 1,
+                decimalPlaces: decimals,
+                indexMeta: null,
+                cryptoMeta: meta,
+            }
+        }
+    }
 
-    if (meta) {
+    const instrument = pair.replace('/', '_')
+    const indexMeta = INDEX_MAP[instrument]
+
+    if (indexMeta) {
         return {
             type: 'cfd_index',
             pointLabel: 'points',
             pointMultiplier: 1,
             decimalPlaces: 1,
-            indexMeta: meta,
+            indexMeta,
+            cryptoMeta: null,
         }
     }
 
     // JPY pairs use 3 decimal places and 100x multiplier for pips
     if (pair.includes('JPY')) {
-        return { 
-            ...FOREX_DEFAULT, 
+        return {
+            ...FOREX_DEFAULT,
             decimalPlaces: 3,
-            pointMultiplier: 100 
+            pointMultiplier: 100
         }
     }
 
     // Gold (XAU) uses 3 decimal places and 10x multiplier (0.1 = 1 pip/point)
     if (pair.includes('XAU')) {
-        return { 
-            ...FOREX_DEFAULT, 
-            decimalPlaces: 3, 
+        return {
+            ...FOREX_DEFAULT,
+            decimalPlaces: 3,
             pointMultiplier: 10,
             pointLabel: 'points'
         }
@@ -116,4 +183,23 @@ export function getAssetConfig(pair: string): AssetConfig {
  */
 export function isCFDIndex(pair: string): boolean {
     return getAssetConfig(pair).type === 'cfd_index'
+}
+
+/**
+ * Check if a pair is a cryptocurrency.
+ */
+export function isCrypto(pair: string): boolean {
+    return getAssetConfig(pair).type === 'crypto'
+}
+
+/**
+ * Convert display pair to internal instrument format.
+ * Crypto: BTC/USD → CRYPTO_BTC_USD
+ * Forex/Index: EUR/USD → EUR_USD
+ */
+export function displayToInternalPair(pair: string): string {
+    if (CRYPTO_MAP[pair]) {
+        return `CRYPTO_${pair.replace('/', '_')}`
+    }
+    return pair.replace('/', '_')
 }

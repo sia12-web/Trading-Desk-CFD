@@ -84,7 +84,11 @@
       "Bash(timeout 10 npm start:*)",
       "Bash(nixpacks.toml << 'EOF'\n[phases.setup]\nnixPkgs = [\"nodejs_20\"]\n\n[phases.install]\ncmds = [\"npm ci\"]\n\n[phases.build]\ncmds = [\"npm run build\"]\n\n[start]\ncmd = \"node .next/standalone/server.js\"\n\n[variables]\nHOSTNAME = \"0.0.0.0\"\nEOF)",
       "Bash(regardless of what happened.\"\n\nNew files:\n- TRADING_PRINCIPLE.md: Core principle, philosophy, and contract\n- docs/EXECUTION_DISCIPLINE_IMPLEMENTATION.md: Complete implementation plan\n\nKey concepts:\n- Execution rate > win rate \\(discipline = edge\\)\n- No discretionary overrides post-plan\n- System exists to remove human interference\n- Track every plan created vs. executed\n\nImplementation phases:\n1. Core tracking \\(plan_execution_log table, stats API\\)\n2. AI reinforcement \\(update all agent prompts\\)\n3. Automation \\(daily/weekly execution reports\\)\n4. Polish \\(one-click execution, Telegram alerts\\)\n\nUpdated MEMORY.md to reference this principle first.\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(git rm:*)",
+      "WebFetch(domain:docs.cdp.coinbase.com)",
+      "WebFetch(domain:vezgo.com)",
+      "WebFetch(domain:apidog.com)"
     ]
   },
   "enableAllProjectMcpServers": true,

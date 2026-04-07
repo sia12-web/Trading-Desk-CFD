@@ -1,5 +1,6 @@
 import type { StoryDataPayload } from '../types'
 import type { CrossMarketReport, IndexCrossMarketReport } from '../agents/types'
+import { getAssetConfig } from '../asset-config'
 
 /**
  * DeepSeek "Quantitative Engine" prompt for Story.
@@ -50,8 +51,21 @@ export function buildStoryQuantPrompt(
         macdHist: tf.indicators.macd.histogram[tf.indicators.macd.histogram.length - 1] || 0,
     }))
 
-    return `You are the Quantitative Engine — a statistical validator for forex trading signals.
+    const assetConfig = getAssetConfig(data.pair)
+    const marketLabel = assetConfig.type === 'crypto' ? 'cryptocurrency' : assetConfig.type === 'cfd_index' ? 'index' : 'forex'
+
+    const cryptoNote = assetConfig.type === 'crypto'
+        ? `\n## CRYPTO MODE — ${assetConfig.cryptoMeta!.displayName}
+- Validate Confluence Strategy phases against 24/7 price action. No session bias.
+- Volume patterns differ from forex — crypto has weekend low-liquidity traps and exchange-specific volume spikes.
+- CoinGecko OHLC volume may be limited — weight price structure and indicator divergence over raw volume.
+- Funding rates and open interest replace session flow analysis.
+- Use "points" not "pips" for all measurements.\n`
+        : ''
+
+    return `You are the Quantitative Engine — a statistical validator for ${marketLabel} trading signals.
 Your job is to validate the structural analysis with hard numbers and compute precise levels.
+${cryptoNote}
 
 ## CROSS-VALIDATION MANDATE (MANDATORY)
 - Cross-check EVERY price level from Gemini's analysis against actual swing highs/lows in the indicator data.
@@ -59,12 +73,12 @@ Your job is to validate the structural analysis with hard numbers and compute pr
 - Cross-check fractal levels against Alligator teeth position — fractals inside the "mouth" (between jaw and teeth) are NOT valid Bill Williams signals.
 - **Elliott Wave Validation**: Verify that proposed entry/exit levels align with Elliott Wave Fibonacci retracements/extensions. If entering on a "Wave 3" setup, confirm we're bouncing off 38.2-61.8% retracement. If targeting, use 127.2-161.8% extensions.
 - **Wave Structure Confirmation**: If Elliott Wave shows "corrective" pattern but Gemini suggests trend continuation, flag this as conflicting signals. Corrective waves (A-B-C) move counter-trend.
-- **TRUE FRACTAL VALIDATION (MANDATORY)**: Cross-check all 4 True Fractal phases against raw indicator data:
-  - Phase 1: Verify Daily wave count matches actual pivot structure. Is the Wave 2 retracement depth mathematically correct?
-  - Phase 2: Verify RSI divergence by comparing actual RSI lows vs price lows on 4H. Verify MACD histogram divergence from raw values.
-  - Phase 3: Verify 1H sub-wave structure exists in pivot data. Confirm micro Fib entry is within actual swing range.
-  - Phase 4: Verify SL/TP/R:R math is correct. Flag if R:R < 2:1.
-  - If any True Fractal phase has confidence < 50, flag it as "unconfirmed" in your validation.
+- **CONFLUENCE STRATEGY VALIDATION (MANDATORY)**: Cross-check all 4 phases against raw indicator data:
+  - Phase 1 (Dow Theory): Verify HH/HL or LH/LL swing count from actual pivot structure. Is the Weekly alignment real?
+  - Phase 2 (Wyckoff): Verify accumulation range from actual ADX/BB data. Confirm Spring price corresponds to a real stop_hunt wick.
+  - Phase 3 (EW Entry): Verify SOS breakout above range is real. Confirm LPS pullback is at valid 50-61.8% Fib of SOS move. Entry must hold above Spring.
+  - Phase 4 (R:R): Verify SL is below Spring price. Verify TP at 161.8% extension. Flag if R:R < 3:1.
+  - If any phase has score < 50, flag it as "unconfirmed" in your validation.
 - Include a "flagged_levels" array in your output listing any suspicious levels with reasons.
 - Your own precise_levels must ONLY use prices derivable from actual candle data.
 
@@ -92,12 +106,12 @@ ${rsiByTF.map(r => `${r.tf}: RSI=${r.rsi.toFixed(1)}, MACD Hist=${r.macdHist.toF
 ## AMD ALGORITHMIC ASSESSMENT
 ${Object.entries(data.amdPhases).map(([tf, p]) => `${tf}: ${p.phase} (${p.confidence}%)`).join('\n')}
 
-## TRUE FRACTAL STATUS (Cross-Timeframe Wave 3 Hunter)
-${data.trueFractal ? `Overall Phase: ${data.trueFractal.overallPhase}/4 | Score: ${data.trueFractal.overallScore}/100 | Direction: ${data.trueFractal.direction}
-Phase 1: ${data.trueFractal.phase1.status} (${data.trueFractal.phase1.confidence}%) — Wave1Complete=${data.trueFractal.phase1.wave1Complete}, Wave2Depth=${data.trueFractal.phase1.wave2Depth !== null ? (data.trueFractal.phase1.wave2Depth * 100).toFixed(1) + '%' : 'N/A'}, InZone=${data.trueFractal.phase1.wave2InZone}
-Phase 2: ${data.trueFractal.phase2.status} (${data.trueFractal.phase2.confidence}%) — RSI_div=${data.trueFractal.phase2.rsiDivergence}, MACD_div=${data.trueFractal.phase2.macdDivergence}, StructShift=${data.trueFractal.phase2.structureShift}, Alligator=${data.trueFractal.phase2.alligatorAwakening}
-Phase 3: ${data.trueFractal.phase3.status} (${data.trueFractal.phase3.confidence}%) — SubWave1=${data.trueFractal.phase3.subWave1Detected}, MicroEntry=${data.trueFractal.phase3.microFibEntry?.toFixed(6) ?? 'N/A'}, Vol=${data.trueFractal.phase3.volumeConfirmed}, Fractal=${data.trueFractal.phase3.fractalSignal}
-Phase 4: SL=${data.trueFractal.phase4.stopLoss?.toFixed(6) ?? 'N/A'}, TP=${data.trueFractal.phase4.takeProfit?.toFixed(6) ?? 'N/A'}, R:R=${data.trueFractal.phase4.riskRewardRatio ?? 'N/A'}` : 'True Fractal unavailable.'}
+## HARMONIC CONVERGENCE MATRIX STATUS
+${data.harmonicConvergence ? `Overall Phase: ${data.harmonicConvergence.overallPhase}/4 | Score: ${data.harmonicConvergence.overallScore}/100 | Direction: ${data.harmonicConvergence.direction}
+Phase 1 (Macro Direction): ${data.harmonicConvergence.phase1.status} (${data.harmonicConvergence.phase1.score}%) — Trend=${data.harmonicConvergence.phase1.primaryTrend}, Filter=${data.harmonicConvergence.phase1.directionalFilter}, HH=${data.harmonicConvergence.phase1.dailySwingHighs}, HL=${data.harmonicConvergence.phase1.dailySwingLows}, WeeklyAligned=${data.harmonicConvergence.phase1.weeklyAligned}, VolConfirm=${data.harmonicConvergence.phase1.volumeConfirms}
+Phase 2 (Harmonic Time): ${data.harmonicConvergence.phase2.status} (${data.harmonicConvergence.phase2.score}%) — M45Correction=${data.harmonicConvergence.phase2.m45CorrectionDetected}, SubWaves=${data.harmonicConvergence.phase2.m15SubWaveCount}/3, M45Cycles=${data.harmonicConvergence.phase2.m45CyclesElapsed}/6, TemporalExhaustion=${data.harmonicConvergence.phase2.temporalExhaustionReached}, Harmonic9=${data.harmonicConvergence.phase2.harmonicMultipleOf9}
+Phase 3 (Trap Geometry): ${data.harmonicConvergence.phase3.status} (${data.harmonicConvergence.phase3.score}%) — EulerianEq=${data.harmonicConvergence.phase3.eulerianEquilibrium?.toFixed(6) ?? 'N/A'}, BowtieApex=${data.harmonicConvergence.phase3.bowtieApex ? data.harmonicConvergence.phase3.bowtieApex.price.toFixed(6) : 'N/A'}, Apex@Eq=${data.harmonicConvergence.phase3.bowtieApexAtEquilibrium}, Spring=${data.harmonicConvergence.phase3.wyckoffSpringDetected}, SpringPrice=${data.harmonicConvergence.phase3.springPrice?.toFixed(6) ?? 'N/A'}
+Phase 4 (Execution): Entry=${data.harmonicConvergence.phase4.entryTrigger}, EntryPrice=${data.harmonicConvergence.phase4.entryPrice?.toFixed(6) ?? 'N/A'}, SL=${data.harmonicConvergence.phase4.stopLoss?.toFixed(6) ?? 'N/A'}, TP1=${data.harmonicConvergence.phase4.tp1?.toFixed(6) ?? 'N/A'}, TP2=${data.harmonicConvergence.phase4.tp2?.toFixed(6) ?? 'N/A'}, R:R(TP1)=${data.harmonicConvergence.phase4.riskRewardToTP1?.toFixed(1) ?? 'N/A'}, R:R(TP2)=${data.harmonicConvergence.phase4.riskRewardToTP2?.toFixed(1) ?? 'N/A'}, Valid=${data.harmonicConvergence.phase4.positionValid}` : 'Harmonic Convergence Matrix unavailable.'}
 
 ## CROSS-MARKET DIVERGENCE CHECK
 ${buildCrossMarketCheck(crossMarket)}

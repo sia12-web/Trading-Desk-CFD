@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server'
  *
  * DELETES:
  * - All trades and positions (manual + story-driven)
- * - All journals and screenshots
+ * - All trade screenshots, strategies, P&L records + storage files
  * - All execution logs
  * - All AI memory (desk state, messages, meetings, trader profile, process scores)
  * - All story content (episodes, bible, scenarios, agent reports)
@@ -55,6 +55,31 @@ export async function POST() {
         }
 
         // ═══════════════════════════════════════════════════════════════════
+        // PHASE 0: Clean up storage files (before deleting DB records)
+        // ═══════════════════════════════════════════════════════════════════
+
+        console.log('[great-reset] Phase 0: Cleaning storage...')
+
+        try {
+            // Delete all trade screenshot files from Supabase Storage
+            const { data: screenshots } = await supabase
+                .from('trade_screenshots')
+                .select('storage_path')
+                .eq('user_id', user.id)
+
+            if (screenshots && screenshots.length > 0) {
+                const paths = screenshots.map(s => s.storage_path)
+                // Storage remove accepts batches of up to 1000
+                for (let i = 0; i < paths.length; i += 1000) {
+                    await supabase.storage.from('trade-screenshots').remove(paths.slice(i, i + 1000))
+                }
+                console.log(`[great-reset] Removed ${paths.length} screenshot files from storage`)
+            }
+        } catch (err) {
+            console.error('[great-reset] Storage cleanup error (non-fatal):', err)
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
         // PHASE 1: Delete FK children first (to avoid constraint violations)
         // ═══════════════════════════════════════════════════════════════════
 
@@ -62,7 +87,11 @@ export async function POST() {
 
         const phase1Tables = [
             'story_position_adjustments',  // FK: position_id
-            'journal_screenshots',          // FK: journal_entry_id
+            'trade_screenshots',            // FK: trade_id (journal screenshots)
+            'trade_strategies',             // FK: trade_id (journal strategy notes)
+            'trade_pnl',                    // FK: trade_id (journal P&L records)
+            'execution_log',               // FK: trade_id (NO CASCADE — must delete before trades)
+            'process_scores',              // FK: trade_id (has CASCADE but clean up explicitly)
             'story_episodes',              // FK: triggered_scenario_id (sometimes)
         ]
 
@@ -77,18 +106,15 @@ export async function POST() {
         console.log('[great-reset] Phase 2: Deleting parent tables...')
 
         const phase2Tables = [
-            // Trading History
-            'trades',                       // Manual trades
+            // Trading History (journal = trades + trade_screenshots + trade_strategies + trade_pnl)
+            'trades',                       // All trades (manual + story)
             'story_positions',              // Story-driven positions
-            'journal_entries',              // Trade journals
-            'execution_log',                // Execution history
 
             // AI Memory
             'desk_state',                   // Character memory + trading scars
             'desk_messages',                // Desk chatter
             'desk_meetings',                // Morning meetings, trade reviews
             'trader_profile',               // Observed weaknesses, current focus
-            'process_scores',               // Trade process scoring
 
             // Story Content
             'story_scenarios',              // Hypothetical setups
@@ -132,7 +158,7 @@ export async function POST() {
         // ═══════════════════════════════════════════════════════════════════
 
         const categories = {
-            trading_history: ['trades', 'story_positions', 'story_position_adjustments', 'journal_entries', 'journal_screenshots', 'execution_log'],
+            trading_history: ['trades', 'story_positions', 'story_position_adjustments', 'trade_screenshots', 'trade_strategies', 'trade_pnl', 'execution_log'],
             ai_memory: ['desk_state', 'desk_messages', 'desk_meetings', 'trader_profile', 'process_scores'],
             story_content: ['story_episodes', 'story_scenarios', 'story_bibles', 'story_seasons', 'story_agent_reports'],
             cms_analysis: ['cms_results', 'cms_analyses', 'scenario_analyses'],

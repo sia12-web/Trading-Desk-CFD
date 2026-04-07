@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { validateTrade } from '@/lib/risk/validator'
 import { createMarketOrder, createLimitOrder, getCurrentPrices } from '@/lib/oanda/client'
+import { createCoinbaseMarketOrder, createCoinbaseLimitOrder, getCoinbasePrices, toProductId } from '@/lib/coinbase/client'
+import { isCryptoPair } from '@/lib/constants/instruments'
 import { logExecution } from '@/lib/data/execution-logs'
 import { createTrade } from '@/lib/data/trades'
 import { getActiveRiskRules } from '@/lib/data/risk-rules'
@@ -32,6 +34,8 @@ export async function POST(req: Request) {
         strategy_explanation
     } = body
 
+    const isCrypto = isCryptoPair(instrument)
+
     // 1. Run server-side risk validation
     const riskParams = {
         instrument,
@@ -59,7 +63,14 @@ export async function POST(req: Request) {
     // 2. Slippage & R:R Guardrail (MARKET orders only)
     if (orderType !== 'LIMIT' && entryPrice && stopLoss) {
         try {
-            const { data: livePrices } = await getCurrentPrices([instrument])
+            // Fetch live price from correct broker
+            let livePrices: any[] = []
+            if (isCrypto) {
+                livePrices = await getCoinbasePrices([instrument])
+            } else {
+                const { data } = await getCurrentPrices([instrument])
+                livePrices = data || []
+            }
             const livePrice = livePrices?.find((p: any) => p.instrument === instrument)
 
             if (livePrice) {
@@ -69,11 +80,16 @@ export async function POST(req: Request) {
 
                 if (liveExecution > 0 && entryPrice > 0) {
                     const isJPY = instrument.includes('JPY')
-                    const pipMultiplier = isJPY ? 100 : 10000
-                    const maxSlippagePips = isJPY ? 10 : 5  // 10 pips JPY, 5 pips others
+                    // Crypto uses absolute price difference, forex uses pip multiplier
+                    const pipMultiplier = isCrypto ? 1 : (isJPY ? 100 : 10000)
+                    const maxSlippagePips = isCrypto
+                        ? liveExecution * 0.005  // 0.5% max slippage for crypto
+                        : (isJPY ? 10 : 5)
 
                     const slippagePips = Math.abs(liveExecution - entryPrice) * pipMultiplier
-                    const slippageExceeded = slippagePips > maxSlippagePips
+                    const slippageExceeded = isCrypto
+                        ? Math.abs(liveExecution - entryPrice) > maxSlippagePips
+                        : slippagePips > maxSlippagePips
 
                     // Recalculate R:R with live price
                     let rrDegraded = false
@@ -105,7 +121,10 @@ export async function POST(req: Request) {
                     if (slippageExceeded || rrDegraded) {
                         const reason = []
                         if (slippageExceeded) {
-                            reason.push(`Price slipped ${slippagePips.toFixed(1)} pips (AI entry: ${entryPrice}, live: ${liveExecution.toFixed(isJPY ? 3 : 5)}, max: ${maxSlippagePips} pips)`)
+                            const slipLabel = isCrypto
+                                ? `$${Math.abs(liveExecution - entryPrice).toFixed(2)} (${((Math.abs(liveExecution - entryPrice) / entryPrice) * 100).toFixed(2)}%)`
+                                : `${slippagePips.toFixed(1)} pips`
+                            reason.push(`Price slipped ${slipLabel} (entry: ${entryPrice}, live: ${liveExecution.toFixed(isCrypto ? 2 : isJPY ? 3 : 5)})`)
                         }
                         if (rrDegraded) {
                             reason.push(`R:R degraded from ${originalRR.toFixed(2)}:1 to ${liveRR.toFixed(2)}:1 (minimum: ${minRR}:1)`)
@@ -118,8 +137,8 @@ export async function POST(req: Request) {
                                 ruleType: 'slippage_guardrail',
                                 passed: false,
                                 isWarning: false,
-                                message: `⚠️ Trade blocked — price moved since AI analysis. ${reason.join('. ')}.`,
-                                currentValue: slippagePips,
+                                message: `Trade blocked — price moved since analysis. ${reason.join('. ')}.`,
+                                currentValue: isCrypto ? Math.abs(liveExecution - entryPrice) : slippagePips,
                                 limitValue: maxSlippagePips
                             }],
                             blockers: [{
@@ -127,14 +146,14 @@ export async function POST(req: Request) {
                                 ruleType: 'slippage_guardrail',
                                 passed: false,
                                 isWarning: false,
-                                message: `⚠️ Trade blocked — price moved since AI analysis. ${reason.join('. ')}.`,
-                                currentValue: slippagePips,
+                                message: `Trade blocked — price moved since analysis. ${reason.join('. ')}.`,
+                                currentValue: isCrypto ? Math.abs(liveExecution - entryPrice) : slippagePips,
                                 limitValue: maxSlippagePips
                             }],
                             warnings: [],
                             livePrice: liveExecution,
                             aiEntryPrice: entryPrice,
-                            slippagePips: slippagePips.toFixed(1),
+                            slippagePips: isCrypto ? Math.abs(liveExecution - entryPrice).toFixed(2) : slippagePips.toFixed(1),
                             originalRR: originalRR.toFixed(2),
                             liveRR: liveRR.toFixed(2)
                         }
@@ -158,62 +177,125 @@ export async function POST(req: Request) {
         }
     }
 
-    // 3. Call OANDA
-    let oandaResponse: any
-    const signedUnits = direction === 'long' ? units : -units
+    // 3. Execute via correct broker
+    let brokerTradeId: string | undefined
+    let brokerResponse: any
+    let fillPrice: number = entryPrice
 
     try {
-        if (orderType === 'LIMIT') {
-            oandaResponse = await createLimitOrder({
-                instrument,
-                units: signedUnits,
-                price: limitPrice.toString(),
-                stopLossOnFill: { price: stopLoss.toString() },
-                takeProfitOnFill: takeProfit ? { price: takeProfit.toString() } : undefined,
-                trailingStopLossOnFill: trailingStopDistance ? { distance: trailingStopDistance.toString() } : undefined
-            })
+        if (isCrypto) {
+            // ═══ COINBASE EXECUTION ═══
+            const productId = toProductId(instrument)
+            const side = direction === 'long' ? 'BUY' as const : 'SELL' as const
+
+            if (orderType === 'LIMIT') {
+                const result = await createCoinbaseLimitOrder({
+                    productId,
+                    side,
+                    baseSize: units.toString(),
+                    limitPrice: limitPrice.toString(),
+                })
+                if (result.error) {
+                    await logExecution({
+                        user_id: user.id,
+                        action: 'place_order',
+                        request_payload: body,
+                        response_payload: result.error,
+                        risk_validation: riskResult,
+                        status: 'failed',
+                        error_message: result.error
+                    })
+                    return NextResponse.json({ error: result.error }, { status: 500 })
+                }
+                brokerTradeId = result.data!.order_id
+                fillPrice = parseFloat(limitPrice)
+            } else {
+                const result = await createCoinbaseMarketOrder({
+                    productId,
+                    side,
+                    baseSize: units.toString(),
+                })
+                if (result.error) {
+                    await logExecution({
+                        user_id: user.id,
+                        action: 'place_order',
+                        request_payload: body,
+                        response_payload: result.error,
+                        risk_validation: riskResult,
+                        status: 'failed',
+                        error_message: result.error
+                    })
+                    return NextResponse.json({ error: result.error }, { status: 500 })
+                }
+                brokerTradeId = result.data!.order_id
+                fillPrice = entryPrice // Market order — use current price as estimate
+            }
+
+            brokerResponse = { broker: 'coinbase', order_id: brokerTradeId }
+
         } else {
-            oandaResponse = await createMarketOrder({
-                instrument,
-                units: signedUnits,
-                stopLossOnFill: { price: stopLoss.toString() },
-                takeProfitOnFill: takeProfit ? { price: takeProfit.toString() } : undefined,
-                trailingStopLossOnFill: trailingStopDistance ? { distance: trailingStopDistance.toString() } : undefined
-            })
+            // ═══ OANDA EXECUTION ═══
+            const signedUnits = direction === 'long' ? units : -units
+
+            if (orderType === 'LIMIT') {
+                brokerResponse = await createLimitOrder({
+                    instrument,
+                    units: signedUnits,
+                    price: limitPrice.toString(),
+                    stopLossOnFill: { price: stopLoss.toString() },
+                    takeProfitOnFill: takeProfit ? { price: takeProfit.toString() } : undefined,
+                    trailingStopLossOnFill: trailingStopDistance ? { distance: trailingStopDistance.toString() } : undefined
+                })
+            } else {
+                brokerResponse = await createMarketOrder({
+                    instrument,
+                    units: signedUnits,
+                    stopLossOnFill: { price: stopLoss.toString() },
+                    takeProfitOnFill: takeProfit ? { price: takeProfit.toString() } : undefined,
+                    trailingStopLossOnFill: trailingStopDistance ? { distance: trailingStopDistance.toString() } : undefined
+                })
+            }
+
+            if (brokerResponse.error) {
+                await logExecution({
+                    user_id: user.id,
+                    action: 'place_order',
+                    request_payload: body,
+                    response_payload: brokerResponse.error,
+                    risk_validation: riskResult,
+                    status: 'failed',
+                    error_message: brokerResponse.error.errorMessage || 'OANDA API Error'
+                })
+                return NextResponse.json({ error: brokerResponse.error.errorMessage || 'Order execution failed' }, { status: 500 })
+            }
+
+            brokerTradeId = brokerResponse.data?.orderFillTransaction?.tradeOpened?.tradeID ||
+                brokerResponse.data?.orderCreateTransaction?.id
+            fillPrice = orderType === 'LIMIT'
+                ? parseFloat(limitPrice)
+                : parseFloat(brokerResponse.data?.orderFillTransaction?.price || entryPrice.toString())
         }
 
-        if (oandaResponse.error) {
-            await logExecution({
-                user_id: user.id,
-                action: 'place_order',
-                request_payload: body,
-                response_payload: oandaResponse.error,
-                risk_validation: riskResult,
-                status: 'failed',
-                error_message: oandaResponse.error.errorMessage || 'OANDA API Error'
-            })
-            return NextResponse.json({ error: oandaResponse.error.errorMessage || 'Order execution failed' }, { status: 500 })
-        }
-
-        // 3. Success - Create local record
-        const oandaTradeId = oandaResponse.data?.orderFillTransaction?.tradeOpened?.tradeID ||
-            oandaResponse.data?.orderCreateTransaction?.id // For limit orders, it's the order ID for now
+        // 4. Create local trade record
+        const displayPair = isCrypto
+            ? instrument.replace('CRYPTO_', '').replace('_', '/')
+            : instrument.replace('_', '/')
 
         const localTrade = await createTrade({
-            pair: instrument.replace('_', '/'),
+            pair: displayPair,
             direction,
-            entry_price: orderType === 'LIMIT' ? parseFloat(limitPrice) : parseFloat(oandaResponse.data?.orderFillTransaction?.price || entryPrice.toString()),
+            entry_price: fillPrice,
             stop_loss: stopLoss,
             take_profit: takeProfit || null,
-            lot_size: units / 100000,
+            lot_size: isCrypto ? units : units / 100000,
             status: orderType === 'LIMIT' ? 'planned' : 'open',
             name: name || null,
             strategy_explanation: strategy_explanation || null
         }, [], [])
 
-        // Update oanda_trade_id after creation since createTrade doesn't include it in the basic data type
+        // Update broker trade ID
         await supabase.from('trades').update({
-            oanda_trade_id: oandaTradeId,
+            oanda_trade_id: brokerTradeId,
             strategy_template_id: strategy_template_id || null,
             voice_transcript: voice_transcript || null,
             parsed_strategy: parsed_strategy || null
@@ -224,25 +306,25 @@ export async function POST(req: Request) {
             await incrementUsage(strategy_template_id)
         }
 
-        // 4. Synchronization — Link to Story Position if active
+        // 5. Story Position Sync
         try {
             const { getActivePosition, updatePosition, addAdjustment } = await import('@/lib/data/story-positions')
-            const storyPos = await getActivePosition(user.id, instrument.replace('_', '/'))
-            
+            const storyPos = await getActivePosition(user.id, displayPair)
+
             if (storyPos && !storyPos.oanda_trade_id && storyPos.status !== 'closed') {
-                await updatePosition(storyPos.id, { 
-                    oanda_trade_id: oandaTradeId,
+                await updatePosition(storyPos.id, {
+                    oanda_trade_id: brokerTradeId,
                     status: 'active',
-                    entry_price: parseFloat(oandaResponse.data?.orderFillTransaction?.price || entryPrice.toString())
+                    entry_price: fillPrice
                 })
-                
+
                 await addAdjustment({
                     position_id: storyPos.id,
                     episode_id: storyPos.entry_episode_id || '',
                     episode_number: storyPos.entry_episode_number || 0,
                     action: 'open',
-                    details: { manual_execution: true, oanda_trade_id: oandaTradeId },
-                    ai_reasoning: "ADOPTED: Execution detected via Trade terminal. Linking OANDA trade to existing narrative position."
+                    details: { manual_execution: true, broker: isCrypto ? 'coinbase' : 'oanda', broker_trade_id: brokerTradeId },
+                    ai_reasoning: `ADOPTED: Execution detected via Trade terminal (${isCrypto ? 'Coinbase' : 'OANDA'}). Linking to existing narrative position.`
                 })
             }
         } catch (syncError) {
@@ -253,18 +335,19 @@ export async function POST(req: Request) {
             user_id: user.id,
             action: 'place_order',
             trade_id: localTrade.id,
-            oanda_trade_id: oandaTradeId,
+            oanda_trade_id: brokerTradeId,
             request_payload: body,
-            response_payload: oandaResponse.data,
+            response_payload: isCrypto ? brokerResponse : brokerResponse.data,
             risk_validation: riskResult,
             status: 'success'
         })
 
         return NextResponse.json({
             success: true,
-            oandaResponse: oandaResponse.data,
+            oandaResponse: isCrypto ? brokerResponse : brokerResponse.data,
             localTradeId: localTrade.id,
-            riskChecks: riskResult.checks
+            riskChecks: riskResult.checks,
+            broker: isCrypto ? 'coinbase' : 'oanda'
         })
 
     } catch (error: any) {

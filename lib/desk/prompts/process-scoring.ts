@@ -35,7 +35,7 @@ export function buildProcessScoringPrompt(trade: ClosedTradeForScoring, context:
 1. Score PROCESS, not P&L. A loss with proper stops honored = high score. A win from gambling = low score.
 2. Each criterion: 1-10 scale. Be honest and specific.
 3. Reference the actual trade data. No fabrications.
-4. Sarah focuses on risk discipline. Marcus focuses on strategy execution.
+4. Sarah focuses on risk discipline. Marcus focuses on Harmonic Convergence Matrix execution quality.
 
 ## THE CLOSED TRADE
 
@@ -58,21 +58,46 @@ ${context.activeRiskRules.map(r =>
         `- ${r.rule_name}: ${JSON.stringify(r.value)}`
     ).join('\n') || '- No rules configured'}
 
-## SCORING CRITERIA
+## SCORING CRITERIA (Harmonic Convergence Matrix Process)
 
-6. **Mindset Inversion (The 95% vs 5% Check) (1-10)**: This is the critical psychological evaluation.
-   - **If the trade was a WINNER**: 
-     - 5% WINNER (Score 8-10): Smart money patience. Stayed in the "Pretty Girl" story until the value was met. Ignored small pull-backs because the Value (RSI/Momentum) hadn't changed.
-     - 95% LOSER (Score 1-4): **Pussy Move**. Scared of a red candle or personal fear. Closed early despite no change in the underlying trend/value.
+1. **Entry Criteria Score (1-10)**: Did the trader wait for HCM Phase 3+ confirmation before entering?
+   - Score 8-10: Entry taken only after Phase 3 convergence — multi-timeframe alignment, structural confirmation, and volume validation all present.
+   - Score 5-7: Partial convergence — some HCM conditions met but entry taken before full Phase 3 signal.
+   - Score 1-4: Pre-emptive entry — traded on incomplete setup without waiting for structural confirmation.
+
+2. **Stop Loss Discipline (1-10)**: Was SL placed below the Spring price (structural invalidation)?
+   - Score 8-10: SL placed at or below the Spring level, honoring structural invalidation. If stopped out, the stop was respected without adjustment.
+   - Score 5-7: SL placed in a reasonable zone but not precisely at the structural invalidation point.
+   - Score 1-4: No SL set, SL placed arbitrarily, or SL was moved/widened after entry to avoid being stopped out.
+
+3. **R:R Compliance (1-10)**: Was R:R >= 3:1 to TP2? Was the split TP1/TP2 execution plan followed?
+   - Score 8-10: Initial R:R was 3:1 or better to TP2. TP1 partial was taken at the planned level, remainder held for TP2 with SL moved to breakeven.
+   - Score 5-7: Acceptable R:R but deviation from the split TP1/TP2 plan (e.g., closed entire position at TP1, or TP2 target was not pre-defined).
+   - Score 1-4: R:R below 2:1, no TP plan defined, or exited the full position prematurely without structural reason.
+
+4. **Size Discipline (1-10)**: Was position sizing consistent with risk rules and account parameters?
+   - Score 8-10: Position size aligned with configured risk percentage per trade. No over-leveraging.
+   - Score 5-7: Minor deviation from risk parameters but within acceptable tolerance.
+   - Score 1-4: Significant over-sizing, revenge sizing after a loss, or doubling down on an existing position.
+
+5. **Patience Score (1-10)**: Did the trader wait for M45 temporal exhaustion and bowtie apex formation?
+   - Score 8-10: Entry timed with M45 cycle exhaustion confirmed and bowtie apex convergence visible. No chasing price action.
+   - Score 5-7: Reasonable timing but entered slightly early before full temporal exhaustion or apex formation completed.
+   - Score 1-4: Chased price action, entered on impulse without waiting for temporal or structural timing signals.
+
+6. **Process Adherence Assessment**: Evaluate the overall execution against the Harmonic Convergence Matrix framework.
+   - **If the trade was a WINNER**:
+     - Disciplined execution (Score 8-10): Waited for full HCM confirmation, held through minor retracements because the structural thesis remained intact, and exited at planned TP levels.
+     - Undisciplined execution (Score 1-4): Entered without confirmation, got lucky with direction, or closed prematurely despite no structural invalidation.
    - **If the trade was a LOSER**:
-     - 5% WINNER (Score 8-10): Strict loser. Cut the loss at the stop-loss immediately. No "hoping" for a reversal.
-     - 95% LOSER (Score 1-4): Hopeful. Held past SL or moved SL because of fear of being wrong.
+     - Disciplined execution (Score 8-10): Followed HCM entry criteria, placed SL at structural invalidation, and accepted the loss when the level was breached. No hesitation.
+     - Undisciplined execution (Score 1-4): Held past the invalidation level hoping for a reversal, moved the stop loss, or added to a losing position.
 
 ## ANTI-HALLUCINATION DOCTRINE
 1. **ONLY reference data provided below.** Never fabricate prices, P&L, or exit reasons.
-2. If the trade was a winner, don't mention "holding past SL" — focus on "letting it run."
-3. If the trade was a loser, don't mention "closing early" — focus on "cutting the loss."
-4. Match Sarah and Marcus's commentary to this mindset framework.
+2. If the trade was a winner, focus on whether the trader followed the HCM execution plan and held to planned TP levels.
+3. If the trade was a loser, focus on whether the structural invalidation (Spring level SL) was respected without adjustment.
+4. Sarah and Marcus must reference specific HCM process elements in their commentary — not abstract judgments.
 
 ### Active Scenarios for ${trade.pair}
 ${context.activeScenarios.filter(s => s.pair === trade.pair).length > 0
@@ -96,9 +121,9 @@ Respond with ONLY valid JSON:
     "size_discipline": 0,
     "patience_score": 0,
     "overall_score": 0.0,
-    "sarah_commentary": "Sarah's blunt risk assessment of this trade's process (2-3 sentences)",
-    "marcus_commentary": "Marcus's strategic feedback on execution quality (2-3 sentences)",
-    "ai_lesson": "Ray (Quant) explains in 1 sentence why the AI's scenario/prediction succeeded or failed based on this outcome."
+    "sarah_commentary": "Sarah's risk discipline assessment — reference SL placement relative to Spring level, position sizing compliance, and structural invalidation adherence (2-3 sentences)",
+    "marcus_commentary": "Marcus's HCM execution assessment — reference Phase confirmation level at entry, TP1/TP2 split compliance, and M45 temporal timing quality (2-3 sentences)",
+    "ai_lesson": "Ray (Quant) explains in 1 sentence how the HCM convergence signals aligned or diverged from the actual price outcome."
 }`
 }
 

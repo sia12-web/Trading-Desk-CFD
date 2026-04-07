@@ -36,7 +36,10 @@ interface TradeFormProps {
 }
 
 export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
+    const isCryptoInstrument = (instrument: string) => instrument.startsWith('CRYPTO_')
+
     const getUnitsPerLot = (instrument: string) => {
+        if (isCryptoInstrument(instrument)) return 1 // 1 unit = 1 coin
         if (instrument.includes('XAU')) return 100
         if (['SPX500_USD', 'NAS100_USD', 'US30_USD', 'DE30_EUR'].includes(instrument.replace('/', '_'))) return 1
         return 100000
@@ -171,8 +174,9 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
 
     const fetchPrice = async () => {
         try {
-            const baseCurrency = selectedInstrument.split('_')[0]
-            const quoteCurrency = selectedInstrument.split('_')[1]
+            const isCryptoSel = isCryptoInstrument(selectedInstrument)
+            const baseCurrency = isCryptoSel ? selectedInstrument.replace('CRYPTO_', '').split('_')[0] : selectedInstrument.split('_')[0]
+            const quoteCurrency = isCryptoSel ? 'USD' : selectedInstrument.split('_')[1]
             const accountCurrency = accountInfo?.account?.currency || accountInfo?.currency || 'USD'
 
             const instrumentsToFetch = [selectedInstrument]
@@ -181,18 +185,21 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
             let baseConversionPair: string | null = null
             let baseInverseConversionPair: string | null = null
 
-            // Fetch quote→account conversion if needed
-            if (quoteCurrency !== accountCurrency) {
-                quoteConversionPair = `${quoteCurrency}_${accountCurrency}`
-                quoteInverseConversionPair = `${accountCurrency}_${quoteCurrency}`
-                instrumentsToFetch.push(quoteConversionPair, quoteInverseConversionPair)
-            }
+            // Crypto pairs are USD-denominated — no conversion pairs needed
+            if (!isCryptoSel) {
+                // Fetch quote→account conversion if needed
+                if (quoteCurrency !== accountCurrency) {
+                    quoteConversionPair = `${quoteCurrency}_${accountCurrency}`
+                    quoteInverseConversionPair = `${accountCurrency}_${quoteCurrency}`
+                    instrumentsToFetch.push(quoteConversionPair, quoteInverseConversionPair)
+                }
 
-            // Fetch base→account conversion if needed (for margin calculation)
-            if (baseCurrency !== accountCurrency) {
-                baseConversionPair = `${baseCurrency}_${accountCurrency}`
-                baseInverseConversionPair = `${accountCurrency}_${baseCurrency}`
-                instrumentsToFetch.push(baseConversionPair, baseInverseConversionPair)
+                // Fetch base→account conversion if needed (for margin calculation)
+                if (baseCurrency !== accountCurrency) {
+                    baseConversionPair = `${baseCurrency}_${accountCurrency}`
+                    baseInverseConversionPair = `${accountCurrency}_${baseCurrency}`
+                    instrumentsToFetch.push(baseConversionPair, baseInverseConversionPair)
+                }
             }
 
             const res = await fetch(`/api/oanda/prices?instruments=${instrumentsToFetch.join(',')}`)
@@ -434,13 +441,17 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const liveSpread = (askPrice - bidPrice) * assetCfg.pointMultiplier
     const label = assetCfg.pointLabel
 
-    // Margin calculation — OANDA formula: units * marginRate * (base→account conversion)
+    // Margin calculation
+    const isCrypto = isCryptoInstrument(selectedInstrument)
     const marginRate = instrumentDetails?.marginRate ? parseFloat(instrumentDetails.marginRate) : 0.05
-    const baseCurrency = selectedInstrument.split('_')[0]
-    const quoteCurrency = selectedInstrument.split('_')[1]
+    const baseCurrency = isCrypto ? selectedInstrument.replace('CRYPTO_', '').split('_')[0] : selectedInstrument.split('_')[0]
+    const quoteCurrency = isCrypto ? 'USD' : selectedInstrument.split('_')[1]
     let marginRequired: number
 
-    if (baseCurrency === accountCurrency) {
+    if (isCrypto) {
+        // Crypto spot: no leverage — margin = full position value (units * price)
+        marginRequired = units * activeEntryPrice
+    } else if (baseCurrency === accountCurrency) {
         // USD/JPY on USD account: base IS account currency → margin = units * marginRate
         marginRequired = units * marginRate
     } else if (quoteCurrency === accountCurrency) {
@@ -514,32 +525,38 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                                 onClick={() => setSizeMode('margin')}
                                                 className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-all ${sizeMode === 'margin' ? 'bg-blue-600 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
                                             >
-                                                Margin
+                                                {isCrypto ? 'USD' : 'Margin'}
                                             </button>
                                         </div>
                                     </div>
                                     <input
                                         type="number"
-                                        step={sizeMode === 'margin' ? '1' : '1'}
+                                        step={isCrypto ? '0.00001' : '1'}
                                         value={sizeMode === 'margin'
                                             ? (marginRequired || '')
                                             : (units || '')}
                                         onChange={(e) => {
                                             const val = parseFloat(e.target.value) || 0
                                             if (sizeMode === 'margin') {
-                                                // Calculate units from margin: units = margin / (marginRate * baseConversionRate)
-                                                const calculatedUnits = Math.round(val / (marginRate * baseConversionRate))
-                                                setUnits(calculatedUnits > 0 ? calculatedUnits : 1)
+                                                if (isCrypto) {
+                                                    // Crypto: units = USD amount / price
+                                                    const calculatedUnits = activeEntryPrice > 0 ? val / activeEntryPrice : 0
+                                                    setUnits(calculatedUnits > 0 ? parseFloat(calculatedUnits.toFixed(8)) : 0.00001)
+                                                } else {
+                                                    // Forex: units = margin / (marginRate * baseConversionRate)
+                                                    const calculatedUnits = Math.round(val / (marginRate * baseConversionRate))
+                                                    setUnits(calculatedUnits > 0 ? calculatedUnits : 1)
+                                                }
                                             } else {
-                                                setUnits(Math.round(val))
+                                                setUnits(isCrypto ? parseFloat(val.toFixed(8)) || 0 : Math.round(val))
                                             }
                                         }}
                                         className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-mono font-bold outline-none"
                                     />
                                     <p className="text-[10px] text-neutral-500 font-mono">
                                         {sizeMode === 'margin'
-                                            ? `≈ ${units.toLocaleString()} units`
-                                            : `≈ ${marginRequired.toFixed(2)} ${accountCurrency} margin`}
+                                            ? (isCrypto ? `≈ ${units} ${baseCurrency}` : `≈ ${units.toLocaleString()} units`)
+                                            : (isCrypto ? `≈ $${marginRequired.toFixed(2)} position value` : `≈ ${marginRequired.toFixed(2)} ${accountCurrency} margin`)}
                                     </p>
                                 </div>
                                 <div className="space-y-4">
@@ -727,7 +744,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                         <h3 className="text-2xl font-bold text-white">Confirm Order</h3>
                         <div className="bg-neutral-800 p-6 rounded-2xl space-y-3">
                             <div className="flex justify-between text-sm"><span className="text-neutral-500">Instrument</span><span className="font-bold">{selectedInstrument}</span></div>
-                            <div className="flex justify-between text-sm"><span className="text-neutral-500">Size</span><span className="font-bold">{(units / getUnitsPerLot(selectedInstrument)).toFixed(2)} lots ({units} units)</span></div>
+                            <div className="flex justify-between text-sm"><span className="text-neutral-500">Size</span><span className="font-bold">{isCryptoInstrument(selectedInstrument) ? `${units} ${selectedInstrument.replace('CRYPTO_', '').split('_')[0]}` : `${(units / getUnitsPerLot(selectedInstrument)).toFixed(2)} lots (${units} units)`}</span></div>
                             <div className="flex justify-between text-sm"><span className="text-neutral-400">Risk</span><span className="font-bold text-red-400">{riskAmount.toFixed(2)} {accountCurrency}</span></div>
                         </div>
                         <input type="text" value={confirmText} onChange={(e) => setConfirmText(e.target.value.toUpperCase())} placeholder="TYPE 'CONFIRM'" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-4 text-center font-bold text-white outline-none" />

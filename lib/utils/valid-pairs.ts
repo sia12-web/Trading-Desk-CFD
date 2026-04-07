@@ -8,6 +8,8 @@ export const VALID_PAIRS = [
     'NAS100/USD', 'SPX500/USD', 'DE30/EUR', 'US30/USD',
     // Commodities
     'XAU/USD',
+    // Cryptocurrencies
+    'BTC/USD', 'ETH/USD', 'SOL/USD', 'XRP/USD', 'DOGE/USD',
 ] as const
 
 export type ValidPair = (typeof VALID_PAIRS)[number]

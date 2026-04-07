@@ -3,49 +3,147 @@ import type { CalculatedIndicators } from '@/lib/strategy/types'
 import type { TrendAssessment } from '@/lib/utils/trend-detector'
 import type { ElliottWaveAnalysis } from './elliott-wave-detector'
 
-// ── True Fractal — 4-Phase Wave 3 Hunting System ──
+// ── The Fast Matrix ──
+// H1 Macro Direction → 4 Scenario Matrix (A/B/C/D) → M1 Precision Execution
 
-export interface TrueFractalPhase {
-    status: 'not_detected' | 'forming' | 'confirmed'
-    confidence: number // 0-100
+export type FastMatrixScenarioType = 'A' | 'B' | 'C' | 'D'
+
+export interface MacroDirection {
+    trend: 'bullish' | 'bearish' | 'ranging'
+    filter: 'buy_only' | 'sell_only' | 'no_trade'
+    h1SwingHighs: number
+    h1SwingLows: number
+    higherHighs: number
+    higherLows: number
+    lowerHighs: number
+    lowerLows: number
+    volumeConfirms: boolean
+    score: number
     details: string
 }
 
-export interface TrueFractalSetup {
-    overallPhase: 0 | 1 | 2 | 3 | 4  // 0 = no setup detected
-    overallScore: number               // 0-100 composite
-    direction: 'bullish' | 'bearish' | 'none'
-    phase1: TrueFractalPhase & {
-        wave1Complete: boolean
-        wave2Depth: number | null       // Fib retracement % (e.g. 0.618)
-        wave2InZone: boolean            // Is retracement between 50-61.8%?
-        keyLevels: { wave1Top: number | null; wave2Bottom: number | null }
-    }
-    phase2: TrueFractalPhase & {
-        rsiDivergence: boolean
-        macdDivergence: boolean
-        structureShift: boolean         // Break of recent swing high
-        alligatorAwakening: boolean     // BW Alligator opening up
-    }
-    phase3: TrueFractalPhase & {
-        subWave1Detected: boolean
-        microFibEntry: number | null    // Price level for 50-61.8% of sub-wave
-        volumeConfirmed: boolean
-        fractalSignal: boolean          // BW fractal at entry zone
-    }
-    phase4: {
-        stopLoss: number | null         // Below Wave 2 bottom
-        takeProfit: number | null       // 161.8% Fib extension
-        riskRewardRatio: number | null
-        positionSizeUnits: number | null
-    }
-    narrative: string                   // One-line summary for AI prompts
+export interface RSIDivergence {
+    detected: boolean
+    type: 'bullish' | 'bearish' | 'none'
+    priceSwing1: number | null
+    priceSwing2: number | null
+    rsiSwing1: number | null
+    rsiSwing2: number | null
+    details: string
 }
+
+export interface MACDDivergence {
+    detected: boolean
+    type: 'bullish' | 'bearish' | 'none'
+    histogramShallowing: boolean
+    details: string
+}
+
+export interface GoldenPocket {
+    fib50: number
+    fib618: number
+    goldenPocketHigh: number   // max(fib50, fib618)
+    goldenPocketLow: number    // min(fib50, fib618)
+    waveSwingHigh: number
+    waveSwingLow: number
+}
+
+export interface DiamondBox {
+    boxHigh: number
+    boxLow: number
+    equilibriumPrice: number   // 1/Price overlay midpoint
+    candlesInBox: number       // target: 6-9
+    isReady: boolean           // >= 6 candles elapsed
+}
+
+export interface CHoCHSignal {
+    detected: boolean
+    direction: 'bullish' | 'bearish' | 'none'
+    breakPrice: number | null
+    breakTime: string | null
+    previousSwingPrice: number | null
+}
+
+export interface StochasticReload {
+    detected: boolean
+    direction: 'bullish' | 'bearish' | 'none'
+    kValue: number | null
+    dValue: number | null
+    crossTime: string | null
+}
+
+export interface VolumeClimax {
+    detected: boolean
+    volumeRatio: number        // volume / avg (2x+ = climax)
+    rejectionCandle: boolean
+    time: string | null
+}
+
+export interface FastMatrixScenario {
+    id: FastMatrixScenarioType
+    label: string              // e.g. "Bullish Wave 2 (Crash Trap)"
+    active: boolean
+    direction: 'long' | 'short'
+    waveType: 2 | 4
+    // Confirmation layer (M15)
+    goldenPocket: GoldenPocket | null     // Wave 2 scenarios only
+    diamondBox: DiamondBox | null         // Wave 4 scenarios only
+    rsiDivergence: RSIDivergence
+    macdDivergence: MACDDivergence
+    // Trigger layer (M1)
+    volumeClimax: VolumeClimax
+    choch: CHoCHSignal
+    stochasticReload: StochasticReload
+    // Execution
+    springPrice: number | null
+    entryPrice: number | null
+    stopLoss: number | null
+    tp1: number | null                    // 100% Fib extension (close 50%)
+    tp2: number | null                    // 161.8% Fib extension (close 50%)
+    riskRewardToTP1: number | null
+    riskRewardToTP2: number | null
+    positionSizeUnits: number | null
+    riskPercent: number
+    riskAmount: number | null
+    score: number                         // 0-100
+    status: 'inactive' | 'watching' | 'confirming' | 'triggered' | 'invalid'
+    details: string
+}
+
+export interface FastMatrixSetup {
+    activeScenario: FastMatrixScenarioType | null
+    overallScore: number
+    direction: 'long' | 'short' | 'neutral'
+    narrative: string
+    macro: MacroDirection
+    scenarios: {
+        A: FastMatrixScenario    // Bullish Wave 2 (Crash Trap)
+        B: FastMatrixScenario    // Bullish Wave 4 (Diamond Chop)
+        C: FastMatrixScenario    // Bearish Wave 2 (Relief Trap)
+        D: FastMatrixScenario    // Bearish Wave 4 (Diamond Chop)
+    }
+    keyLevels: {
+        goldenPocketHigh: number | null
+        goldenPocketLow: number | null
+        diamondBoxHigh: number | null
+        diamondBoxLow: number | null
+        equilibriumPrice: number | null
+        springPrice: number | null
+        entryPrice: number | null
+        stopLoss: number | null
+        tp1: number | null
+        tp2: number | null
+    }
+}
+
+// Backward compat aliases — old code/stored data may reference these
+export type HarmonicConvergenceSetup = FastMatrixSetup
+export type TrueFractalSetup = FastMatrixSetup
 
 // ── Data Payload (raw data collected for AI) ──
 
 export interface TimeframeData {
-    timeframe: 'M' | 'W' | 'D' | 'H4' | 'H1'
+    timeframe: 'M' | 'W' | 'D' | 'H4' | 'H1' | 'M15' | 'M1'
     candles: OandaCandle[]
     indicators: CalculatedIndicators
     trend: TrendAssessment
@@ -115,7 +213,9 @@ export interface StoryDataPayload {
     atr14: number
     atr50: number
     atrRatio: number  // atr14/atr50 — >1 = expanding, <1 = contracting
-    trueFractal?: TrueFractalSetup            // Cross-timeframe True Fractal phase analysis
+    fastMatrix?: FastMatrixSetup                     // The Fast Matrix scenario analysis
+    harmonicConvergence?: FastMatrixSetup            // Backward compat alias
+    trueFractal?: FastMatrixSetup                    // Backward compat alias
     correlationInsights?: CorrelationInsight  // Hedge fund grade: multi-currency pattern analysis
     recent_trades?: Array<{
         direction: string

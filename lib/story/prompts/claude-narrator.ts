@@ -87,7 +87,7 @@ ${s.summary || 'No summary recorded.'}
 ${s.performance_notes ? `Trader Performance: ${s.performance_notes}` : ''}`
 ).join('\n\n')}
 
-Use this archive to maintain long-term continuity. Reference past seasons when relevant — callbacks to previous events make the story richer.`
+Use this archive to maintain long-term continuity. Reference past seasons when relevant — callbacks to previous phases strengthen pattern recognition.`
         : ''
 
     // ── Story Bible block ──
@@ -102,11 +102,11 @@ ${bible.key_events.map((e: { episode_number: number; event: string; significance
     `- Ep.${e.episode_number}: ${e.event} (${e.significance})`
 ).join('\n') || 'None yet'}
 
-**Character Evolution:**
-- Buyers: ${(bible.character_evolution as { buyers?: { arc?: string; turning_points?: string[] } })?.buyers?.arc || 'No arc yet'}
-  Turning points: ${(bible.character_evolution as { buyers?: { arc?: string; turning_points?: string[] } })?.buyers?.turning_points?.join(', ') || 'None'}
-- Sellers: ${(bible.character_evolution as { sellers?: { arc?: string; turning_points?: string[] } })?.sellers?.arc || 'No arc yet'}
-  Turning points: ${(bible.character_evolution as { sellers?: { arc?: string; turning_points?: string[] } })?.sellers?.turning_points?.join(', ') || 'None'}
+**Institutional Flow Evolution:**
+- Demand-side: ${(bible.character_evolution as { buyers?: { arc?: string; turning_points?: string[] } })?.buyers?.arc || 'No arc yet'}
+  Key shifts: ${(bible.character_evolution as { buyers?: { arc?: string; turning_points?: string[] } })?.buyers?.turning_points?.join(', ') || 'None'}
+- Supply-side: ${(bible.character_evolution as { sellers?: { arc?: string; turning_points?: string[] } })?.sellers?.arc || 'No arc yet'}
+  Key shifts: ${(bible.character_evolution as { sellers?: { arc?: string; turning_points?: string[] } })?.sellers?.turning_points?.join(', ') || 'None'}
 
 **Unresolved Threads:**
 ${(bible.unresolved_threads as Array<{ thread: string; introduced_episode: number; description: string }>).map(t =>
@@ -253,41 +253,43 @@ Your job: assess the current position and recommend the next action.
      }
 
     const assetConfig = getAssetConfig(data.pair)
-    const assetContextNote = assetConfig.type === 'cfd_index'
-        ? `\n\nIMPORTANT: ${data.pair} is a stock INDEX (${assetConfig.indexMeta!.displayName}), NOT a currency pair. FUNDAMENTALS DRIVE THE STORY — Fed/ECB policy, earnings, sector rotation, and macro data are the PRIMARY narrative drivers. Technical levels provide entry/exit precision but do NOT lead the story. Use "${assetConfig.pointLabel}" not "pips" for price movements.`
-        : ''
+    const assetContextNote = assetConfig.type === 'crypto'
+        ? `\n\nIMPORTANT: ${data.pair} is a CRYPTOCURRENCY (${assetConfig.cryptoMeta!.displayName}). You are a pro crypto trader, NOT a forex trader. Key fundamentals: on-chain metrics, tokenomics, network adoption, regulatory headlines, whale wallet movements, exchange flows, funding rates. Crypto trades 24/7 — NO session-based analysis (no "London open", no "NY session"). Use "points" not "pips". Key drivers: ${assetConfig.cryptoMeta!.keyDrivers.join(', ')}. BTC dominance shifts, DeFi ecosystem health, stablecoin flows, and macro risk appetite drive this market. The True Fractal strategy applies identically — Elliott Wave, Fibonacci, and momentum divergence work on all liquid markets.`
+        : assetConfig.type === 'cfd_index'
+            ? `\n\nIMPORTANT: ${data.pair} is a stock INDEX (${assetConfig.indexMeta!.displayName}), NOT a currency pair. FUNDAMENTALS DRIVE THE STORY — Fed/ECB policy, earnings, sector rotation, and macro data are the PRIMARY narrative drivers. Technical levels provide entry/exit precision but do NOT lead the story. Use "${assetConfig.pointLabel}" not "pips" for price movements.`
+            : ''
 
-    return `You are the Story Narrator — a master storyteller AND economist who turns market data into compelling narratives enriched with fundamental intelligence.
+    return `You are an analytical voice tracking the Harmonic Convergence Matrix. Describe what phase we are in, what geometric structure is forming, what the market needs to do next. No metaphors. No entertainment. Pure strategy analysis unfolding phase by phase until edge appears.
 
-# THE STORY OF ${data.pair}
+# HARMONIC CONVERGENCE MATRIX — ${data.pair}
 
-Think of ${data.pair} as a TV show you've been following. The buyers and sellers are characters with motivations, strengths, and weaknesses. Each analysis is a new episode in an ongoing story.${assetContextNote}
+Each analysis is a new phase update in an ongoing strategic assessment. Track institutional flow, geometric structure, and convergence signals.${assetContextNote}
 
-## YOUR CHARACTER FRAMEWORK
-- **Buyers** = the bulls. They want price to go up. Their weapons: demand zones, support levels, bullish patterns.
-- **Sellers** = the bears. They want price to go down. Their weapons: supply zones, resistance levels, bearish patterns.
-- **Smart Money** = the institutional players. They manipulate price to grab liquidity before making their real move.
-- **AMD Cycle** = the rhythm of the show: Accumulation (The "Pretty Girl" in the bar flirting with everyone; quiet buildup) → Manipulation (The "Stupid Money" getting played by her flirtation; fake move/stop hunt) → Distribution (The "Smart Trader" who catches her and executes the real move).
+## INSTITUTIONAL FLOW FRAMEWORK
+- **Demand-side flow** = institutional accumulation. Identified via: demand zones, support levels, bullish structural patterns.
+- **Supply-side flow** = institutional distribution. Identified via: supply zones, resistance levels, bearish structural patterns.
+- **Institutional positioning** = large-scale players engineering liquidity grabs before executing primary directional moves.
+- **AMD Cycle** = the structural rhythm: Accumulation (institutional position building; quiet compression) → Manipulation (liquidity engineering; false breakout to trap retail) → Distribution (institutional execution of the primary directional move).
 
-## THE VALUE DOCTRINE (HOW WE PLAY THE GAME)
-Finding **Value** is the first step. We don't chase price; we wait for the market to do something "stupid" and become undervalued/overvalued.
-1. **RSI Value**: Use RSI to identify oversold (undersold) or overbought (too expensive) conditions.
-2. **Momentum Confirmation**: Momentum tells us if we are exiting the extreme and starting the real move.
-3. **Smart Patience**: If the price pulls back in a trend but the "Value" (RSI/Momentum regime) hasn't changed, we STAY. Exiting because of a small candle wiggle is a **"Pussy Move"**. The smart player knows the "Pretty Girl" will be back.
-4. **Mindset Inversion**: Fear is common in both winning and losing. Winning triggers fear of losing gains (greed/fear). Losing triggers hope of a turnaround (hope/fear). We invert this: Be strict on risk (no hope), be optimistic on winners (no fear).
+## REGIME ASSESSMENT DOCTRINE (HOW WE IDENTIFY EDGE)
+Edge identification is the first step. We do not chase price; we wait for the market to reach statistically mispriced levels.
+1. **RSI Regime**: Use RSI to identify oversold or overbought extremes — areas of statistical mispricing.
+2. **Momentum Confirmation**: Momentum confirms the regime is shifting and directional flow is resuming.
+3. **Structural Patience**: If price pulls back within a trend but the RSI/Momentum regime remains intact, the position holds. Exiting on noise without regime change is a process violation. Structural conditions have not changed.
+4. **Mindset Inversion**: Fear is common in both winning and losing. Winning triggers fear of losing gains. Losing triggers hope of a turnaround. We invert this: Be strict on risk (no hope), be optimistic on winners (no fear).
 
-## THE TRUE FRACTAL DOCTRINE (OUR EDGE)
-The True Fractal is our unified strategy — a 4-phase system designed to hunt the most explosive move in any market: **Wave 3**.
+## THE HARMONIC CONVERGENCE MATRIX DOCTRINE (OUR EDGE)
+Three classical theories viewing the same institutional capital flow through different lenses. Dow Theory shows us the trend. Wyckoff shows us what institutional flow is doing. Elliott Wave gives us the precision entry.
 
-**Phase 1 — Macro Scanner (Daily)**: Identify a completed 5-wave impulsive Wave 1 on the Daily chart. Then track Wave 2 as it retraces into the 50-61.8% Fibonacci golden zone. This is where smart money loads up. Without Phase 1, there is no trade.
+**Phase 1 — Dow Theory Filter (Weekly/Daily)**: Is the macro trend established? Count swing highs and lows on Daily: 2+ consecutive HH/HL = bullish, 2+ LH/LL = bearish. Weekly must align. Volume on trending candles must be above average. Without Dow confirmation, there is no trade.
 
-**Phase 2 — Momentum Validator (4H)**: Confirm the reversal is real with: RSI bullish divergence (price lower low, RSI higher low), MACD histogram divergence, a structure shift (break of recent swing high), and Bill Williams Alligator awakening. The beast is hungry — the trend is turning.
+**Phase 2 — Wyckoff Battleground (Daily/H4)**: The correction after the trend IS Wyckoff Accumulation (for longs) or Distribution (for shorts). Institutional flow is loading while retail is bored (low ADX, tight range, declining volume). Wait for the **Spring** — a sharp liquidity sweep below the accumulation range that traps retail stops.
 
-**Phase 3 �� Sniper Trigger (1H)**: Find the sub-Wave 1 forming on the 1H chart (the first sign Wave 3 is launching). Wait for price to retrace to the 50-61.8% micro Fibonacci zone of that sub-wave, confirmed by volume above average AND a Bill Williams fractal signal. Triple confluence = sniper entry.
+**Phase 3 �� EW Precision Entry (H4/H1)**: After the Spring, watch for the **Sign of Strength (SOS)** — a breakout above the accumulation range with volume conviction (1.5x+ average). Then wait for the **Last Point of Support (LPS)** — a pullback to the 50-61.8% Fibonacci retracement of the SOS move. Entry MUST hold above the Spring price.
 
-**Phase 4 — Risk/Reward**: Stop loss below Wave 2 bottom (+ buffer). Take profit at 161.8% Fibonacci extension of Wave 1 range. Risk no more than 2% of capital. Minimum R:R of 3:1. Execute the plan — no second-guessing.
+**Phase 4 — Risk/Reward Engineering**: Stop loss below the Spring price (Wyckoff thesis invalidation). Take profit at 161.8% Fibonacci extension. R:R must be >= 3:1. Execute the plan — no second-guessing.
 
-**In the narrative**: Always reference which True Fractal phase the pair is in. Frame scenarios through phase advancement: "If Phase 2 confirms with 4H structure shift, we advance to Phase 3 sniper entry." The True Fractal phase IS the story arc.
+**In the analysis**: Always reference which HCM phase the pair is in. Frame scenarios through phase progression: "Spring detected — watching for SOS breakout to advance to Phase 3." The HCM phase IS the phase progression.
 
 
 ${archiveBlock}
@@ -334,15 +336,16 @@ ${news.avoidTrading ? '\n⚠️ HIGH-IMPACT NEWS IMMINENT — factor this into t
 ### AMD Phase Summary
 ${Object.entries(data.amdPhases).map(([tf, p]) => `- ${tf}: ${p.phase} (${p.confidence}%)`).join('\n')}
 
-### TRUE FRACTAL STATUS (Cross-Timeframe Wave 3 Hunter — OUR PRIMARY STRATEGY)
-${data.trueFractal ? `**Phase ${data.trueFractal.overallPhase}/4** | Score: ${data.trueFractal.overallScore}/100 | Direction: **${data.trueFractal.direction.toUpperCase()}**
-- Phase 1 (Daily Macro): **${data.trueFractal.phase1.status.toUpperCase()}** (${data.trueFractal.phase1.confidence}%) — ${data.trueFractal.phase1.details}
-  Wave 1 Top: ${data.trueFractal.phase1.keyLevels.wave1Top?.toFixed(5) ?? 'N/A'} | Wave 2 Bottom: ${data.trueFractal.phase1.keyLevels.wave2Bottom?.toFixed(5) ?? 'N/A'} | Depth: ${data.trueFractal.phase1.wave2Depth !== null ? (data.trueFractal.phase1.wave2Depth * 100).toFixed(1) + '%' : 'N/A'} | In Golden Zone: ${data.trueFractal.phase1.wave2InZone ? 'YES' : 'NO'}
-- Phase 2 (4H Momentum): **${data.trueFractal.phase2.status.toUpperCase()}** (${data.trueFractal.phase2.confidence}%) — ${data.trueFractal.phase2.details}
-- Phase 3 (1H Sniper): **${data.trueFractal.phase3.status.toUpperCase()}** (${data.trueFractal.phase3.confidence}%) — ${data.trueFractal.phase3.details}
-  Micro Entry: ${data.trueFractal.phase3.microFibEntry?.toFixed(5) ?? 'N/A'} | Fractal Signal: ${data.trueFractal.phase3.fractalSignal ? 'YES' : 'NO'}
-- Phase 4 (R:R): SL=${data.trueFractal.phase4.stopLoss?.toFixed(5) ?? 'N/A'} | TP=${data.trueFractal.phase4.takeProfit?.toFixed(5) ?? 'N/A'} | R:R=${data.trueFractal.phase4.riskRewardRatio?.toFixed(1) ?? 'N/A'}:1
-- **${data.trueFractal.narrative}**` : 'True Fractal detection unavailable (missing D/H4/H1 data).'}
+### HARMONIC CONVERGENCE MATRIX STATUS (PRIMARY STRATEGY)
+${data.harmonicConvergence ? `**Phase ${data.harmonicConvergence.overallPhase}/4** | Score: ${data.harmonicConvergence.overallScore}/100 | Direction: **${data.harmonicConvergence.direction.toUpperCase()}**
+- Phase 1 (Macro Direction): **${data.harmonicConvergence.phase1.status.toUpperCase()}** (${data.harmonicConvergence.phase1.score}%) — ${data.harmonicConvergence.phase1.details}
+  Trend: ${data.harmonicConvergence.phase1.primaryTrend} | Filter: ${data.harmonicConvergence.phase1.directionalFilter} | Swing HH: ${data.harmonicConvergence.phase1.dailySwingHighs} | Swing HL: ${data.harmonicConvergence.phase1.dailySwingLows} | Weekly Aligned: ${data.harmonicConvergence.phase1.weeklyAligned ? 'YES' : 'NO'} | Volume: ${data.harmonicConvergence.phase1.volumeConfirms ? 'CONFIRMS' : 'weak'}
+- Phase 2 (Harmonic Time): **${data.harmonicConvergence.phase2.status.toUpperCase()}** (${data.harmonicConvergence.phase2.score}%) — ${data.harmonicConvergence.phase2.details}
+  M45 Correction: ${data.harmonicConvergence.phase2.m45CorrectionDetected ? 'YES' : 'NO'} | M15 Sub-waves: ${data.harmonicConvergence.phase2.m15SubWaveCount}/3 | M45 Cycles: ${data.harmonicConvergence.phase2.m45CyclesElapsed}/6 | Temporal Exhaustion: ${data.harmonicConvergence.phase2.temporalExhaustionReached ? 'YES' : 'NO'}
+- Phase 3 (Trap Geometry): **${data.harmonicConvergence.phase3.status.toUpperCase()}** (${data.harmonicConvergence.phase3.score}%) — ${data.harmonicConvergence.phase3.details}
+  Eulerian Eq: ${data.harmonicConvergence.phase3.eulerianEquilibrium?.toFixed(5) ?? 'N/A'} | Bowtie Apex: ${data.harmonicConvergence.phase3.bowtieApex ? data.harmonicConvergence.phase3.bowtieApex.price.toFixed(5) : 'N/A'} | Apex@Eq: ${data.harmonicConvergence.phase3.bowtieApexAtEquilibrium ? 'YES' : 'NO'} | Spring: ${data.harmonicConvergence.phase3.wyckoffSpringDetected ? `YES at ${data.harmonicConvergence.phase3.springPrice?.toFixed(5)}` : 'NOT YET'}
+- Phase 4 (Execution): Entry=${data.harmonicConvergence.phase4.entryTrigger ? 'TRIGGERED' : 'waiting'} | SL=${data.harmonicConvergence.phase4.stopLoss?.toFixed(5) ?? 'N/A'} | TP1=${data.harmonicConvergence.phase4.tp1?.toFixed(5) ?? 'N/A'} | TP2=${data.harmonicConvergence.phase4.tp2?.toFixed(5) ?? 'N/A'} | R:R(TP2)=${data.harmonicConvergence.phase4.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1 | Valid: ${data.harmonicConvergence.phase4.positionValid ? 'YES' : 'NO'}
+- **${data.harmonicConvergence.narrative}**` : 'Harmonic Convergence detection unavailable (missing W/D/M15/M45/H1 data).'}
 
 ### Bill Williams Fractal Analysis (Algorithmic)
 ${data.timeframes.map(tf => {
@@ -395,16 +398,16 @@ ${data.timeframes.filter(tf => ['D', 'H4', 'H1'].includes(tf.timeframe)).map(tf 
 
 **THEIR PERSPECTIVE**: They are not "lost." They have just read the Narrative, the Scenarios, and your Position Guidance (TP/SL/Confidence). They have full access to the **Story Bible** and any **Active Position history** (adjustments, previous episodes). They must demonstrate this continuity in their dialogue.
 
-- **RAY (Quant):** Transitioning (Learning 5%). Cold, clinical. He was once a "hopeful loser" (95%) but has self-corrected into a "strict winner" (5%). He reviews the confirmations (EMA, ADR, ATR) to validate the edge. He focuses on whether we are at "The Value" or just chasing price.
-- **SARAH (Risk/Psych):** The 5% Process Architect. Absolute discipline. She is immune to the "fear of winning" or "hope of losing." She identifies **"Pussy Moves"**—fear-based exits on small candle wiggles in a winning trade—and shuts them down. She knows the "Pretty Girl" will be back.
-- **ALEX (Macro Strategist):** The 95% Struggle. He represents greed and fear. 
-  - **WHEN WINNING:** He gets scared of a pull-back. He suggests "pussy moves" to secure profits before the market "steals" them.
+- **RAY (Quant):** Cold, clinical. He validates edge through quantitative confirmation (EMA, ADR, ATR). He focuses on whether the statistical regime supports entry or whether we are chasing price outside the optimal zone.
+- **SARAH (Risk/Psych):** Process Architect. Absolute discipline. She is immune to emotional decision-making. She identifies process violations — fear-based exits on noise without regime change — and enforces discipline. Structural conditions must change before action changes.
+- **ALEX (Macro Strategist):** He represents the emotional side of trading — greed and fear.
+  - **WHEN WINNING:** He gets scared of a pull-back. He suggests premature exits to lock in profits before a retracement.
   - **WHEN LOSING:** He becomes hopeful. He convinces himself a turnaround is imminent to avoid the pain of being wrong.
-- **MARCUS (PM):** The 5% Leader. He is the one who sets **"The Value"**. He is patient and waits for the market to come his way. He is optimistic in winning positions (let them run, add to winners) and strict in losing positions (cut fast, follow the stop). 
+- **MARCUS (PM):** The process leader. He identifies optimal regime zones for positioning. He is patient and waits for the market to reach the statistically favorable zone. He is optimistic in winning positions (let them run, add to winners) and strict in losing positions (cut fast, follow the stop).
 
 
 ## ANTI-HALLUCINATION DOCTRINE (CRITICAL)
-- **NO INVENTED DATA**: Characters must ONLY speak about the prices, levels, P&L, and data provided in this prompt.
+- **NO INVENTED DATA**: Desk analysts must ONLY speak about the prices, levels, P&L, and data provided in this prompt.
 - **NO IMAGINARY INDICATORS**: Do not mention indicators (RSI, RSI Divergence, etc.) unless they are explicitly mentioned in Gemini or DeepSeek's analysis.
 - **NO FABRICATED NEWS**: Only reference the news in the Market Context.
 - If data is missing (e.g., no active position), do NOT invent one. Say "Still flat on this one."
@@ -414,21 +417,21 @@ ${data.timeframes.filter(tf => ['D', 'H4', 'H1'].includes(tf.timeframe)).map(tf 
 
 **TOKEN BUDGET: Your entire JSON response must be ≤2000 tokens. Be ruthlessly concise.**
 
-Write Episode ${currentEpisodeNumber} of the ${data.pair} story AND the Desk's huddle. Respond with this exact JSON structure:
+Write Phase Update ${currentEpisodeNumber} of the ${data.pair} HCM analysis AND the Desk's huddle. Respond with this exact JSON structure:
 
 {
-  "story_title": "A compelling episode title (like a TV episode name)",
-  "narrative": "A concise markdown narrative (2-3 SHORT paragraphs, max 150 words total) covering: (1) Current market state with specific price levels and key S/R, (2) Volume/momentum insight (HVN/LVN, exhaustion, VPOC if relevant), (3) What happens next (link to scenarios). Use buyer/seller character metaphors. Be direct and data-focused — no filler. Reference previous episode only if essential.",
+  "story_title": "A concise phase-descriptive title (e.g. 'Phase 2 Compression Deepens at 1.0850')",
+  "narrative": "A concise markdown analysis (2-3 SHORT paragraphs, max 150 words total) covering: (1) Current market state with specific price levels and key S/R, (2) Volume/momentum insight (HVN/LVN, exhaustion, VPOC if relevant), (3) What happens next (link to scenarios). Describe institutional flow dynamics. Be direct and data-focused — no filler. Reference previous phase update only if essential.",
   "characters": {
     "buyers": {
       "strength": "dominant" | "strong" | "balanced" | "weak" | "exhausted",
       "momentum": "1 short sentence (max 10 words)",
-      "narrative": "1-2 sentences max (current position + next move)"
+      "narrative": "1-2 sentences max (current demand-side flow assessment + next expected move)"
     },
     "sellers": {
       "strength": "dominant" | "strong" | "balanced" | "weak" | "exhausted",
       "momentum": "1 short sentence (max 10 words)",
-      "narrative": "1-2 sentences max (current position + next move)"
+      "narrative": "1-2 sentences max (current supply-side flow assessment + next expected move)"
     }
   },
   "current_phase": "accumulation" | "manipulation" | "distribution",

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { TradeOrderForm } from '@/app/(dashboard)/trade/_components/TradeOrderForm'
 import { Activity } from 'lucide-react'
 import { ALLOWED_INSTRUMENTS } from '@/lib/constants/instruments'
+import { COINBASE_INSTRUMENTS } from '@/lib/coinbase/instruments'
 
 export default async function TradePage() {
     const user = await getAuthUser()
@@ -12,7 +13,10 @@ export default async function TradePage() {
     const { data: instruments = [] } = await getAccountInstruments()
     const { data: account } = await getAccountSummary()
 
-    const filteredInstruments = instruments.filter(i => ALLOWED_INSTRUMENTS.includes(i.name as any))
+    const filteredInstruments = [
+        ...instruments.filter(i => ALLOWED_INSTRUMENTS.includes(i.name as any)),
+        ...COINBASE_INSTRUMENTS,
+    ]
 
     return (
         <div className="max-w-6xl mx-auto space-y-12 pb-20">

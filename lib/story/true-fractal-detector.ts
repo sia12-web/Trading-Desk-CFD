@@ -1,487 +1,675 @@
 import type { OandaCandle } from '@/lib/types/oanda'
 import type { CalculatedIndicators } from '@/lib/strategy/types'
 import type { ElliottWaveAnalysis } from './elliott-wave-detector'
-import type { FractalSetup } from './fractal-detector'
-import type { TrueFractalSetup, TrueFractalPhase } from './types'
+import type {
+    FastMatrixSetup,
+    FastMatrixScenario,
+    FastMatrixScenarioType,
+    MacroDirection,
+    RSIDivergence,
+    MACDDivergence,
+    GoldenPocket,
+    DiamondBox,
+    CHoCHSignal,
+    StochasticReload,
+    VolumeClimax,
+} from './types'
+import {
+    detectRSIDivergence,
+    detectMACDDivergence,
+    detectStochasticReload as detectStochReload,
+    calculateGoldenPocket,
+} from '@/lib/utils/indicators'
+import {
+    detectCHoCH,
+    detectVolumeClimax,
+    detectDiamondBox,
+} from '@/lib/utils/m1-detectors'
 
 /**
- * True Fractal Detector — 4-Phase Wave 3 Hunting System
+ * The Fast Matrix — Universal Playbook
  *
- * Combines Elliott Wave, Fibonacci, momentum divergence, Bill Williams fractals,
- * and volume confirmation into a single cross-timeframe logic tree.
+ * Macro Anchor: H1 (defines the trend — HH/HL or LH/LL)
+ * Trap Anchor: M15 (defines the geometry — Golden Pocket or Diamond Box)
+ * Trigger Anchor: M1 (defines the execution — CHoCH + Stochastic)
  *
- * Phase 1 (Macro Scanner): Daily — completed Wave 1 + Wave 2 retracement in 50-61.8% zone
- * Phase 2 (Momentum Validator): 4H — RSI/MACD divergence + structure shift + Alligator awakening
- * Phase 3 (Sniper Trigger): 1H — Sub-wave 1 + micro Fib entry + volume + fractal signal
- * Phase 4 (Risk/Reward): Pure math — SL below Wave 2, TP at 161.8% extension
+ * 4 Scenarios:
+ *   A: Bullish Wave 2 (Crash Trap — Golden Pocket on M15)
+ *   B: Bullish Wave 4 (Diamond Chop — 1/Price equilibrium box on M15)
+ *   C: Bearish Wave 2 (Relief Trap — Golden Pocket on M15)
+ *   D: Bearish Wave 4 (Diamond Chop — 1/Price equilibrium box on M15)
  */
 
-export function detectTrueFractal(
-    dailyCandles: OandaCandle[],
-    dailyIndicators: CalculatedIndicators,
-    dailyElliottWave: ElliottWaveAnalysis | undefined,
-    h4Candles: OandaCandle[],
-    h4Indicators: CalculatedIndicators,
+export function detectFastMatrix(
     h1Candles: OandaCandle[],
     h1Indicators: CalculatedIndicators,
-    h1ElliottWave: ElliottWaveAnalysis | undefined,
-    dailyFractalSetup: FractalSetup | undefined,
-    pipLocation: number
-): TrueFractalSetup {
-    // ── Phase 1: Macro Scanner (Daily) ──
-    const phase1 = detectPhase1(dailyCandles, dailyElliottWave)
+    m15Candles: OandaCandle[],
+    m15Indicators: CalculatedIndicators,
+    m15ElliottWave: ElliottWaveAnalysis | undefined,
+    m1Candles: OandaCandle[],
+    m1Indicators: CalculatedIndicators,
+    pipLocation: number,
+    accountBalance?: number
+): FastMatrixSetup {
+    // ── Step 1: Macro Direction (H1 Trend) ──
+    const macro = detectMacroDirectionH1(h1Candles, h1Indicators)
 
-    // ── Phase 2: Momentum Validator (4H) ──
-    const phase2 = detectPhase2(h4Candles, h4Indicators, dailyFractalSetup)
+    // ── Step 2: Evaluate applicable scenarios ──
+    const emptyScenario = (id: FastMatrixScenarioType, label: string, dir: 'long' | 'short', wt: 2 | 4): FastMatrixScenario => ({
+        id, label, active: false, direction: dir, waveType: wt,
+        goldenPocket: null, diamondBox: null,
+        rsiDivergence: { detected: false, type: 'none', priceSwing1: null, priceSwing2: null, rsiSwing1: null, rsiSwing2: null, details: 'Not evaluated' },
+        macdDivergence: { detected: false, type: 'none', histogramShallowing: false, details: 'Not evaluated' },
+        volumeClimax: { detected: false, volumeRatio: 0, rejectionCandle: false, time: null },
+        choch: { detected: false, direction: 'none', breakPrice: null, breakTime: null, previousSwingPrice: null },
+        stochasticReload: { detected: false, direction: 'none', kValue: null, dValue: null, crossTime: null },
+        springPrice: null, entryPrice: null, stopLoss: null, tp1: null, tp2: null,
+        riskRewardToTP1: null, riskRewardToTP2: null,
+        positionSizeUnits: null, riskPercent: 2, riskAmount: null,
+        score: 0, status: 'inactive', details: 'Macro filter does not permit this direction.',
+    })
 
-    // ── Phase 3: Sniper Trigger (1H) ──
-    const phase3 = detectPhase3(h1Candles, h1Indicators, h1ElliottWave, phase1.direction)
+    let scenarioA = emptyScenario('A', 'Bullish Wave 2 (Crash Trap)', 'long', 2)
+    let scenarioB = emptyScenario('B', 'Bullish Wave 4 (Diamond Chop)', 'long', 4)
+    let scenarioC = emptyScenario('C', 'Bearish Wave 2 (Relief Trap)', 'short', 2)
+    let scenarioD = emptyScenario('D', 'Bearish Wave 4 (Diamond Chop)', 'short', 4)
 
-    // ── Phase 4: Risk/Reward (pure math) ──
-    const phase4 = calculatePhase4(phase1, phase3, pipLocation, dailyCandles)
+    if (macro.filter === 'buy_only') {
+        scenarioA = evaluateWave2Scenario('A', true, h1Candles, m15Candles, m15Indicators, m15ElliottWave, m1Candles, m1Indicators, pipLocation, accountBalance)
+        scenarioB = evaluateWave4Scenario('B', true, h1Candles, m15Candles, m15Indicators, m15ElliottWave, m1Candles, m1Indicators, pipLocation, accountBalance)
+    } else if (macro.filter === 'sell_only') {
+        scenarioC = evaluateWave2Scenario('C', false, h1Candles, m15Candles, m15Indicators, m15ElliottWave, m1Candles, m1Indicators, pipLocation, accountBalance)
+        scenarioD = evaluateWave4Scenario('D', false, h1Candles, m15Candles, m15Indicators, m15ElliottWave, m1Candles, m1Indicators, pipLocation, accountBalance)
+    }
 
-    // ── Overall scoring ──
-    const phase1Score = phase1.confidence * 0.25
-    const phase2Score = phase2.confidence * 0.25
-    const phase3Score = phase3.confidence * 0.25
-    const phase4Score = phase4.riskRewardRatio !== null && phase4.riskRewardRatio >= 3 ? 25 : phase4.riskRewardRatio !== null ? (phase4.riskRewardRatio / 3) * 25 : 0
-    const overallScore = Math.round(phase1Score + phase2Score + phase3Score + phase4Score)
+    // ── Step 3: Select best active scenario ──
+    const allScenarios = [scenarioA, scenarioB, scenarioC, scenarioD]
+    const activeScenarios = allScenarios.filter(s => s.status !== 'inactive' && s.status !== 'invalid')
+    const best = activeScenarios.sort((a, b) => b.score - a.score)[0] ?? null
 
-    // Determine highest confirmed phase
-    let overallPhase: TrueFractalSetup['overallPhase'] = 0
-    if (phase1.status === 'confirmed') overallPhase = 1
-    if (overallPhase >= 1 && phase2.status === 'confirmed') overallPhase = 2
-    if (overallPhase >= 2 && phase3.status === 'confirmed') overallPhase = 3
-    if (overallPhase >= 3 && phase4.riskRewardRatio !== null && phase4.riskRewardRatio >= 2) overallPhase = 4
+    const activeScenario = best?.id ?? null
+    const overallScore = best?.score ?? 0
+    const direction: FastMatrixSetup['direction'] =
+        macro.filter === 'buy_only' ? 'long'
+            : macro.filter === 'sell_only' ? 'short'
+                : 'neutral'
 
-    // Direction from phase 1
-    const direction = phase1.direction
-
-    const narrative = buildNarrative(overallPhase, overallScore, direction, phase1, phase2, phase3, phase4)
+    const narrative = buildNarrative(macro, best, overallScore)
 
     return {
-        overallPhase,
+        activeScenario,
         overallScore,
         direction,
-        phase1: { ...phase1, status: phase1.status, confidence: phase1.confidence, details: phase1.details },
-        phase2,
-        phase3,
-        phase4,
         narrative,
+        macro,
+        scenarios: { A: scenarioA, B: scenarioB, C: scenarioC, D: scenarioD },
+        keyLevels: {
+            goldenPocketHigh: best?.goldenPocket?.goldenPocketHigh ?? null,
+            goldenPocketLow: best?.goldenPocket?.goldenPocketLow ?? null,
+            diamondBoxHigh: best?.diamondBox?.boxHigh ?? null,
+            diamondBoxLow: best?.diamondBox?.boxLow ?? null,
+            equilibriumPrice: best?.diamondBox?.equilibriumPrice ?? null,
+            springPrice: best?.springPrice ?? null,
+            entryPrice: best?.entryPrice ?? null,
+            stopLoss: best?.stopLoss ?? null,
+            tp1: best?.tp1 ?? null,
+            tp2: best?.tp2 ?? null,
+        },
     }
 }
 
-// ────────────────────────────────────────────────────────────────
-// Phase 1: Macro Scanner (Daily)
-// ────────────────────────────────────────────────────────────────
-
-interface Phase1Result extends TrueFractalPhase {
-    wave1Complete: boolean
-    wave2Depth: number | null
-    wave2InZone: boolean
-    keyLevels: { wave1Top: number | null; wave2Bottom: number | null }
-    direction: 'bullish' | 'bearish' | 'none'
-}
-
-function detectPhase1(dailyCandles: OandaCandle[], ew: ElliottWaveAnalysis | undefined): Phase1Result {
-    const empty: Phase1Result = {
-        status: 'not_detected', confidence: 0, details: 'Insufficient Elliott Wave data on Daily',
-        wave1Complete: false, wave2Depth: null, wave2InZone: false,
-        keyLevels: { wave1Top: null, wave2Bottom: null },
-        direction: 'none',
-    }
-
-    if (!ew || dailyCandles.length < 50) return empty
-
-    // Check for impulsive wave structure (Wave 1 completed or Wave 3 forming)
-    const isImpulsive = ew.waveType === 'impulsive'
-    const currentWave = ew.currentWave.toLowerCase()
-
-    // We want: Wave 1 complete (5-wave impulse detected) and currently in Wave 2 correction
-    // OR: corrective structure after impulsive = Wave 2 forming
-    const wave1Scenarios = [
-        currentWave.includes('wave 3') || currentWave.includes('wave 4'), // Already past wave 2
-        currentWave.includes('early impulse'),                             // Wave 1-2 area
-        currentWave.includes('wave 5') || currentWave.includes('completion'), // Full cycle
-    ]
-
-    const correctiveAfterImpulse = ew.waveType === 'corrective' && (
-        currentWave.includes('wave a') || currentWave.includes('wave b') || currentWave.includes('wave c')
-    )
-
-    // Determine direction from the swing structure
-    const fib = ew.fibonacciLevels
-    const swingRange = fib.swingHigh - fib.swingLow
-    if (swingRange <= 0) return empty
-
-    const currentPrice = parseFloat(dailyCandles[dailyCandles.length - 1].mid.c)
-
-    // Bullish Wave 3 hunt: Wave 1 went UP, Wave 2 retraces DOWN
-    // Bearish Wave 3 hunt: Wave 1 went DOWN, Wave 2 retraces UP
-    const isBullish = ew.projectedMove === 'bullish' || (isImpulsive && currentPrice > fib.swingLow + swingRange * 0.3)
-    const isBearish = ew.projectedMove === 'bearish' || (isImpulsive && currentPrice < fib.swingHigh - swingRange * 0.3)
-
-    let direction: 'bullish' | 'bearish' | 'none' = 'none'
-    let wave1Top: number | null = null
-    let wave2Bottom: number | null = null
-    let wave2Depth: number | null = null
-
-    if (isBullish) {
-        direction = 'bullish'
-        wave1Top = fib.swingHigh
-        // Wave 2 bottom = how far price retraced from Wave 1 top
-        // Check where current price sits relative to Fibonacci retracements
-        wave2Bottom = fib.swingLow
-        // Calculate retracement depth: how much of Wave 1 was retraced
-        const retracementFromTop = (wave1Top - currentPrice) / swingRange
-        wave2Depth = Math.max(0, Math.min(1, retracementFromTop))
-    } else if (isBearish) {
-        direction = 'bearish'
-        wave1Top = fib.swingLow // In bearish: Wave 1 top = lowest point
-        wave2Bottom = fib.swingHigh // Wave 2 retraces back up
-        const retracementFromBottom = (currentPrice - wave1Top) / swingRange
-        wave2Depth = Math.max(0, Math.min(1, retracementFromBottom))
-    }
-
-    if (direction === 'none') return empty
-
-    // Check if Wave 2 retracement is in the golden zone (50-61.8%)
-    const wave2InZone = wave2Depth !== null && wave2Depth >= 0.45 && wave2Depth <= 0.68
-
-    // Score confidence
-    let confidence = 0
-    const wave1Complete = isImpulsive || correctiveAfterImpulse || wave1Scenarios.some(Boolean)
-
-    if (wave1Complete) confidence += 40
-    if (wave2InZone) confidence += 40
-    else if (wave2Depth !== null && wave2Depth >= 0.382 && wave2Depth <= 0.786) confidence += 20
-    if (ew.confidence > 60) confidence += 10
-    if (isImpulsive) confidence += 10
-
-    confidence = Math.min(100, confidence)
-
-    let status: TrueFractalPhase['status'] = 'not_detected'
-    if (confidence >= 70) status = 'confirmed'
-    else if (confidence >= 40) status = 'forming'
-
-    const details = wave1Complete
-        ? `Daily ${direction} impulse detected. Wave 2 retracement: ${wave2Depth !== null ? (wave2Depth * 100).toFixed(1) : '?'}%${wave2InZone ? ' (IN GOLDEN ZONE)' : ''}`
-        : `Monitoring for ${direction} impulsive Wave 1 completion on Daily`
-
-    return {
-        status, confidence, details,
-        wave1Complete, wave2Depth, wave2InZone,
-        keyLevels: { wave1Top, wave2Bottom },
-        direction,
-    }
-}
+// Backward compat aliases
+export const detectHarmonicConvergence = detectFastMatrix
+export const detectTrueFractal = detectFastMatrix
 
 // ────────────────────────────────────────────────────────────────
-// Phase 2: Momentum Validator (4H)
+// Macro Direction (H1 Trend — Dow Theory on 1-Hour Chart)
 // ────────────────────────────────────────────────────────────────
 
-function detectPhase2(
-    h4Candles: OandaCandle[],
-    h4Indicators: CalculatedIndicators,
-    dailyFractalSetup: FractalSetup | undefined
-): TrueFractalPhase & { rsiDivergence: boolean; macdDivergence: boolean; structureShift: boolean; alligatorAwakening: boolean } {
-    const empty = {
-        status: 'not_detected' as const, confidence: 0, details: 'Insufficient 4H data',
-        rsiDivergence: false, macdDivergence: false, structureShift: false, alligatorAwakening: false,
-    }
-
-    if (h4Candles.length < 30) return empty
-
-    const rsi = h4Indicators.rsi
-    const macdHist = h4Indicators.macd.histogram
-    const closes = h4Candles.map(c => parseFloat(c.mid.c))
-    const highs = h4Candles.map(c => parseFloat(c.mid.h))
-    const lastIdx = h4Candles.length - 1
-
-    // ── RSI Bullish Divergence: price lower low + RSI higher low ──
-    const rsiDivergence = detectBullishDivergence(closes, rsi, 20)
-
-    // ── MACD Histogram Divergence ──
-    const macdDivergence = detectBullishDivergence(closes, macdHist, 20)
-
-    // ── Structure Shift: break of recent swing high ──
-    const structureShift = detectStructureShift(h4Candles, 20)
-
-    // ── Alligator Awakening from Daily fractal setup ──
-    const alligatorAwakening = dailyFractalSetup
-        ? (dailyFractalSetup.alligatorState === 'awakening' || dailyFractalSetup.alligatorState === 'eating')
-        : false
-
-    // Score
-    let confidence = 0
-    if (rsiDivergence) confidence += 30
-    if (macdDivergence) confidence += 25
-    if (structureShift) confidence += 25
-    if (alligatorAwakening) confidence += 20
-    confidence = Math.min(100, confidence)
-
-    let status: TrueFractalPhase['status'] = 'not_detected'
-    if (confidence >= 70) status = 'confirmed'
-    else if (confidence >= 35) status = 'forming'
-
-    const signals: string[] = []
-    if (rsiDivergence) signals.push('RSI bullish divergence')
-    if (macdDivergence) signals.push('MACD histogram divergence')
-    if (structureShift) signals.push('structure shift (swing high broken)')
-    if (alligatorAwakening) signals.push(`Alligator ${dailyFractalSetup?.alligatorState}`)
-
-    const details = signals.length > 0
-        ? `4H momentum: ${signals.join(', ')}`
-        : 'No 4H momentum confirmation signals detected'
-
-    return { status, confidence, details, rsiDivergence, macdDivergence, structureShift, alligatorAwakening }
-}
-
-/**
- * Detect bullish divergence: price makes lower low but indicator makes higher low
- * Works for both RSI and MACD histogram
- */
-function detectBullishDivergence(prices: number[], indicator: number[], lookback: number): boolean {
-    if (prices.length < lookback || indicator.length < lookback) return false
-
-    const startIdx = prices.length - lookback
-    const recentPrices = prices.slice(startIdx)
-    const recentIndicator = indicator.slice(startIdx)
-
-    // Find two lowest price points
-    let lowestIdx1 = 0
-    let lowestIdx2 = -1
-    for (let i = 1; i < recentPrices.length; i++) {
-        if (recentPrices[i] < recentPrices[lowestIdx1]) {
-            lowestIdx2 = lowestIdx1
-            lowestIdx1 = i
-        } else if (lowestIdx2 === -1 || recentPrices[i] < recentPrices[lowestIdx2]) {
-            if (Math.abs(i - lowestIdx1) > 3) { // Ensure separation
-                lowestIdx2 = i
-            }
-        }
-    }
-
-    if (lowestIdx2 === -1) return false
-
-    // Ensure chronological order
-    const [firstIdx, secondIdx] = lowestIdx1 < lowestIdx2 ? [lowestIdx1, lowestIdx2] : [lowestIdx2, lowestIdx1]
-
-    // Price: lower low (second low is lower than first)
-    const priceLowerLow = recentPrices[secondIdx] < recentPrices[firstIdx]
-
-    // Indicator: higher low (second low is higher than first)
-    const validFirst = !isNaN(recentIndicator[firstIdx])
-    const validSecond = !isNaN(recentIndicator[secondIdx])
-    if (!validFirst || !validSecond) return false
-
-    const indicatorHigherLow = recentIndicator[secondIdx] > recentIndicator[firstIdx]
-
-    return priceLowerLow && indicatorHigherLow
-}
-
-/**
- * Detect structure shift: price breaks above the most recent swing high
- */
-function detectStructureShift(candles: OandaCandle[], lookback: number): boolean {
-    if (candles.length < lookback) return false
-
-    const recent = candles.slice(-lookback)
-    const highs = recent.map(c => parseFloat(c.mid.h))
-    const currentClose = parseFloat(candles[candles.length - 1].mid.c)
-
-    // Find the highest swing high in the lookback (excluding last 3 bars)
-    const swingHighs: number[] = []
-    for (let i = 2; i < highs.length - 3; i++) {
-        if (highs[i] > highs[i - 1] && highs[i] > highs[i + 1] &&
-            highs[i] > highs[i - 2] && highs[i] > highs[i + 2]) {
-            swingHighs.push(highs[i])
-        }
-    }
-
-    if (swingHighs.length === 0) return false
-
-    // Most recent swing high
-    const recentSwingHigh = swingHighs[swingHighs.length - 1]
-
-    // Structure shift = current close breaks above the swing high
-    return currentClose > recentSwingHigh
-}
-
-// ────────────────────────────────────────────────────────────────
-// Phase 3: Sniper Trigger (1H)
-// ────────────────────────────────────────────────────────────────
-
-function detectPhase3(
+function detectMacroDirectionH1(
     h1Candles: OandaCandle[],
     h1Indicators: CalculatedIndicators,
-    h1ElliottWave: ElliottWaveAnalysis | undefined,
-    direction: 'bullish' | 'bearish' | 'none'
-): TrueFractalPhase & { subWave1Detected: boolean; microFibEntry: number | null; volumeConfirmed: boolean; fractalSignal: boolean } {
-    const empty = {
-        status: 'not_detected' as const, confidence: 0, details: 'Insufficient 1H data',
-        subWave1Detected: false, microFibEntry: null, volumeConfirmed: false, fractalSignal: false,
+): MacroDirection {
+    const empty: MacroDirection = {
+        trend: 'ranging', filter: 'no_trade',
+        h1SwingHighs: 0, h1SwingLows: 0,
+        higherHighs: 0, higherLows: 0, lowerHighs: 0, lowerLows: 0,
+        volumeConfirms: false, score: 0,
+        details: 'Insufficient H1 data for macro direction.',
     }
 
-    if (h1Candles.length < 30 || direction === 'none') return empty
+    if (h1Candles.length < 50) return empty
 
-    const lastIdx = h1Candles.length - 1
+    const swings = analyzeSwingStructure(h1Candles, 5, 30)
+    const { higherHighs, higherLows, lowerHighs, lowerLows, swingHighs, swingLows } = swings
 
-    // ── Sub-Wave 1 on 1H (using Elliott Wave detection) ──
-    const subWave1Detected = h1ElliottWave
-        ? (h1ElliottWave.waveType === 'impulsive' && (
-            h1ElliottWave.currentWave.toLowerCase().includes('early impulse') ||
-            h1ElliottWave.currentWave.toLowerCase().includes('wave 3') ||
-            h1ElliottWave.currentWave.toLowerCase().includes('wave 2')
-        ))
-        : false
+    let trend: MacroDirection['trend'] = 'ranging'
+    if (higherHighs >= 2 && higherLows >= 2) trend = 'bullish'
+    else if (lowerHighs >= 2 && lowerLows >= 2) trend = 'bearish'
 
-    // ── Micro Fibonacci Entry (50-61.8% of sub-wave on 1H) ──
-    let microFibEntry: number | null = null
-    if (h1ElliottWave) {
-        const fib = h1ElliottWave.fibonacciLevels
-        const range = fib.swingHigh - fib.swingLow
-        if (range > 0) {
-            if (direction === 'bullish') {
-                // Entry zone: between 50% and 61.8% retracement from the swing high
-                microFibEntry = (fib.retracements.level_500 + fib.retracements.level_618) / 2
+    const filter: MacroDirection['filter'] =
+        trend === 'bullish' ? 'buy_only'
+            : trend === 'bearish' ? 'sell_only'
+                : 'no_trade'
+
+    const volumeConfirms = checkVolumeConfirmation(h1Candles, h1Indicators, trend)
+
+    let score = 0
+    if (trend !== 'ranging') {
+        score += 30
+        const count = trend === 'bullish' ? higherHighs + higherLows : lowerHighs + lowerLows
+        score += Math.min(30, count > 4 ? 30 : count > 2 ? 20 : 10)
+    }
+    if (volumeConfirms) score += 20
+    // Extra points for strong trend (many swings)
+    score += Math.min(20, swingHighs.length + swingLows.length)
+
+    const shCount = trend === 'bullish' ? higherHighs : lowerHighs
+    const slCount = trend === 'bullish' ? higherLows : lowerLows
+
+    const details = trend === 'ranging'
+        ? 'H1 shows no clear Dow trend. Filter: NO TRADE. Stand aside.'
+        : `H1 ${trend}: ${shCount} ${trend === 'bullish' ? 'HH' : 'LH'}, ${slCount} ${trend === 'bullish' ? 'HL' : 'LL'}. Volume ${volumeConfirms ? 'CONFIRMS' : 'weak'}. Filter: ${filter.toUpperCase()}.`
+
+    return {
+        trend, filter,
+        h1SwingHighs: swingHighs.length, h1SwingLows: swingLows.length,
+        higherHighs, higherLows, lowerHighs, lowerLows,
+        volumeConfirms, score, details,
+    }
+}
+
+// ────────────────────────────────────────────────────────────────
+// Wave 2 Scenario Evaluator (Scenarios A & C — Golden Pocket)
+// ────────────────────────────────────────────────────────────────
+
+function evaluateWave2Scenario(
+    id: FastMatrixScenarioType,
+    isBullish: boolean,
+    h1Candles: OandaCandle[],
+    m15Candles: OandaCandle[],
+    m15Indicators: CalculatedIndicators,
+    m15ElliottWave: ElliottWaveAnalysis | undefined,
+    m1Candles: OandaCandle[],
+    m1Indicators: CalculatedIndicators,
+    pipLocation: number,
+    accountBalance?: number,
+): FastMatrixScenario {
+    const label = isBullish ? 'Bullish Wave 2 (Crash Trap)' : 'Bearish Wave 2 (Relief Trap)'
+    const dir: 'long' | 'short' = isBullish ? 'long' : 'short'
+
+    const base: FastMatrixScenario = {
+        id, label, active: false, direction: dir, waveType: 2,
+        goldenPocket: null, diamondBox: null,
+        rsiDivergence: { detected: false, type: 'none', priceSwing1: null, priceSwing2: null, rsiSwing1: null, rsiSwing2: null, details: 'Not evaluated' },
+        macdDivergence: { detected: false, type: 'none', histogramShallowing: false, details: 'Not evaluated' },
+        volumeClimax: { detected: false, volumeRatio: 0, rejectionCandle: false, time: null },
+        choch: { detected: false, direction: 'none', breakPrice: null, breakTime: null, previousSwingPrice: null },
+        stochasticReload: { detected: false, direction: 'none', kValue: null, dValue: null, crossTime: null },
+        springPrice: null, entryPrice: null, stopLoss: null, tp1: null, tp2: null,
+        riskRewardToTP1: null, riskRewardToTP2: null,
+        positionSizeUnits: null, riskPercent: 2, riskAmount: null,
+        score: 0, status: 'watching', details: '',
+    }
+
+    if (m15Candles.length < 30) return { ...base, status: 'inactive', details: 'Insufficient M15 data' }
+
+    // ── Find Wave 1 impulse on M15 ──
+    // Use Elliott Wave data if available, otherwise use swing structure
+    let wave1High: number | null = null
+    let wave1Low: number | null = null
+
+    if (m15ElliottWave?.waves?.length) {
+        // Look for a completed impulse wave
+        const impulse = m15ElliottWave.waves.find(w => w.label === '1' || w.label === 'i')
+        if (impulse) {
+            wave1High = impulse.end_price > impulse.start_price ? impulse.end_price : impulse.start_price
+            wave1Low = impulse.end_price > impulse.start_price ? impulse.start_price : impulse.end_price
+        }
+    }
+
+    // Fallback: use recent swing extremes on H1 for the impulse
+    if (!wave1High || !wave1Low) {
+        const { swingHighPrices, swingLowPrices } = getSwingDetails(h1Candles.slice(-50), 5)
+        if (swingHighPrices.length >= 2 && swingLowPrices.length >= 2) {
+            if (isBullish) {
+                wave1Low = swingLowPrices[swingLowPrices.length - 2] ?? swingLowPrices[swingLowPrices.length - 1]
+                wave1High = swingHighPrices[swingHighPrices.length - 1]
             } else {
-                // Bearish: inverse retracement
-                microFibEntry = fib.swingLow + range * 0.559 // Midpoint of 50-61.8%
+                wave1High = swingHighPrices[swingHighPrices.length - 2] ?? swingHighPrices[swingHighPrices.length - 1]
+                wave1Low = swingLowPrices[swingLowPrices.length - 1]
             }
         }
     }
 
-    // ── Volume Confirmation ──
-    const volumeFlow = h1Indicators.volumeFlow
-    const volumeConfirmed = volumeFlow
-        ? !volumeFlow.exhaustion.detected || volumeFlow.exhaustion.type === 'none'
-        : false
+    if (!wave1High || !wave1Low || wave1High <= wave1Low) {
+        return { ...base, status: 'watching', score: 5, details: 'Scanning for Wave 1 impulse on M15/H1.' }
+    }
 
-    // Also check raw volume above average
-    const vol = h1Indicators.volume[lastIdx]
-    const volSma = h1Indicators.volumeSma[lastIdx]
-    const volumeAboveAvg = vol && volSma ? vol > volSma * 1.1 : false
+    // ── Calculate Golden Pocket (50-61.8% Fib) ──
+    const goldenPocket = calculateGoldenPocket(wave1Low, wave1High)
 
-    // ── Fractal Signal at entry zone ──
-    const fractals = h1Indicators.fractals
-    const currentPrice = parseFloat(h1Candles[lastIdx].mid.c)
-    let fractalSignal = false
+    // Check if current price is in or near the Golden Pocket
+    const currentPrice = parseFloat(m15Candles[m15Candles.length - 1].mid.c)
+    const isInPocket = isBullish
+        ? currentPrice >= goldenPocket.goldenPocketLow * 0.998 && currentPrice <= goldenPocket.goldenPocketHigh * 1.002
+        : currentPrice >= goldenPocket.goldenPocketLow * 0.998 && currentPrice <= goldenPocket.goldenPocketHigh * 1.002
 
-    if (direction === 'bullish') {
-        // Look for bullish fractal near the micro Fib entry
-        const recentBullish = fractals.filter(f => f.type === 'bullish').slice(-5)
-        fractalSignal = recentBullish.some(f => {
-            if (!microFibEntry) return false
-            const tolerance = Math.abs(currentPrice - microFibEntry) * 0.3
-            return Math.abs(f.price - microFibEntry) < tolerance
-        })
-        // Also accept if there's any recent bullish fractal
-        if (!fractalSignal && recentBullish.length > 0) {
-            const latestFractal = recentBullish[recentBullish.length - 1]
-            fractalSignal = latestFractal.price < currentPrice // Bullish fractal below current price
-        }
-    } else {
-        const recentBearish = fractals.filter(f => f.type === 'bearish').slice(-5)
-        fractalSignal = recentBearish.some(f => {
-            if (!microFibEntry) return false
-            const tolerance = Math.abs(currentPrice - microFibEntry) * 0.3
-            return Math.abs(f.price - microFibEntry) < tolerance
-        })
-        if (!fractalSignal && recentBearish.length > 0) {
-            const latestFractal = recentBearish[recentBearish.length - 1]
-            fractalSignal = latestFractal.price > currentPrice
+    // ── RSI Divergence on M15 ──
+    const closes = m15Candles.map(c => parseFloat(c.mid.c))
+    const rsi = m15Indicators.rsi ?? []
+    const rsiDiv = detectRSIDivergence(closes, rsi, isBullish, 5)
+
+    // ── MACD Divergence on M15 ──
+    const macdHist = m15Indicators.macd?.histogram ?? []
+    const macdDiv = detectMACDDivergence(closes, macdHist, isBullish, 5)
+
+    // ── M1 Triggers ──
+    const volClimax = m1Candles.length > 20 ? detectVolumeClimax(m1Candles) : base.volumeClimax
+    const choch = m1Candles.length > 20 ? detectCHoCH(m1Candles, isBullish) : base.choch
+
+    const stochK = m1Indicators.stochastic?.kLine ?? []
+    const stochD = m1Indicators.stochastic?.dLine ?? []
+    const m1Times = m1Candles.map(c => c.time)
+    const stochReload = stochK.length > 3 ? detectStochReload(stochK, stochD, isBullish, m1Times) : base.stochasticReload
+
+    // ── Spring Price (from volume climax rejection) ──
+    let springPrice: number | null = null
+    if (volClimax.detected && volClimax.time) {
+        const climaxCandle = m1Candles.find(c => c.time === volClimax.time)
+        if (climaxCandle) {
+            springPrice = isBullish ? parseFloat(climaxCandle.mid.l) : parseFloat(climaxCandle.mid.h)
         }
     }
 
-    // Score
-    let confidence = 0
-    if (subWave1Detected) confidence += 30
-    if (microFibEntry !== null) confidence += 20
-    if (volumeConfirmed || volumeAboveAvg) confidence += 25
-    if (fractalSignal) confidence += 25
-    confidence = Math.min(100, confidence)
+    // ── Execution Levels ──
+    let entryPrice: number | null = null
+    let stopLoss: number | null = null
+    let tp1: number | null = null
+    let tp2: number | null = null
 
-    let status: TrueFractalPhase['status'] = 'not_detected'
-    if (confidence >= 70) status = 'confirmed'
-    else if (confidence >= 35) status = 'forming'
+    if (choch.detected && choch.breakPrice) {
+        entryPrice = stochReload.detected ? currentPrice : choch.breakPrice
+    }
 
-    const signals: string[] = []
-    if (subWave1Detected) signals.push('sub-Wave 1 on 1H')
-    if (microFibEntry) signals.push(`micro Fib entry at ${microFibEntry.toFixed(5)}`)
-    if (volumeConfirmed || volumeAboveAvg) signals.push('volume confirmed')
-    if (fractalSignal) signals.push('fractal signal at zone')
+    if (springPrice) {
+        const pip = Math.pow(10, pipLocation)
+        stopLoss = isBullish ? springPrice - pip : springPrice + pip
+    }
 
-    const details = signals.length > 0
-        ? `1H sniper: ${signals.join(', ')}`
-        : 'No 1H trigger signals detected'
+    if (entryPrice && stopLoss) {
+        const risk = Math.abs(entryPrice - stopLoss)
+        tp1 = isBullish ? entryPrice + risk * 2 : entryPrice - risk * 2      // 2:1 R:R (100% ext)
+        tp2 = isBullish ? entryPrice + risk * 3.236 : entryPrice - risk * 3.236  // 161.8% ext of wave
+    }
 
-    return { status, confidence, details, subWave1Detected, microFibEntry, volumeConfirmed: volumeConfirmed || volumeAboveAvg, fractalSignal }
+    // ── R:R and Position Sizing ──
+    const rr1 = entryPrice && stopLoss && tp1 ? Math.abs(tp1 - entryPrice) / Math.abs(entryPrice - stopLoss) : null
+    const rr2 = entryPrice && stopLoss && tp2 ? Math.abs(tp2 - entryPrice) / Math.abs(entryPrice - stopLoss) : null
+    let positionSizeUnits: number | null = null
+    let riskAmount: number | null = null
+    if (accountBalance && entryPrice && stopLoss) {
+        riskAmount = accountBalance * 0.02
+        const distancePerUnit = Math.abs(entryPrice - stopLoss)
+        positionSizeUnits = distancePerUnit > 0 ? Math.floor(riskAmount / distancePerUnit) : null
+    }
+
+    // ── Scoring ──
+    let score = 0
+    if (isInPocket) score += 15          // Price in Golden Pocket
+    if (rsiDiv.detected) score += 20     // RSI divergence
+    if (macdDiv.detected) score += 10    // MACD divergence
+    if (volClimax.detected) score += 20  // Volume climax on M1
+    if (choch.detected) score += 20      // CHoCH structural break
+    if (stochReload.detected) score += 15 // Stochastic reload
+    score = Math.min(100, score)
+
+    let status: FastMatrixScenario['status'] = 'watching'
+    if (score >= 80 && choch.detected && stochReload.detected) status = 'triggered'
+    else if (score >= 50) status = 'confirming'
+    else if (score >= 15) status = 'watching'
+
+    const details = buildScenarioDetails(label, score, status, isInPocket, rsiDiv, macdDiv, volClimax, choch, stochReload, rr2)
+
+    return {
+        ...base,
+        active: status !== 'inactive',
+        goldenPocket,
+        rsiDivergence: rsiDiv,
+        macdDivergence: macdDiv,
+        volumeClimax: volClimax,
+        choch,
+        stochasticReload: stochReload,
+        springPrice,
+        entryPrice,
+        stopLoss,
+        tp1,
+        tp2,
+        riskRewardToTP1: rr1,
+        riskRewardToTP2: rr2,
+        positionSizeUnits,
+        riskAmount,
+        score,
+        status,
+        details,
+    }
 }
 
 // ────────────────────────────────────────────────────────────────
-// Phase 4: Risk/Reward (pure math)
+// Wave 4 Scenario Evaluator (Scenarios B & D — Diamond Box)
 // ────────────────────────────────────────────────────────────────
 
-function calculatePhase4(
-    phase1: Phase1Result,
-    phase3: ReturnType<typeof detectPhase3>,
+function evaluateWave4Scenario(
+    id: FastMatrixScenarioType,
+    isBullish: boolean,
+    h1Candles: OandaCandle[],
+    m15Candles: OandaCandle[],
+    m15Indicators: CalculatedIndicators,
+    m15ElliottWave: ElliottWaveAnalysis | undefined,
+    m1Candles: OandaCandle[],
+    m1Indicators: CalculatedIndicators,
     pipLocation: number,
-    dailyCandles: OandaCandle[]
-): TrueFractalSetup['phase4'] {
-    const empty = { stopLoss: null, takeProfit: null, riskRewardRatio: null, positionSizeUnits: null }
+    accountBalance?: number,
+): FastMatrixScenario {
+    const label = isBullish ? 'Bullish Wave 4 (Diamond Chop)' : 'Bearish Wave 4 (Diamond Chop)'
+    const dir: 'long' | 'short' = isBullish ? 'long' : 'short'
 
-    if (phase1.direction === 'none') return empty
-
-    const { wave1Top, wave2Bottom } = phase1.keyLevels
-    if (wave1Top === null || wave2Bottom === null) return empty
-
-    const pipValue = Math.pow(10, pipLocation) // e.g. 0.0001 for forex
-    const buffer = pipValue * 10 // 10 pip buffer
-
-    let stopLoss: number
-    let takeProfit: number
-    const wave1Range = Math.abs(wave1Top - wave2Bottom)
-
-    if (phase1.direction === 'bullish') {
-        stopLoss = wave2Bottom - buffer
-        // TP at 161.8% Fibonacci extension of Wave 1 range from Wave 2 bottom
-        takeProfit = wave2Bottom + wave1Range * 1.618
-    } else {
-        stopLoss = wave2Bottom + buffer // wave2Bottom is swingHigh in bearish
-        takeProfit = wave2Bottom - wave1Range * 1.618
+    const base: FastMatrixScenario = {
+        id, label, active: false, direction: dir, waveType: 4,
+        goldenPocket: null, diamondBox: null,
+        rsiDivergence: { detected: false, type: 'none', priceSwing1: null, priceSwing2: null, rsiSwing1: null, rsiSwing2: null, details: 'Not evaluated' },
+        macdDivergence: { detected: false, type: 'none', histogramShallowing: false, details: 'Not evaluated' },
+        volumeClimax: { detected: false, volumeRatio: 0, rejectionCandle: false, time: null },
+        choch: { detected: false, direction: 'none', breakPrice: null, breakTime: null, previousSwingPrice: null },
+        stochasticReload: { detected: false, direction: 'none', kValue: null, dValue: null, crossTime: null },
+        springPrice: null, entryPrice: null, stopLoss: null, tp1: null, tp2: null,
+        riskRewardToTP1: null, riskRewardToTP2: null,
+        positionSizeUnits: null, riskPercent: 2, riskAmount: null,
+        score: 0, status: 'watching', details: '',
     }
 
-    // Entry price: use micro Fib entry from phase 3 or current price
-    const entryPrice = phase3.microFibEntry || parseFloat(dailyCandles[dailyCandles.length - 1].mid.c)
-    const riskPips = Math.abs(entryPrice - stopLoss)
-    const rewardPips = Math.abs(takeProfit - entryPrice)
-    const riskRewardRatio = riskPips > 0 ? Math.round((rewardPips / riskPips) * 100) / 100 : null
+    if (m15Candles.length < 30) return { ...base, status: 'inactive', details: 'Insufficient M15 data' }
 
-    // Position sizing: assume 2% risk, $10k account, approximate
-    // This is illustrative — actual sizing happens in the trade terminal
-    const positionSizeUnits = riskPips > 0 ? Math.round(200 / riskPips) : null // ~$200 risk / riskInPrice
+    // ── Detect Diamond Box (Wave 4 consolidation) on M15 ──
+    const diamondBox = detectDiamondBox(m15Candles, 30)
 
-    return { stopLoss, takeProfit, riskRewardRatio, positionSizeUnits }
+    if (!diamondBox.isReady) {
+        return {
+            ...base,
+            diamondBox: diamondBox.boxHigh > 0 ? diamondBox : null,
+            status: 'watching',
+            score: diamondBox.candlesInBox >= 3 ? 10 : 5,
+            details: `Scanning M15 for Diamond Box (Wave 4 consolidation). ${diamondBox.candlesInBox} candles in range (need 6+).`,
+        }
+    }
+
+    // ── RSI Divergence at box boundary ──
+    const closes = m15Candles.map(c => parseFloat(c.mid.c))
+    const rsi = m15Indicators.rsi ?? []
+    const rsiDiv = detectRSIDivergence(closes, rsi, isBullish, 5)
+
+    // ── MACD Divergence ──
+    const macdHist = m15Indicators.macd?.histogram ?? []
+    const macdDiv = detectMACDDivergence(closes, macdHist, isBullish, 5)
+
+    // ── Check if price is near box boundary (Spring/Upthrust zone) ──
+    const currentPrice = parseFloat(m15Candles[m15Candles.length - 1].mid.c)
+    const nearBoundary = isBullish
+        ? currentPrice <= diamondBox.boxLow * 1.003  // near bottom for longs
+        : currentPrice >= diamondBox.boxHigh * 0.997  // near top for shorts
+
+    // ── M1 Triggers ──
+    const volClimax = m1Candles.length > 20 ? detectVolumeClimax(m1Candles) : base.volumeClimax
+    const choch = m1Candles.length > 20 ? detectCHoCH(m1Candles, isBullish) : base.choch
+
+    const stochK = m1Indicators.stochastic?.kLine ?? []
+    const stochD = m1Indicators.stochastic?.dLine ?? []
+    const m1Times = m1Candles.map(c => c.time)
+    const stochReload = stochK.length > 3 ? detectStochReload(stochK, stochD, isBullish, m1Times) : base.stochasticReload
+
+    // ── Spring/Upthrust Price ──
+    let springPrice: number | null = null
+    if (volClimax.detected && volClimax.time) {
+        const climaxCandle = m1Candles.find(c => c.time === volClimax.time)
+        if (climaxCandle) {
+            springPrice = isBullish ? parseFloat(climaxCandle.mid.l) : parseFloat(climaxCandle.mid.h)
+        }
+    }
+
+    // ── Execution Levels ──
+    let entryPrice: number | null = null
+    let stopLoss: number | null = null
+    let tp1: number | null = null
+    let tp2: number | null = null
+
+    if (choch.detected && choch.breakPrice) {
+        entryPrice = stochReload.detected ? currentPrice : choch.breakPrice
+    }
+
+    if (springPrice) {
+        const pip = Math.pow(10, pipLocation)
+        stopLoss = isBullish ? springPrice - pip : springPrice + pip
+    }
+
+    if (entryPrice && stopLoss) {
+        // TP based on the box range projected from entry
+        const boxRange = diamondBox.boxHigh - diamondBox.boxLow
+        tp1 = isBullish ? entryPrice + boxRange : entryPrice - boxRange           // 100% box extension
+        tp2 = isBullish ? entryPrice + boxRange * 1.618 : entryPrice - boxRange * 1.618  // 161.8% ext
+    }
+
+    const rr1 = entryPrice && stopLoss && tp1 ? Math.abs(tp1 - entryPrice) / Math.abs(entryPrice - stopLoss) : null
+    const rr2 = entryPrice && stopLoss && tp2 ? Math.abs(tp2 - entryPrice) / Math.abs(entryPrice - stopLoss) : null
+    let positionSizeUnits: number | null = null
+    let riskAmount: number | null = null
+    if (accountBalance && entryPrice && stopLoss) {
+        riskAmount = accountBalance * 0.02
+        const distancePerUnit = Math.abs(entryPrice - stopLoss)
+        positionSizeUnits = distancePerUnit > 0 ? Math.floor(riskAmount / distancePerUnit) : null
+    }
+
+    // ── Scoring ──
+    let score = 0
+    if (diamondBox.isReady) score += 15   // Box formed (6+ candles)
+    if (nearBoundary) score += 10         // Price near trap zone
+    if (rsiDiv.detected) score += 20      // RSI divergence
+    if (macdDiv.detected) score += 10     // MACD divergence
+    if (volClimax.detected) score += 20   // Volume climax on M1
+    if (choch.detected) score += 15       // CHoCH
+    if (stochReload.detected) score += 10 // Stochastic reload
+    score = Math.min(100, score)
+
+    let status: FastMatrixScenario['status'] = 'watching'
+    if (score >= 80 && choch.detected && stochReload.detected) status = 'triggered'
+    else if (score >= 50) status = 'confirming'
+    else if (score >= 15) status = 'watching'
+
+    const details = buildScenarioDetails(label, score, status, nearBoundary, rsiDiv, macdDiv, volClimax, choch, stochReload, rr2)
+
+    return {
+        ...base,
+        active: status !== 'inactive',
+        diamondBox,
+        rsiDivergence: rsiDiv,
+        macdDivergence: macdDiv,
+        volumeClimax: volClimax,
+        choch,
+        stochasticReload: stochReload,
+        springPrice,
+        entryPrice,
+        stopLoss,
+        tp1,
+        tp2,
+        riskRewardToTP1: rr1,
+        riskRewardToTP2: rr2,
+        positionSizeUnits,
+        riskAmount,
+        score,
+        status,
+        details,
+    }
 }
 
 // ────────────────────────────────────────────────────────────────
-// Narrative builder
+// Shared Helpers
 // ────────────────────────────────────────────────────────────────
+
+function analyzeSwingStructure(candles: OandaCandle[], swingLookback: number, searchDepth: number) {
+    const swingHighs: number[] = []
+    const swingLows: number[] = []
+
+    const start = Math.max(swingLookback, candles.length - searchDepth * 3)
+    const end = candles.length - swingLookback
+
+    for (let i = start; i < end; i++) {
+        const high = parseFloat(candles[i].mid.h)
+        const low = parseFloat(candles[i].mid.l)
+
+        let isSwingHigh = true
+        let isSwingLow = true
+
+        for (let j = i - swingLookback; j <= i + swingLookback; j++) {
+            if (j === i || j < 0 || j >= candles.length) continue
+            if (parseFloat(candles[j].mid.h) >= high) isSwingHigh = false
+            if (parseFloat(candles[j].mid.l) <= low) isSwingLow = false
+        }
+
+        if (isSwingHigh) swingHighs.push(high)
+        if (isSwingLow) swingLows.push(low)
+    }
+
+    let higherHighs = 0, higherLows = 0, lowerHighs = 0, lowerLows = 0
+
+    for (let i = swingHighs.length - 1; i > 0; i--) {
+        if (swingHighs[i] > swingHighs[i - 1]) higherHighs++
+        else if (swingHighs[i] < swingHighs[i - 1]) lowerHighs++
+        else break
+        if (i <= swingHighs.length - 5) break
+    }
+
+    for (let i = swingLows.length - 1; i > 0; i--) {
+        if (swingLows[i] > swingLows[i - 1]) higherLows++
+        else if (swingLows[i] < swingLows[i - 1]) lowerLows++
+        else break
+        if (i <= swingLows.length - 5) break
+    }
+
+    return { higherHighs, higherLows, lowerHighs, lowerLows, swingHighs, swingLows }
+}
+
+function getSwingDetails(candles: OandaCandle[], lookback: number) {
+    const swingHighPrices: number[] = []
+    const swingLowPrices: number[] = []
+    const swingHighIndices: number[] = []
+    const swingLowIndices: number[] = []
+    const swingHighTimes: string[] = []
+    const swingLowTimes: string[] = []
+
+    const end = candles.length - lookback
+
+    for (let i = lookback; i < end; i++) {
+        const high = parseFloat(candles[i].mid.h)
+        const low = parseFloat(candles[i].mid.l)
+
+        let isSwingHigh = true
+        let isSwingLow = true
+
+        for (let j = i - lookback; j <= i + lookback; j++) {
+            if (j === i || j < 0 || j >= candles.length) continue
+            if (parseFloat(candles[j].mid.h) >= high) isSwingHigh = false
+            if (parseFloat(candles[j].mid.l) <= low) isSwingLow = false
+        }
+
+        if (isSwingHigh) {
+            swingHighPrices.push(high)
+            swingHighIndices.push(i)
+            swingHighTimes.push(candles[i].time)
+        }
+        if (isSwingLow) {
+            swingLowPrices.push(low)
+            swingLowIndices.push(i)
+            swingLowTimes.push(candles[i].time)
+        }
+    }
+
+    return { swingHighPrices, swingLowPrices, swingHighIndices, swingLowIndices, swingHighTimes, swingLowTimes }
+}
+
+function checkVolumeConfirmation(candles: OandaCandle[], indicators: CalculatedIndicators, trend: string): boolean {
+    const volume = indicators.volume
+    const volumeSma = indicators.volumeSma
+    if (!volume?.length || !volumeSma?.length) return false
+
+    const recent = candles.slice(-20)
+    let trendingVolumeTotal = 0
+    let trendingCount = 0
+    let avgVolume = 0
+    let volCount = 0
+
+    for (let i = 0; i < recent.length; i++) {
+        const idx = candles.length - 20 + i
+        const o = parseFloat(recent[i].mid.o)
+        const c = parseFloat(recent[i].mid.c)
+        const vol = volume[idx] || 0
+
+        if (vol > 0) { avgVolume += vol; volCount++ }
+
+        if ((trend === 'bullish' && c > o) || (trend === 'bearish' && c < o)) {
+            trendingVolumeTotal += vol
+            trendingCount++
+        }
+    }
+
+    if (trendingCount === 0 || volCount === 0) return false
+    return (trendingVolumeTotal / trendingCount) > (avgVolume / volCount) * 1.1
+}
+
+// ────────────────────────────────────────────────────────────────
+// Narrative Builders
+// ────────────────────────────────────────────────────────────────
+
+function buildScenarioDetails(
+    label: string, score: number, status: string,
+    zoneActive: boolean,
+    rsiDiv: RSIDivergence, macdDiv: MACDDivergence,
+    volClimax: VolumeClimax, choch: CHoCHSignal,
+    stochReload: StochasticReload, rr2: number | null,
+): string {
+    const parts: string[] = [`${label} — ${status.toUpperCase()} (${score}/100).`]
+    if (zoneActive) parts.push('Price in target zone.')
+    if (rsiDiv.detected) parts.push(`RSI ${rsiDiv.type} divergence confirmed.`)
+    if (macdDiv.detected) parts.push(`MACD ${macdDiv.type} divergence.`)
+    if (volClimax.detected) parts.push(`Volume climax (${volClimax.volumeRatio.toFixed(1)}x avg).`)
+    if (choch.detected) parts.push(`CHoCH at ${choch.breakPrice?.toFixed(5)}.`)
+    if (stochReload.detected) parts.push(`Stochastic reload from ${stochReload.direction === 'bullish' ? 'oversold' : 'overbought'}.`)
+    if (rr2) parts.push(`R:R to TP2: ${rr2.toFixed(1)}:1.`)
+    return parts.join(' ')
+}
 
 function buildNarrative(
-    phase: TrueFractalSetup['overallPhase'],
-    score: number,
-    direction: TrueFractalSetup['direction'],
-    phase1: Phase1Result,
-    phase2: ReturnType<typeof detectPhase2>,
-    phase3: ReturnType<typeof detectPhase3>,
-    phase4: TrueFractalSetup['phase4']
+    macro: MacroDirection,
+    bestScenario: FastMatrixScenario | null,
+    overallScore: number,
 ): string {
-    if (phase === 0) return 'No True Fractal setup detected. Monitoring for Wave 1 impulse on Daily.'
-    if (phase === 1) return `Phase 1 active: ${direction} Wave 1 complete on Daily. Wave 2 retracement at ${phase1.wave2Depth !== null ? (phase1.wave2Depth * 100).toFixed(0) : '?'}%.${phase1.wave2InZone ? ' IN GOLDEN ZONE — advancing to Phase 2.' : ' Waiting for 50-61.8% zone.'}`
-    if (phase === 2) return `Phase 2 confirmed: 4H momentum validating ${direction} thesis. ${phase2.rsiDivergence ? 'RSI div + ' : ''}${phase2.structureShift ? 'structure shift + ' : ''}${phase2.alligatorAwakening ? 'Alligator awakening' : ''}. Watching 1H for sniper entry.`
-    if (phase === 3) return `Phase 3 TRIGGERED: 1H sniper entry for ${direction} Wave 3.${phase3.microFibEntry ? ` Entry zone: ${phase3.microFibEntry.toFixed(5)}.` : ''}${phase3.fractalSignal ? ' Fractal signal confirmed.' : ''} Score: ${score}/100.`
-    if (phase === 4) return `Phase 4 READY: Full ${direction} True Fractal setup. SL: ${phase4.stopLoss?.toFixed(5)}, TP: ${phase4.takeProfit?.toFixed(5)}, R:R ${phase4.riskRewardRatio?.toFixed(1)}:1. Score: ${score}/100. EXECUTE THE PLAN.`
-    return `True Fractal score: ${score}/100.`
+    if (macro.filter === 'no_trade') {
+        return `No setup. H1 macro: ${macro.trend}. Filter: NO TRADE. Waiting for H1 to establish HH/HL or LH/LL.`
+    }
+
+    if (!bestScenario || bestScenario.status === 'inactive') {
+        return `H1 macro ${macro.trend} — filter: ${macro.filter}. Scanning M15 for Wave 2 (Golden Pocket) or Wave 4 (Diamond Box) setups.`
+    }
+
+    if (bestScenario.status === 'watching') {
+        return `H1 ${macro.trend}. ${bestScenario.label} — watching. Score: ${bestScenario.score}/100. Waiting for M15 confirmation signals.`
+    }
+
+    if (bestScenario.status === 'confirming') {
+        return `H1 ${macro.trend}. ${bestScenario.label} — CONFIRMING. Score: ${bestScenario.score}/100. ${bestScenario.rsiDivergence.detected ? 'RSI divergence active. ' : ''}Waiting for M1 trigger (CHoCH + Stochastic).`
+    }
+
+    if (bestScenario.status === 'triggered') {
+        return `TRIGGERED — ${bestScenario.label}. Score: ${bestScenario.score}/100. Entry: ${bestScenario.entryPrice?.toFixed(5)}. SL: ${bestScenario.stopLoss?.toFixed(5)}. TP1: ${bestScenario.tp1?.toFixed(5)} (50% close). TP2: ${bestScenario.tp2?.toFixed(5)} (50% close). R:R ${bestScenario.riskRewardToTP2?.toFixed(1)}:1. Risk: $${bestScenario.riskAmount?.toFixed(0) ?? '?'} (2%).`
+    }
+
+    return `Fast Matrix score: ${overallScore}/100.`
 }

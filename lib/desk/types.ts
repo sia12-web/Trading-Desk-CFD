@@ -229,6 +229,15 @@ export interface MarketContext {
     }>
     dollar_trend?: string
     cross_market_thesis?: string
+    // Crypto market context (populated when crypto pairs are subscribed)
+    cryptoContext?: {
+        fearGreedIndex: number
+        fearGreedLabel: string
+        btcDominance: number
+        btcPrice: number
+        btcChange24h: number
+        totalMarketCapChange24h: number
+    }
 }
 
 export interface FractalSetupSummary {
@@ -240,17 +249,39 @@ export interface FractalSetupSummary {
     signals: string[]
 }
 
-export interface TrueFractalSummary {
+export interface FastMatrixSummary {
     pair: string
-    overallPhase: number
+    activeScenario: string | null      // 'A' | 'B' | 'C' | 'D' | null
     overallScore: number
     direction: string
     narrative: string
-    phase1Status: string
-    phase2Status: string
-    phase3Status: string
-    riskRewardRatio: number | null
+    // Macro
+    h1Trend: string                    // 'bullish' | 'bearish' | 'ranging'
+    directionalFilter: string          // 'buy_only' | 'sell_only' | 'no_trade'
+    // Active scenario details
+    waveType: number | null            // 2 or 4
+    scenarioLabel: string | null
+    rsiDivergence: boolean
+    macdDivergence: boolean
+    volumeClimax: boolean
+    chochDetected: boolean
+    stochasticReload: boolean
+    // Key price levels
+    goldenPocketHigh: number | null
+    goldenPocketLow: number | null
+    diamondBoxHigh: number | null
+    diamondBoxLow: number | null
+    springPrice: number | null
+    entryPrice: number | null
+    stopLoss: number | null
+    tp1: number | null
+    tp2: number | null
+    riskRewardToTP2: number | null
 }
+
+// Backward compat aliases
+export type HarmonicConvergenceSummary = FastMatrixSummary
+export type TrueFractalSummary = FastMatrixSummary
 
 export interface DeskContext {
     openPositions: OpenPosition[]

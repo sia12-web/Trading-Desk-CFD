@@ -6,6 +6,8 @@ import { getSubscribedPairs, getLatestEpisode, getActiveScenarios } from '@/lib/
 import { getActivePosition } from '@/lib/data/story-positions'
 import { getProfile } from '@/lib/data/trader-profile'
 import { getCorrelationInsights } from '@/lib/story/correlation-integrator'
+import { isCrypto } from '@/lib/story/asset-config'
+import { getCryptoMarketContext } from '@/lib/crypto/market-context'
 import type {
     DeskContext,
     DeskState,
@@ -15,7 +17,7 @@ import type {
     ActiveScenario,
     MarketContext,
     FractalSetupSummary,
-    TrueFractalSummary,
+    FastMatrixSummary,
 } from './types'
 
 /**
@@ -126,8 +128,8 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
     // Fractal setups populated from latest cached structural analyses if available
     const fractalSetups: FractalSetupSummary[] = await getFractalSetups(supabase, userId, pairNames)
 
-    // True Fractal setups from latest story episodes
-    const trueFractalSetups: TrueFractalSummary[] = await getTrueFractalSetups(supabase, userId, pairNames)
+    // Fast Matrix setups from latest story episodes
+    const trueFractalSetups: FastMatrixSummary[] = await getFastMatrixSetups(supabase, userId, pairNames)
 
     // Fetch per-pair data in parallel
     const pairResults = await Promise.all(
@@ -176,6 +178,9 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         .reduce((sum, t) => sum + t.pnl_amount, 0)
 
     // Market context from latest episodes + cross-market intelligence
+    const hasCryptoPairs = pairNames.some((p: string) => isCrypto(p))
+    const cryptoCtx = hasCryptoPairs ? await getCryptoMarketContext() : null
+
     const marketContext: MarketContext = {
         overall_sentiment: determineSentiment(activeScenarios),
         key_events_today: [],
@@ -187,6 +192,16 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
             equity_indices: crossMarketReport.indices,
             dollar_trend: crossMarketReport.dollar_trend || undefined,
             cross_market_thesis: crossMarketReport.thesis || undefined,
+        } : {}),
+        ...(cryptoCtx ? {
+            cryptoContext: {
+                fearGreedIndex: cryptoCtx.fearGreedIndex,
+                fearGreedLabel: cryptoCtx.fearGreedLabel,
+                btcDominance: cryptoCtx.btcDominance,
+                btcPrice: cryptoCtx.btcPrice,
+                btcChange24h: cryptoCtx.btcChange24h,
+                totalMarketCapChange24h: cryptoCtx.totalMarketCapChange24h,
+            },
         } : {}),
     }
 
@@ -363,25 +378,25 @@ async function getFractalSetups(
     }
 }
 
-async function getTrueFractalSetups(
+async function getFastMatrixSetups(
     supabase: Awaited<ReturnType<typeof createClient>>,
     userId: string,
     pairs: string[]
-): Promise<TrueFractalSummary[]> {
+): Promise<FastMatrixSummary[]> {
     if (pairs.length === 0) return []
     try {
-        // Pull True Fractal data from story_episodes raw_data which includes trueFractal from data collector
+        // Pull Fast Matrix data from story_episodes raw_data
         const { data } = await supabase
             .from('story_episodes')
             .select('pair:story_subscriptions!inner(pair), raw_data')
             .eq('story_subscriptions.user_id', userId)
             .order('created_at', { ascending: false })
-            .limit(pairs.length * 2) // Get recent episodes across pairs
+            .limit(pairs.length * 2)
 
         if (!data || data.length === 0) return []
 
         const seen = new Set<string>()
-        const setups: TrueFractalSummary[] = []
+        const setups: FastMatrixSummary[] = []
 
         for (const row of data) {
             const pairData = row.pair as unknown as { pair: string } | { pair: string }[] | null
@@ -392,25 +407,76 @@ async function getTrueFractalSetups(
             const rawData = row.raw_data as Record<string, unknown> | null
             if (!rawData) continue
 
-            const tf = rawData.trueFractal as Record<string, unknown> | undefined
-            if (!tf) continue
+            // Try new field name first, fall back to old for backward compat
+            const fm = (rawData.fastMatrix || rawData.harmonicConvergence || rawData.trueFractal) as Record<string, unknown> | undefined
+            if (!fm) continue
 
-            const p1 = tf.phase1 as Record<string, unknown> | undefined
-            const p2 = tf.phase2 as Record<string, unknown> | undefined
-            const p3 = tf.phase3 as Record<string, unknown> | undefined
-            const p4 = tf.phase4 as Record<string, unknown> | undefined
+            // New Fast Matrix format: has activeScenario + scenarios object
+            if (fm.scenarios || fm.macro) {
+                const macro = fm.macro as Record<string, unknown> | undefined
+                const activeId = fm.activeScenario as string | null
+                const scenarios = fm.scenarios as Record<string, Record<string, unknown>> | undefined
+                const active = activeId && scenarios ? scenarios[activeId] : null
+                const keyLevels = fm.keyLevels as Record<string, unknown> | undefined
 
-            setups.push({
-                pair,
-                overallPhase: (tf.overallPhase as number) || 0,
-                overallScore: (tf.overallScore as number) || 0,
-                direction: (tf.direction as string) || 'none',
-                narrative: (tf.narrative as string) || '',
-                phase1Status: (p1?.status as string) || 'not_detected',
-                phase2Status: (p2?.status as string) || 'not_detected',
-                phase3Status: (p3?.status as string) || 'not_detected',
-                riskRewardRatio: (p4?.riskRewardRatio as number) ?? null,
-            })
+                setups.push({
+                    pair,
+                    activeScenario: activeId,
+                    overallScore: (fm.overallScore as number) || 0,
+                    direction: (fm.direction as string) || 'neutral',
+                    narrative: (fm.narrative as string) || '',
+                    h1Trend: (macro?.h1Trend as string) || 'ranging',
+                    directionalFilter: (macro?.directionalFilter as string) || 'no_trade',
+                    waveType: (active?.waveType as number) ?? null,
+                    scenarioLabel: (active?.label as string) ?? null,
+                    rsiDivergence: (active?.rsiDivergence as Record<string, unknown>)?.detected === true,
+                    macdDivergence: (active?.macdDivergence as Record<string, unknown>)?.detected === true,
+                    volumeClimax: (active?.volumeClimax as Record<string, unknown>)?.detected === true,
+                    chochDetected: (active?.choch as Record<string, unknown>)?.detected === true,
+                    stochasticReload: (active?.stochasticReload as Record<string, unknown>)?.detected === true,
+                    goldenPocketHigh: (active?.goldenPocket as Record<string, unknown>)?.goldenPocketHigh as number ?? null,
+                    goldenPocketLow: (active?.goldenPocket as Record<string, unknown>)?.goldenPocketLow as number ?? null,
+                    diamondBoxHigh: (active?.diamondBox as Record<string, unknown>)?.boxHigh as number ?? null,
+                    diamondBoxLow: (active?.diamondBox as Record<string, unknown>)?.boxLow as number ?? null,
+                    springPrice: (keyLevels?.springPrice as number) ?? null,
+                    entryPrice: (keyLevels?.entryPrice as number) ?? null,
+                    stopLoss: (keyLevels?.stopLoss as number) ?? null,
+                    tp1: (keyLevels?.tp1 as number) ?? null,
+                    tp2: (keyLevels?.tp2 as number) ?? null,
+                    riskRewardToTP2: (keyLevels?.riskRewardToTP2 as number) ?? null,
+                })
+            } else {
+                // Legacy HCM format: map old phase-based fields to summary
+                const p1 = fm.phase1 as Record<string, unknown> | undefined
+                const keyLevels = fm.keyLevels as Record<string, unknown> | undefined
+
+                setups.push({
+                    pair,
+                    activeScenario: null,
+                    overallScore: (fm.overallScore as number) || 0,
+                    direction: (fm.direction as string) || 'neutral',
+                    narrative: (fm.narrative as string) || '',
+                    h1Trend: (p1?.primaryTrend as string) || 'ranging',
+                    directionalFilter: (p1?.directionalFilter as string) || 'no_trade',
+                    waveType: null,
+                    scenarioLabel: null,
+                    rsiDivergence: false,
+                    macdDivergence: false,
+                    volumeClimax: false,
+                    chochDetected: false,
+                    stochasticReload: false,
+                    goldenPocketHigh: null,
+                    goldenPocketLow: null,
+                    diamondBoxHigh: null,
+                    diamondBoxLow: null,
+                    springPrice: (keyLevels?.springPrice as number) ?? null,
+                    entryPrice: (keyLevels?.entryPrice as number) ?? null,
+                    stopLoss: (keyLevels?.stopLoss as number) ?? null,
+                    tp1: (keyLevels?.tp1 as number) ?? null,
+                    tp2: (keyLevels?.tp2 as number) ?? null,
+                    riskRewardToTP2: null,
+                })
+            }
         }
 
         return setups

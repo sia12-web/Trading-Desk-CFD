@@ -51,14 +51,18 @@ export async function runGlobalOptimization(userId: string, onProgress?: (msg: s
  */
 export async function calibrateForPairAndTimeframe(userId: string, pair: string, timeframe: Timeframe) {
     // 1. Fetch historical data (250 candles should be enough for DeepSeek to see trends/volatility)
+    // OANDA Granularity Mapping: M -> MN (Monthly). Crypto (CoinGecko) stays 'M'.
+    const isCrypto = pair.startsWith('CRYPTO_')
+    const granularity = (timeframe === 'M' && !isCrypto) ? 'MN' : timeframe
+
     const { data: candles, error } = await getCandles({
         instrument: pair,
-        granularity: timeframe,
+        granularity,
         count: 250
     })
 
     if (error || !candles || candles.length === 0) {
-        throw new Error(`Could not fetch candles for ${pair} ${timeframe}: ${JSON.stringify(error)}`)
+        throw new Error(`Could not fetch candles for ${pair} ${timeframe} (Logic Granularity: ${granularity}): ${JSON.stringify(error)}`)
     }
 
     // 2. Prepare data summary for DeepSeek

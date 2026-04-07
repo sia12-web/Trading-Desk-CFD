@@ -33,15 +33,30 @@ export interface StoryReactionContext {
         setupDirection: 'buy' | 'sell' | 'none'
         signals: string[]
     }
-    trueFractal?: {
-        overallPhase: number
+    fastMatrix?: {
+        activeScenario: string | null
         overallScore: number
         direction: string
         narrative: string
-        phase1Status: string
-        phase2Status: string
-        phase3Status: string
-        riskRewardRatio: number | null
+        h1Trend: string
+        directionalFilter: string
+        waveType: number | null
+        scenarioLabel: string | null
+        rsiDivergence: boolean
+        macdDivergence: boolean
+        volumeClimax: boolean
+        chochDetected: boolean
+        stochasticReload: boolean
+        goldenPocketHigh: number | null
+        goldenPocketLow: number | null
+        diamondBoxHigh: number | null
+        diamondBoxLow: number | null
+        springPrice: number | null
+        entryPrice: number | null
+        stopLoss: number | null
+        tp1: number | null
+        tp2: number | null
+        riskRewardToTP2: number | null
     }
 }
 
@@ -80,7 +95,7 @@ export async function generatePositionEntryReaction(
         // 2. Build prompt
         const prompt = buildPositionEntryReactionPrompt(
             ctx.pair, guidance, storyTitle, psychology, ctx.currentPrice, ctx.atr14,
-            ctx.atr50, ctx.volatilityStatus, ctx.fractalAnalysis, ctx.trueFractal,
+            ctx.atr50, ctx.volatilityStatus, ctx.fractalAnalysis, ctx.fastMatrix,
         )
 
         // 3. Call Gemini

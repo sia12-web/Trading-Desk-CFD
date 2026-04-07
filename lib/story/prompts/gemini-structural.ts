@@ -1,6 +1,7 @@
 import type { StoryDataPayload } from '../types'
 import type { StoryNewsContext } from '../types'
 import type { CrossMarketReport, IndexCrossMarketReport } from '../agents/types'
+import { getAssetConfig } from '../asset-config'
 
 /**
  * Gemini "Pattern Archaeologist" prompt for Story.
@@ -53,7 +54,21 @@ export function buildStoryStructuralPrompt(
         ? data.liquidityZones.map(z => `- [${z.timeframe}] ${z.type}: ${z.description}${z.swept ? ' (SWEPT)' : ''}`).join('\n')
         : 'No significant liquidity zones detected.'
 
-    return `You are the Pattern Archaeologist — a structural analyst for forex markets.
+    const assetConfig = getAssetConfig(data.pair)
+    const marketLabel = assetConfig.type === 'crypto' ? 'cryptocurrency' : assetConfig.type === 'cfd_index' ? 'index' : 'forex'
+    const pointLabel = assetConfig.pointLabel
+
+    const cryptoNote = assetConfig.type === 'crypto'
+        ? `\n\n## CRYPTO MODE — ${assetConfig.cryptoMeta!.displayName} (${assetConfig.cryptoMeta!.symbol})
+This is a CRYPTOCURRENCY, not a forex pair. Structural analysis adjustments:
+- **24/7 market**: No session opens/closes. Focus on UTC high-volume hours (12:00-20:00) for momentum.
+- **Fundamental drivers**: ${assetConfig.cryptoMeta!.keyDrivers.join(', ')}
+- **Key context**: BTC dominance trends, DeFi ecosystem health, regulatory headlines, whale wallet movements
+- **Volume caveat**: CoinGecko OHLC volume may be limited — weight price structure over volume for confirmation.
+- Use "${pointLabel}" not "pips" for all price movement references.`
+        : ''
+
+    return `You are the Pattern Archaeologist — a structural analyst for ${marketLabel} markets.
 Your job is to dig through multi-timeframe data and find the structural story.
 
 ## GROUNDING RULES (MANDATORY)
@@ -67,10 +82,10 @@ In addition to standard swing highs/lows, you are provided with Gann-based key l
 - **Low of swing high bars**: When a bar makes a swing high, its LOW often becomes resistance on pullbacks (marks the extreme volatility at the peak)
 - **High of swing low bars**: When a bar makes a swing low, its HIGH often becomes support on rallies (marks the extreme volatility at the bottom)
 These are REAL levels from actual candle data, not projections. Use them as additional confluence points for support/resistance.
-
+${cryptoNote}
 ## PAIR: ${data.pair}
 **Current Price**: ${data.currentPrice.toFixed(5)}
-**Volatility**: ${data.volatilityStatus} (ATR14: ${data.atr14.toFixed(1)} pips)
+**Volatility**: ${data.volatilityStatus} (ATR14: ${data.atr14.toFixed(1)} ${pointLabel})
 **Data collected at**: ${data.collectedAt}
 
 ## FUNDAMENTAL CONTEXT
@@ -91,17 +106,16 @@ ${amdSummary}
 ## LIQUIDITY ZONES
 ${liquiditySummary}
 
-## TRUE FRACTAL STATUS (Cross-Timeframe Wave 3 Hunter)
-${data.trueFractal ? `**Overall Phase**: ${data.trueFractal.overallPhase}/4 | Score: ${data.trueFractal.overallScore}/100 | Direction: ${data.trueFractal.direction}
-- Phase 1 (Daily Macro): ${data.trueFractal.phase1.status} (${data.trueFractal.phase1.confidence}%) — ${data.trueFractal.phase1.details}
-  Wave 1 Complete: ${data.trueFractal.phase1.wave1Complete} | Wave 2 Depth: ${data.trueFractal.phase1.wave2Depth !== null ? (data.trueFractal.phase1.wave2Depth * 100).toFixed(1) + '%' : 'N/A'} | In Zone: ${data.trueFractal.phase1.wave2InZone}
-  Key Levels: Wave 1 Top=${data.trueFractal.phase1.keyLevels.wave1Top?.toFixed(5) ?? 'N/A'}, Wave 2 Bottom=${data.trueFractal.phase1.keyLevels.wave2Bottom?.toFixed(5) ?? 'N/A'}
-- Phase 2 (4H Momentum): ${data.trueFractal.phase2.status} (${data.trueFractal.phase2.confidence}%) — ${data.trueFractal.phase2.details}
-  RSI Div: ${data.trueFractal.phase2.rsiDivergence} | MACD Div: ${data.trueFractal.phase2.macdDivergence} | Structure Shift: ${data.trueFractal.phase2.structureShift} | Alligator: ${data.trueFractal.phase2.alligatorAwakening}
-- Phase 3 (1H Sniper): ${data.trueFractal.phase3.status} (${data.trueFractal.phase3.confidence}%) — ${data.trueFractal.phase3.details}
-  Sub-Wave 1: ${data.trueFractal.phase3.subWave1Detected} | Micro Entry: ${data.trueFractal.phase3.microFibEntry?.toFixed(5) ?? 'N/A'} | Volume: ${data.trueFractal.phase3.volumeConfirmed} | Fractal: ${data.trueFractal.phase3.fractalSignal}
-- Phase 4 (R:R): SL=${data.trueFractal.phase4.stopLoss?.toFixed(5) ?? 'N/A'}, TP=${data.trueFractal.phase4.takeProfit?.toFixed(5) ?? 'N/A'}, R:R=${data.trueFractal.phase4.riskRewardRatio?.toFixed(1) ?? 'N/A'}:1
-- **Narrative**: ${data.trueFractal.narrative}` : 'True Fractal detection unavailable (missing D/H4/H1 data).'}
+## HARMONIC CONVERGENCE MATRIX STATUS
+${data.harmonicConvergence ? `**Overall Phase**: ${data.harmonicConvergence.overallPhase}/4 | Score: ${data.harmonicConvergence.overallScore}/100 | Direction: ${data.harmonicConvergence.direction}
+- Phase 1 (Macro Direction): ${data.harmonicConvergence.phase1.status} (${data.harmonicConvergence.phase1.score}%) ��� ${data.harmonicConvergence.phase1.details}
+  Trend: ${data.harmonicConvergence.phase1.primaryTrend} | Filter: ${data.harmonicConvergence.phase1.directionalFilter} | HH: ${data.harmonicConvergence.phase1.dailySwingHighs} | HL: ${data.harmonicConvergence.phase1.dailySwingLows} | Weekly Aligned: ${data.harmonicConvergence.phase1.weeklyAligned} | Volume: ${data.harmonicConvergence.phase1.volumeConfirms}
+- Phase 2 (Harmonic Time): ${data.harmonicConvergence.phase2.status} (${data.harmonicConvergence.phase2.score}%) — ${data.harmonicConvergence.phase2.details}
+  M45 Correction: ${data.harmonicConvergence.phase2.m45CorrectionDetected ? 'YES' : 'NO'} | M15 Sub-waves: ${data.harmonicConvergence.phase2.m15SubWaveCount}/3 | M45 Cycles: ${data.harmonicConvergence.phase2.m45CyclesElapsed}/6 | Temporal Exhaustion: ${data.harmonicConvergence.phase2.temporalExhaustionReached ? 'YES' : 'NO'} | Harmonic×9: ${data.harmonicConvergence.phase2.harmonicMultipleOf9 ? 'YES' : 'NO'}
+- Phase 3 (Trap Geometry): ${data.harmonicConvergence.phase3.status} (${data.harmonicConvergence.phase3.score}%) — ${data.harmonicConvergence.phase3.details}
+  Eulerian Eq: ${data.harmonicConvergence.phase3.eulerianEquilibrium?.toFixed(5) ?? 'N/A'} | Bowtie Apex: ${data.harmonicConvergence.phase3.bowtieApex ? `${data.harmonicConvergence.phase3.bowtieApex.price.toFixed(5)}` : 'N/A'} | Apex@Eq: ${data.harmonicConvergence.phase3.bowtieApexAtEquilibrium ? 'YES' : 'NO'} | Spring: ${data.harmonicConvergence.phase3.wyckoffSpringDetected ? `YES at ${data.harmonicConvergence.phase3.springPrice?.toFixed(5)}` : 'NO'}
+- Phase 4 (Execution): Entry=${data.harmonicConvergence.phase4.entryTrigger ? 'TRIGGERED' : 'waiting'} | SL=${data.harmonicConvergence.phase4.stopLoss?.toFixed(5) ?? 'N/A'} | TP1=${data.harmonicConvergence.phase4.tp1?.toFixed(5) ?? 'N/A'} | TP2=${data.harmonicConvergence.phase4.tp2?.toFixed(5) ?? 'N/A'} | R:R(TP2)=${data.harmonicConvergence.phase4.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1 | Valid: ${data.harmonicConvergence.phase4.positionValid ? 'YES' : 'NO'}
+- **Narrative**: ${data.harmonicConvergence.narrative}` : 'Harmonic Convergence detection unavailable (missing W/D/M15/M45/H1 data).'}
 
 ## YOUR TASK
 Analyze ALL the data above and produce a JSON response:
@@ -120,29 +134,27 @@ Analyze ALL the data above and produce a JSON response:
   "optimization_suggestions": ["What indicators are most relevant given current structure?"]
 }
 
-**TRUE FRACTAL ASSESSMENT (PRIMARY FRAMEWORK)**: Frame your entire structural analysis through the True Fractal 4-phase system:
-- **Phase 1 (Macro Scanner)**: Is there a completed 5-wave impulsive Wave 1 on Daily? Is Wave 2 retracing into the 50-61.8% golden zone? This is THE setup precondition.
-- **Phase 2 (Momentum Validator)**: Does 4H show RSI/MACD divergence + structure shift + Alligator awakening? This confirms the reversal is real.
-- **Phase 3 (Sniper Trigger)**: Does 1H show a sub-wave 1 forming? Is there a micro Fib entry at 50-61.8% with volume + fractal confluence?
-- **Phase 4 (Risk/Reward)**: What are the calculated SL (below Wave 2 bottom), TP (161.8% extension), and R:R ratio?
-- State which True Fractal phase this pair is currently in and what needs to happen to advance to the next phase.
-- If no True Fractal setup is active, state "Phase 0 — monitoring for Wave 1 impulse on Daily."
+**CONFLUENCE STRATEGY ASSESSMENT (PRIMARY FRAMEWORK)**: Frame your entire structural analysis through the 4-phase Confluence system (Dow Theory + Wyckoff + Elliott Wave):
+- **Phase 1 (Dow Theory Filter)**: Is the Daily trend established (2+ HH/HL or LH/LL)? Does the Weekly align? Does volume confirm? No trade without a confirmed trend.
+- **Phase 2 (Wyckoff Battleground)**: Is there an accumulation/distribution range? Has a Spring (liquidity sweep below range) or UTAD (sweep above) occurred? Smart money trapping retail.
+- **Phase 3 (EW Sniper Entry)**: After the Spring, did a Sign of Strength (SOS) breakout occur? Is price pulling back to the 50-61.8% Fib zone (Last Point of Support / LPS)? Holds above Spring?
+- **Phase 4 (Risk/Reward)**: SL below Spring price (thesis invalidation). TP at 161.8% Fibonacci extension. R:R must be >= 3:1.
+- State which Confluence phase this pair is currently in and what needs to happen to advance.
+- If no setup is active, state "Phase 0 — waiting for Dow Theory trend confirmation on Daily."
 
-**Bill Williams Fractal Analysis**: When the Alligator is 'eating' or 'awakening', note the direction and nearest valid fractals (those beyond the Teeth line). These are high-probability confluence zones within the True Fractal framework. If a fractal breakout has a VOLUME TRAP WARNING, flag it as a likely fake breakout regardless of other signals.
+**Wyckoff + AMD Integration**: The AMD detector's "accumulation" IS Wyckoff accumulation. The liquidity mapper's "stop_hunt" IS a Wyckoff Spring. Connect these explicitly in your analysis.
 
-**Elliott Wave Structure**: Use wave analysis as the backbone of True Fractal Phase 1:
-- **IMPULSIVE waves (5-wave)**: Identify completed Wave 1 structures. Wave 3 is our TARGET — the explosive move we're hunting.
-- **CORRECTIVE waves (3-wave)**: Wave 2 corrections into the 50-61.8% zone are our ENTRY ZONE.
-- **Fibonacci levels**: 50-61.8% retracements for entry (Phase 1/3 golden zones). 161.8% extensions for TP (Phase 4).
-- **Wave confluence**: When EW + BW fractals + volume all align, this is TRUE FRACTAL CONFIRMED.
+**Elliott Wave Structure**: Wave analysis validates the Confluence framework:
+- **IMPULSIVE waves (5-wave)**: Wave 3 is the post-Spring markup — the explosive move after accumulation.
+- **CORRECTIVE waves (3-wave)**: The LPS pullback IS the corrective wave before Wave 3 continuation.
+- **Fibonacci levels**: 50-61.8% retracements for LPS entry. 161.8% extensions for TP.
 
-**Volume Flow Intelligence**: Use volume data to validate True Fractal entries:
-- **VPOC** = strongest S/R level. If it aligns with the Phase 3 micro Fib entry, that's triple confluence.
-- **HVN** = real S/R where big money sits. Phase 1 Wave 2 bottoming at an HVN = highest conviction.
-- **LVN** = thin zones. If Phase 3 entry sits at an LVN, it's weaker.
-- **Volume Exhaustion** in the direction of Wave 2 = Phase 2 confirmation (sellers running out of steam).
+**Volume Flow Intelligence**: Use volume data to validate Confluence entries:
+- **VPOC** = strongest S/R level. If it aligns with the LPS entry zone, that's triple confluence.
+- **HVN** = real S/R where big money sits. Accumulation range at an HVN = highest conviction.
+- **Volume Exhaustion** during accumulation = Phase 2 confirmation (smart money absorbing supply).
 
-**Cross-Market Validation**: If your True Fractal thesis contradicts the cross-market risk appetite, note this tension explicitly. Cross-market divergences can invalidate even high-scoring True Fractal setups.
+**Cross-Market Validation**: If your Confluence thesis contradicts the cross-market risk appetite, note this tension explicitly. Cross-market divergences can invalidate even high-scoring setups.
 
 Be precise with price levels. Reference specific timeframes. Look for confluences where multiple TFs tell the same story.`
 }

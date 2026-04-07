@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentPrices } from '@/lib/oanda/client'
+import { getCoinbasePrices } from '@/lib/coinbase/client'
+import { isCryptoPair } from '@/lib/constants/instruments'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
@@ -17,11 +19,29 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Missing instruments parameter' }, { status: 400 })
     }
 
-    const { data: prices, error: pricesError } = await getCurrentPrices(instruments.split(','))
+    // Split crypto vs non-crypto instruments
+    const allInstruments = instruments.split(',').filter(Boolean)
+    const oandaInstruments = allInstruments.filter(i => !isCryptoPair(i))
+    const cryptoInstruments = allInstruments.filter(i => isCryptoPair(i))
 
-    if (pricesError) {
-        return NextResponse.json({ error: pricesError }, { status: 500 })
+    // Fetch from both brokers in parallel
+    const [oandaResult, coinbasePrices] = await Promise.all([
+        oandaInstruments.length > 0
+            ? getCurrentPrices(oandaInstruments)
+            : { data: [], error: null },
+        cryptoInstruments.length > 0
+            ? getCoinbasePrices(cryptoInstruments)
+            : [],
+    ])
+
+    if (oandaResult.error && oandaInstruments.length > 0) {
+        return NextResponse.json({ error: oandaResult.error }, { status: 500 })
     }
+
+    const prices = [
+        ...(oandaResult.data || []),
+        ...coinbasePrices,
+    ]
 
     return NextResponse.json({ prices })
 }
