@@ -1,5 +1,5 @@
 import type { DeskContext, TradeProposal } from '../types'
-import { getAssetConfig } from '@/lib/story/asset-config'
+import { getAssetConfig, isCrypto } from '@/lib/story/asset-config'
 
 export interface VolatilitySnapshot {
     atr14: number
@@ -26,19 +26,27 @@ export function buildTradeReviewPrompt(context: DeskContext, proposal: TradeProp
     const isCold = vol.status === 'cold'
     const isSpike = vol.status === 'spike'
 
-    return `You are simulating a JP Morgan trading desk reviewing a trade proposal. Each desk member evaluates from their specialty. Be honest — if the trade is bad, block it.
+    const cryptoReviewNote = isCrypto(proposal.pair) ? `
+## CRYPTO MODE — ${proposal.pair} is a cryptocurrency, NOT a forex pair.
+- Ray: Validate 24/7 price action. No session bias. Crypto volume patterns differ from forex.
+- Sarah: Crypto volatility is 3-5x forex. Tighter position sizing required.
+- Alex: Macro context = BTC dominance, regulatory climate, whale movements — not central banks.
+- Marcus: Confluence discipline is identical. Phase progression gatekeeps entry.
+` : ''
 
+    return `You are simulating a JP Morgan trading desk reviewing a trade proposal. Each desk member evaluates from their specialty. Be honest — if the trade is bad, block it.
+${cryptoReviewNote}
 ## THE DESK CHARACTERS
 
-**RAY (Quant — Transitioning to 5%):** Evaluates statistical edge and volatility. He was formerly the 95% "hopeful loser" but now acts as a strict system gatekeeper. He points out where "hope" might be clouding the entry and where the statistical edge actually lies.
-**SARAH (Risk — The 5% Resident):** The iron hand. Zero-tolerance. She represents the "Strict Loser" who cuts risk immediately. If the trade violates a rule, she blocks it without emotion.
-**ALEX (Macro — The 95% Struggle):** When evaluating a trade before entry, he is often "hopeful" or "optimistic" about a shaky setup if it fits a story he likes. He represents the danger of narrative over discipline.
-**MARCUS (PM — The 5% Leader):** The "Confident Winner." He looks for setups with potential to "run" and defines the final verdict based on the 5% mindset inversion: "Be strict on the risk, optimistic on the potential."
+**RAY (Quant — Playbook Checklist Validator):** Evaluates statistical edge and volatility. Validates the Hedge Fund Master Matrix Playbook 8-item checklist. Flags entries where confluence data is insufficient or where the score is below threshold.
+**SARAH (Risk Analyst — Process Enforcement):** Zero-tolerance. Enforces EXACTLY $17 risk per trade (based on 2% of $850 account), SL placement below Spring price, and split TP1/TP2 targets. If the trade violates the "$17 Rule", she blocks it without emotion.
+**ALEX (Macro Analyst — Directional Filter):** Validates Phase 1 directional filter alignment and cross-market context based on the Hedge Fund Master Matrix Playbook.
+**MARCUS (Portfolio Manager — Strategy Architect):** Validates setup alignment with the Playbook (Scenario A, B, C, or D). Only high-probability Playbook setups deserve capital.
 
 ## ANTI-HALLUCINATION DOCTRINE
 1. **ONLY reference data provided below.** Never fabricate prices, SL/TP, or news events.
 2. If the trade violates risk rules, Sarah MUST block it.
-3. Match the character's reaction to the data — if the R:R is bad, Alex might still be "hopeful," but Marcus and Sarah MUST be critical.
+3. Match the character's reaction to the data — if the R:R is bad or HCM score is low, Marcus and Sarah MUST be critical.
 
 ## CRITICAL RULES
 
@@ -102,10 +110,10 @@ ${context.activeScenarios.filter(s => s.pair === proposal.pair).length > 0
             ).join('\n')
             : '- No active scenarios for this pair'}
 
-### True Fractal Status for ${proposal.pair}
+### Hedge Fund Master Matrix Playbook Status for ${proposal.pair}
 ${context.trueFractalSetups && context.trueFractalSetups.find(s => s.pair === proposal.pair)
-            ? (() => { const tf = context.trueFractalSetups!.find(s => s.pair === proposal.pair)!; return `Phase ${tf.overallPhase}/4 | Score: ${tf.overallScore}/100 | Direction: ${tf.direction}\n${tf.narrative}\n**Ray**: Validate this trade against True Fractal phase. Phase 3+ with score 70+ = high conviction. Phase 0-1 = no edge.\n**Sarah**: Check Phase 4 R:R. If R:R < 3:1, flag it.\n**Alex**: Does Phase 1 macro (Daily wave structure) support the thesis?\n**Marcus**: Is this pair advancing through True Fractal phases? Only Phase 3+ pairs deserve capital.` })()
-            : '- No True Fractal data for this pair'
+            ? (() => { const tf = context.trueFractalSetups!.find(s => s.pair === proposal.pair)!; return `Matrix Wave ${tf.waveType ?? '?'}/4 | Score: ${tf.overallScore}/100 | Direction: ${tf.direction}\nMacro: ${tf.h1Trend} [${tf.directionalFilter}] | Setup: ${tf.scenarioLabel || 'Developing'} | R:R: ${tf.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1\n${tf.narrative}\n**Ray**: Validate the Playbook setup checklist. Is the 1M CHoCH confirmed? Is the Stochastic reloaded?\n**Sarah**: ENFORCE THE $17 RULE. Stop loss must be exactly $17 away from entry. SL must also be below/above the Spring wick. TP1 must be >= 2:1.\n**Alex**: Weekly/Daily alignment confirmed? Does the directional filter allow this entry?\n**Marcus**: Only Scenario A, B, C, or D setups are actionable. Is this a high-conviction Playbook entry?` })()
+            : '- No Playbook data for this pair'
         }
 
 ### Portfolio Summary

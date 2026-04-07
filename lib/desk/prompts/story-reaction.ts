@@ -1,5 +1,5 @@
 import type { PositionGuidance } from '@/lib/story/types'
-import { getAssetConfig } from '@/lib/story/asset-config'
+import { getAssetConfig, isCrypto } from '@/lib/story/asset-config'
 
 interface PsychologyContext {
     streak: number
@@ -31,15 +31,30 @@ export function buildPositionEntryReactionPrompt(
         setupDirection: string
         signals: string[]
     },
-    trueFractal?: {
-        overallPhase: number
+    fastMatrix?: {
+        activeScenario: string | null
         overallScore: number
         direction: string
         narrative: string
-        phase1Status: string
-        phase2Status: string
-        phase3Status: string
-        riskRewardRatio: number | null
+        h1Trend: string
+        directionalFilter: string
+        waveType: number | null
+        scenarioLabel: string | null
+        rsiDivergence: boolean
+        macdDivergence: boolean
+        volumeClimax: boolean
+        chochDetected: boolean
+        stochasticReload: boolean
+        goldenPocketHigh: number | null
+        goldenPocketLow: number | null
+        diamondBoxHigh: number | null
+        diamondBoxLow: number | null
+        springPrice: number | null
+        entryPrice: number | null
+        stopLoss: number | null
+        tp1: number | null
+        tp2: number | null
+        riskRewardToTP2: number | null
     },
 ): string {
     const config = getAssetConfig(pair)
@@ -58,8 +73,16 @@ export function buildPositionEntryReactionPrompt(
     const isSpike = volatilityStatus === 'spike'
     const ratio = atr50 > 0 ? (atr14 / atr50).toFixed(2) : '1.00'
 
-    return `You are a JP Morgan desk reacting to an AI-generated trade entry recommendation. Each character gives a 1-2 sentence reaction. Stay in character. Be honest — if the trade looks weak, say so.
+    const cryptoReactionNote = isCrypto(pair) ? `
+## CRYPTO MODE — This is a cryptocurrency, NOT a forex pair.
+- Ray: Validate against 24/7 price action. No session bias. Funding rates replace session flow.
+- Sarah: Crypto volatility is 3-5x forex. Position size MUST reflect this.
+- Alex: Macro = BTC dominance, regulatory headlines, whale wallets — NOT central banks.
+- Marcus: Confluence phases apply identically. Discipline doesn't change because it's crypto.
+` : ''
 
+    return `You are a JP Morgan desk reacting to an AI-generated trade entry recommendation. Each character gives a 1-2 sentence reaction. Stay in character. Be honest — if the trade looks weak, say so.
+${cryptoReactionNote}
 ## THE RECOMMENDATION
 
 Episode: "${storyTitle}"
@@ -81,25 +104,32 @@ ${tp1Points ? `- TP distance vs daily ATR: ${(tp1Points / atr14).toFixed(1)}x da
 ${isCold ? `- COLD MARKET: The market is moving LESS than average. A ${tp1Points ? tp1Points.toFixed(0) : '?'} ${label} target in a market averaging ${atr14.toFixed(0)} ${label}/day is questionable without a catalyst.` : ''}
 ${isSpike ? `- SPIKE: Volatility is 1.5x+ above average. Wider stops needed. Whipsaw risk elevated.` : ''}
 
-${trueFractal ? `## TRUE FRACTAL STATUS (for Ray's validation — OUR PRIMARY STRATEGY)
+${fastMatrix ? `## THE FAST MATRIX STATUS (for Ray's validation — OUR PRIMARY STRATEGY)
 
-Phase: ${trueFractal.overallPhase}/4 | Score: ${trueFractal.overallScore}/100 | Direction: ${trueFractal.direction}
-Narrative: ${trueFractal.narrative}
-Phase 1 (Daily Macro): ${trueFractal.phase1Status} | Phase 2 (4H Momentum): ${trueFractal.phase2Status} | Phase 3 (1H Sniper): ${trueFractal.phase3Status}
-R:R: ${trueFractal.riskRewardRatio?.toFixed(1) ?? 'N/A'}:1
+Active Scenario: ${fastMatrix.activeScenario ?? 'NONE'} | Score: ${fastMatrix.overallScore}/100 | Direction: ${fastMatrix.direction}
+Narrative: ${fastMatrix.narrative}
+H1 Macro: ${fastMatrix.h1Trend} [${fastMatrix.directionalFilter}]
+${fastMatrix.activeScenario ? `Scenario ${fastMatrix.activeScenario}: ${fastMatrix.scenarioLabel ?? 'Unknown'} (Wave ${fastMatrix.waveType ?? '?'})` : 'No active scenario'}
+M15 Confirmations: RSI Div: ${fastMatrix.rsiDivergence ? 'YES' : 'NO'} | MACD Div: ${fastMatrix.macdDivergence ? 'YES' : 'NO'}
+M1 Execution: Vol Climax: ${fastMatrix.volumeClimax ? 'YES' : 'NO'} | CHoCH: ${fastMatrix.chochDetected ? 'YES' : 'NO'} | Stoch Reload: ${fastMatrix.stochasticReload ? 'YES' : 'NO'}
+${fastMatrix.waveType === 2 ? `Golden Pocket: ${fastMatrix.goldenPocketLow?.toFixed(5) ?? 'N/A'} — ${fastMatrix.goldenPocketHigh?.toFixed(5) ?? 'N/A'}` : ''}
+${fastMatrix.waveType === 4 ? `Diamond Box: ${fastMatrix.diamondBoxLow?.toFixed(5) ?? 'N/A'} — ${fastMatrix.diamondBoxHigh?.toFixed(5) ?? 'N/A'}` : ''}
+Spring: ${fastMatrix.springPrice?.toFixed(5) ?? 'N/A'}
+Levels: Entry: ${fastMatrix.entryPrice?.toFixed(5) ?? 'N/A'} | SL: ${fastMatrix.stopLoss?.toFixed(5) ?? 'N/A'} | TP1: ${fastMatrix.tp1?.toFixed(5) ?? 'N/A'} | TP2: ${fastMatrix.tp2?.toFixed(5) ?? 'N/A'}
+R:R to TP2: ${fastMatrix.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1
 
-**8-ITEM TRUE FRACTAL CHECKLIST** (Ray must validate):
-1. ✓/✗ Daily Wave 1 complete (5-wave impulsive structure)
-2. ✓/✗ Wave 2 retracement in 50-61.8% Fibonacci golden zone
-3. ✓/✗ RSI bullish divergence on 4H (price LL, RSI HL)
-4. ✓/✗ MACD histogram divergence + structure shift on 4H
-5. ✓/✗ Alligator awakening (lips > teeth > jaw, spreading)
-6. ✓/✗ Sub-Wave 1 detected on 1H timeframe
-7. ✓/✗ Entry at 50-61.8% micro Fib with volume + fractal signal
-8. ✓/✗ SL below Wave 2 bottom, TP at 161.8% extension, R:R >= 3:1
+**8-ITEM MASTER MATRIX CHECKLIST** (Ray must validate):
+1. H1 macro trend confirmed (HH/HL = buy only, LH/LL = sell only)
+2. Active Scenario identified (A/B/C/D)
+3. RSI divergence + MACD divergence confirmed on M15
+4. M1 volume climax + rejection candle at key zone
+5. M1 CHoCH confirmed (structural break)
+6. Stochastic reload from extreme zone
+7. SL below Spring / above Upthrust, split TP1/TP2
+8. Position sized AT EXACTLY $17 (2% of $850)
 
-**Ray's Task**: If overall score <50/100 OR Phase 1 is 'not_detected', flag this as NO TRUE FRACTAL SETUP. Only Phase 3+ confirmed entries (score 70+) are institutional-grade.
-` : ''}${fractalAnalysis ? `## BILL WILLIAMS DETAIL (supporting True Fractal Phase 2-3)
+**Ray's Task**: If score <50/100 OR H1 macro not confirmed, flag as NO ENTRY. Only Scenario A, B, C, or D setups with CHoCH confirmed are institutional-grade.
+` : ''}${fractalAnalysis ? `## BILL WILLIAMS DETAIL (supporting analysis)
 Setup Score: ${fractalAnalysis.setupScore}/100 → ${fractalAnalysis.setupDirection}
 Alligator: ${fractalAnalysis.alligatorState} (${fractalAnalysis.alligatorDirection})
 Signals: ${fractalAnalysis.signals.length > 0 ? fractalAnalysis.signals.join(', ') : 'none'}
@@ -115,12 +145,10 @@ Violations This Week: ${psychology.violationsThisWeek}
 
 ## CHARACTERS
 
-- **RAY (Quant — Transitioning to 5%):** Focus on **"The Value"**. He reviews if price is actually at a level where smart money plays (RSI/Momentum extremes). ${trueFractal ? `**TRUE FRACTAL VALIDATION**: Ray validates the 8-item True Fractal checklist. If score <50 or Phase 1 not confirmed, he MUST flag the entry as premature. Only Phase 3+ with score 70+ gets his approval.` : fractalAnalysis ? `**FRACTAL VALIDATION**: Ray checks Alligator state and setup score. If setup score <60 or Alligator sleeping, he flags it.` : 'He denies entries that are just "chasing" without real value.'}
-- **SARAH (Risk — The 5% Resident):** The iron hand. She hates **"Pussy Moves"**. If the trader is closing because of a wiggle, she will alert that the "Pretty Girl" hasn't left the bar yet.
-- **ALEX (Macro — The 95% Struggle):** Represents Greed and Fear.
-  - **WINNING**: Suggests "Pussy Moves" to close early because he's scared of a pull-back.
-  - **LOSING**: Suggests "Hoping" for a reversal because he's fearful of taking the loss.
-- **MARCUS (PM — The 5% Leader):** The "Confident Winner." He looks for a "major trend" and waits for it to be tested. He is patient. He ignores Alex's fear and checks if the "Value" has actually changed.
+- **RAY (Quant):** Validates the Hedge Fund Master Matrix Playbook 8-item checklist. If score <50 or H1 trend not confirmed, he MUST flag the entry as premature. Only Scenario A, B, C, or D setups with valid CHoCH get his approval.
+- **SARAH (Risk Analyst):** Enforces the "$17 Rule" (exactly 2% of $850 account). Validates SL placement below/above the Spring/Upthrust, split TP1/TP2, and R:R ratio. If position sizing is NOT $17 or stops are missing, she blocks the trade.
+- **ALEX (Macro Analyst):** Checks Phase 1 directional filter alignment and cross-market context based on the Playbook.
+- **MARCUS (Portfolio Manager):** Validates setup alignment with the Playbook (Scenario A, B, C, or D). Only high-probability Playbook setups deserve capital.
 
 
 ## ANTI-HALLUCINATION DOCTRINE
@@ -187,7 +215,7 @@ Trader Streak: ${psychology.streak}
     // hold/adjust — only Ray + Sarah
     return `You are the quant (Ray) and risk manager (Sarah) on a JP Morgan desk. React to a position management recommendation. 1-2 sentences each.
 
-### POSITION MANAGEMENT REACTION (THE 95% VS 5% TEST)
+### POSITION MANAGEMENT REACTION
 Episode: "${storyTitle}"
 Pair: ${pair}
 Action: ${guidance.action}
@@ -198,12 +226,12 @@ ${guidance.new_take_profit ? `New TP: ${guidance.new_take_profit}` : ''}
 Reasoning: ${guidance.reasoning}
 
 ## THE CHARACTERS (1-2 sentences each)
-- **RAY (Quant — Transitioning to 5%):** Review **"The Value"**. Has the RSI/Momentum regime actually shifted, or is this just a "Stupid Money" pull-back?
-- **SARAH (Risk — The 5% Resident):** The iron hand. Identifies **"Pussy Moves"**. If the trader is panicking on a winner, she calls it out. If they are hoping on a loser, she cuts it.
-- **ALEX (Macro — The 95% Struggle):** 
-  - If in PROFIT: Scared of the red candle. Suggests closing early (**Pussy Move**).
-  - If in LOSS: Hopeful that the central bank or "some news" will save him.
-- **MARCUS (PM — The 5% Leader):** The Patient Winner. He knows the **"Pretty Girl"** story. He enforces staying in winners for the full target and cutting losers at the stop.
+- **RAY (Quant):** Review whether the market structure has shifted. Has RSI/Momentum regime actually changed, or is this a normal retracement within the expected range?
+- **SARAH (Risk Analyst):** Validates stop/TP compliance and position sizing rules. If the trader is exiting a winner before plan targets, she flags the deviation. If they are holding a loser past the stop, she enforces the cut.
+- **ALEX (Macro Analyst):**
+  - If in PROFIT: Checks whether the directional filter and macro context still support the position.
+  - If in LOSS: Evaluates whether the original macro thesis has been invalidated or remains intact.
+- **MARCUS (Portfolio Manager):** Validates the phase-based hold/exit decision. Enforces staying in winners for the full target when confluence is intact, and cutting losers at the planned stop level.
 
 
 ## OUTPUT (JSON only)

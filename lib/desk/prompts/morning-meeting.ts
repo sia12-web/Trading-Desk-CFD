@@ -1,48 +1,67 @@
 import type { DeskContext } from '../types'
+import { isCrypto } from '@/lib/story/asset-config'
 
 /**
  * Build the morning meeting prompt — a single Gemini call generates all 4 characters.
  */
 export function buildMorningMeetingPrompt(context: DeskContext): string {
-    return `You are simulating a JP Morgan FX trading desk morning meeting. Generate authentic dialogue for 4 characters who work together daily. They know each other well — there's banter, tension, respect, and professional rivalry.
+    // Detect if any open positions or scenarios involve crypto
+    const hasCrypto = [
+        ...context.openPositions.map(p => p.pair),
+        ...context.activeScenarios.map(s => s.pair),
+        ...context.activeStoryPositions.map(p => p.pair),
+    ].some(pair => isCrypto(pair))
+
+    const cryptoNote = hasCrypto ? `
+
+## CRYPTO MODE ACTIVE
+Some instruments are CRYPTOCURRENCIES (24/7 markets). Character adjustments:
+- **Alex**: For crypto, macro = BTC dominance, regulatory headlines, whale wallet movements, stablecoin flows — NOT central banks or equity earnings.
+- **Ray**: For crypto, validate 24/7 price action. Funding rates and open interest replace session flow analysis. Weekend liquidity traps are real.
+- **Sarah**: Crypto volatility is 3-5x forex. Position sizing must reflect this. No session-based risk windows.
+- **Marcus**: True Fractal phases apply identically to crypto. Phase progression is the only thing that matters — the market being "crypto" changes nothing about discipline.
+` : ''
+
+    return `You are simulating a systematic FX trading desk morning meeting. Generate analytical dialogue for 4 characters who form a disciplined strategy execution team. They challenge each other with data, enforce process, and maintain strategic clarity.
+${cryptoNote}
 
 ## THE DESK
 
-**ALEX — Macro Strategist (Greed & Fear / The 95% Struggle)**
+**ALEX — Macro Strategist (Directional Filter & Cross-Market Context)**
 - Big-picture thinker. Central banks, geopolitics, capital flows, sentiment.
-- Represents the "Stupid Money" getting played by the market's flirtation.
+- Provides Phase 1 directional filter for the Hedge Fund Master Matrix Playbook. Macro alignment with cross-market context.
 - **BEHAVIOR**:
-  - **WINNING**: He gets greedy to add more, or fearful of a pull-back. He often suggests **"Pussy Moves"** (closing on a small 1H red candle in a bull trend) because he's scared of losing what he has.
-  - **LOSING**: He becomes hopeful and fearful of being wrong. He tries to "hope" the market back to his entry.
+  - **WINNING**: Validates whether macro conditions still support the position. Flags regime shifts that could invalidate the directional thesis.
+  - **LOSING**: Assesses whether the macro thesis has structurally changed or if the drawdown is within expected parameters.
 - **CROSS-MARKET**: Alex should LEAD with the global risk appetite reading. Reference specific index moves (e.g., "DAX down 1.2% overnight — European risk is bleeding"). Use equity index data to frame macro narrative.
-- Speech style: Sentimental, narrative-driven. 
+- Speech style: Analytical, macro-focused. Frames everything through directional filters and regime context.
 
-**RAY — Quantitative Analyst (Transitioning to 5%)**
-- Formerly a 95% trader, now a strict system-follower.
-- **BEHAVIOR**: He defines **"The Value"** for the book. He recognizes when Alex is "hoping" or "scared" and shuts it down with RSI/Momentum logic.
-- Often says: "I used to hope at this level too, Alex. But we are at the Value now—stick to the edge."
+**RAY — Quantitative Analyst (Playbook Checklist Validator)**
+- Strict system-follower. Validates the Hedge Fund Master Matrix Playbook 8-item checklist for each pair.
+- **BEHAVIOR**: He validates Playbook scores and flags any pair with score below 50. He identifies when emotional reasoning is overriding system signals and redirects to the quantitative edge.
+- Key focus: "Playbook checklist shows 6/8 confirmed — the edge is present." Flags pairs where checklist items are failing.
 - **CROSS-MARKET**: Ray validates if the statistical edge holds in the current risk regime. E.g., "Statistically, this edge thins in risk-off environments — and equities are dumping."
 - Speech style: Precise, data-heavy. "The edge is thinning...", "Statistically speaking..."
 
-**SARAH — Risk Desk (The 5% Process Architect)**
-- Blunt, zero-tolerance. She is the embodiment of the "Strict Loser."
-- **BEHAVIOR**: She hates **"Pussy Moves"**. If a trader closes a winner because they were "scared of a pull-back," she marks it as a failure of character. She knows the **"Pretty Girl"** (the market trend) will be back.
+**SARAH — Risk Desk (Process Enforcement)**
+- Blunt, zero-tolerance. Enforces EXACTLY $17 risk per trade (based on 2% of $850 account), split TP1/TP2 targets, and mandatory stop-loss on every position.
+- **BEHAVIOR**: No position without a stop-loss. Every entry must have defined TP1/TP2 levels. She flags premature exits that violate the trade plan as process failures. She enforces the "$17 Rule" (position sizing must be exactly $17 to SL) without exception.
 - **CROSS-MARKET**: Sarah flags cross-market exposure concentration. E.g., "We're long EUR and EUR equities are falling — that's correlated risk I won't sign off on."
-- Speech style: Direct, "The process says Y, so we do Y."
+- Speech style: Direct, process-driven. "The plan says Y, so we execute Y. No discretionary overrides."
 
-**MARCUS — Portfolio Manager (The 5% Winner)**
-- Calm, strategic. He knows that 5% of people make money by being patient.
-- **BEHAVIOR**: He waits for the market to do something stupid and become undervalued. When in a winning trade, he is optimistic and encourages "patiently using the girl until we've profited enough."
-- **TRUE FRACTAL**: Marcus frames the day through True Fractal phases. "Which pairs are advancing through phases?" Pairs in Phase 3+ are the day's focus. Phase 0-1 pairs are watch-only.
+**MARCUS — Portfolio Manager (Strategy Architect)**
+- Calm, strategic. Synthesizes all inputs into a single executable directive for the day based on the Hedge Fund Master Matrix Playbook.
+- **BEHAVIOR**: He waits for setup alignment with the Playbook (Scenario A, B, C, or D). Which pairs have a bowtie forming? Any approaching temporal exhaustion? Which pairs have Phase 3+ confirmation? 
+- **HEDGE FUND MASTER MATRIX PLAYBOOK**: Marcus frames the day through the Playbook states (Bullish Scenarios A/B, Bearish Scenarios C/D). Prioritizes setups where multiple convergence items align.
 - **CROSS-MARKET**: Marcus factors risk regime into his directive. E.g., "Risk-off today — only high-conviction setups. The indices are telling us to be patient."
-- Speech style: Measured, authoritative.
+- Speech style: Measured, authoritative. Focused on phase progression and convergence scoring.
 
 
 ## ANTI-HALLUCINATION RULES
 1. **ONLY reference data provided below.** Never fabricate prices, levels, P&L, or news events.
-2. If there are no open positions, say so. Do not invent trades. 
-3. If no rules are broken, do not invent violations. Praise the discipline. 
-4. Match the tone to the data — if things are going well, Alex is scared, Marcus is letting it run. If failing, Alex is hopeful, Sarah is cutting it.
+2. If there are no open positions, say so. Do not invent trades.
+3. If no rules are broken, do not invent violations. Acknowledge process adherence.
+4. Match the tone to the data — if things are going well, validate the execution. If there are drawdowns, assess whether the system is being followed. If there are violations, escalate.
 
 ## CRITICAL RULES
 
@@ -120,12 +139,12 @@ ${context.activeStoryPositions.length > 0
             : '- No active story positions'
         }
 
-### True Fractal Status (Cross-Timeframe Wave 3 Hunter — PRIMARY STRATEGY)
+### Hedge Fund Master Matrix Playbook Status (THE ABSOLUTE LAW)
 ${context.trueFractalSetups && context.trueFractalSetups.length > 0
             ? context.trueFractalSetups.map(s =>
-                `- **${s.pair}**: Phase ${s.overallPhase}/4 | Score: ${s.overallScore}/100 | Direction: ${s.direction}\n  ${s.narrative}`
+                `- **${s.pair}**: Wave ${s.waveType ?? '?'}/4 | Score: ${s.overallScore}/100 | Direction: ${s.direction}\n  Matrix Setup: ${s.scenarioLabel || 'Developing'}\n  Macro: ${s.h1Trend} [${s.directionalFilter}] | Spring: ${s.springPrice ? `YES at ${s.springPrice.toFixed(5)}` : 'NO'} | R:R: ${s.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1\n  ${s.narrative}`
             ).join('\n')
-            : '- No True Fractal setups available'
+            : '- No Playbook setups available'
         }
 
 ### Bill Williams Fractal Setups (Algorithmic — feeds into True Fractal)
@@ -155,10 +174,10 @@ ${context.correlationInsights.predictions.topPredictions.slice(0, 3).map(pred =>
         }
 
 **DESK USAGE:**
-- Marcus: Reference correlation patterns for multi-pair position construction and portfolio-level edge
-- Sarah: Flag correlation-based concentration risk (e.g., multiple patterns pointing to same currency strength)
-- Ray: Validate statistical significance of pattern match percentages before committing capital
-- Alex: Connect correlation outcomes to macro risk regime (risk-on/risk-off)
+- Marcus: Reference correlation patterns for multi-pair position construction and HCM convergence validation
+- Sarah: Flag correlation-based concentration risk (e.g., multiple patterns pointing to same currency strength). Enforce 2% risk caps.
+- Ray: Validate HCM checklist items against pattern match percentages before committing capital. Flag scores below 50.
+- Alex: Connect correlation outcomes to macro risk regime and Phase 1 directional filter alignment
 
 ### Trader Profile
 - Style: ${context.profile.trading_style || 'not set'}
@@ -193,6 +212,13 @@ ${context.recentProcessScores.length > 0
         }
 - Dollar: ${context.marketContext.dollar_trend || 'unknown'}
 - Cross-Market Thesis: ${context.marketContext.cross_market_thesis || 'N/A'}
+${context.marketContext.cryptoContext ? `
+### Crypto Market Intelligence
+- Fear & Greed: ${context.marketContext.cryptoContext.fearGreedIndex}/100 (${context.marketContext.cryptoContext.fearGreedLabel})
+- BTC Dominance: ${context.marketContext.cryptoContext.btcDominance.toFixed(1)}%
+- BTC Price: $${context.marketContext.cryptoContext.btcPrice.toLocaleString()} (${context.marketContext.cryptoContext.btcChange24h > 0 ? '+' : ''}${context.marketContext.cryptoContext.btcChange24h.toFixed(1)}% 24h)
+- Total Market Cap Change: ${context.marketContext.cryptoContext.totalMarketCapChange24h > 0 ? '+' : ''}${context.marketContext.cryptoContext.totalMarketCapChange24h.toFixed(1)}% 24h
+` : ''}
 
 ${context.deskState?.marcus_memory?.last_directive
             ? `### Previous Meeting Context\n- Marcus's last directive: ${context.deskState.marcus_memory.last_directive}`
@@ -232,7 +258,7 @@ Respond with ONLY valid JSON in this exact structure:
         "exposure_percent": 0
     },
     "marcus_directive": {
-        "message": "Marcus's synthesis and today's directive (2-5 sentences). Include 'The Value' assessment for the day.",
+        "message": "Marcus's synthesis and today's directive (2-5 sentences). Include HCM phase assessment and priority pairs for the day.",
         "tone": "neutral|positive|cautious|warning|critical",
         "priorities": ["today's priorities"],
         "restrictions": ["any restrictions"],

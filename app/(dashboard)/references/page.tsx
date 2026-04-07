@@ -1705,34 +1705,57 @@ function ElliotWavesSection() {
   )
 }
 function StrategySection() {
+  const [accountBalance, setAccountBalance] = useState(850)
+  const riskPercent = 2
+  const riskAmount = (accountBalance * (riskPercent / 100))
+
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 print:text-black print:space-y-8">
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-[3rem] bg-neutral-900 border border-neutral-800 p-10 shadow-2xl">
-        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+      <div className="relative overflow-hidden rounded-[3rem] bg-neutral-900 border border-neutral-800 p-10 shadow-2xl print:bg-white print:border-neutral-300 print:rounded-none print:shadow-none print:p-6">
+        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none print:hidden">
           <Zap size={200} className="text-yellow-500" />
         </div>
         
         <div className="relative z-10 max-w-4xl space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-black uppercase tracking-[0.2em]">
-            <Shield size={14} /> Official Playbook
+          <div className="flex justify-between items-start">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-black uppercase tracking-[0.2em] print:border-neutral-300 print:text-black">
+              <Shield size={14} /> Official Playbook
+            </div>
+            <button 
+              onClick={() => window.print()}
+              className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-neutral-400 transition-all flex items-center gap-2 print:hidden"
+            >
+              <Zap size={14} className="text-yellow-500" /> Print Playbook
+            </button>
           </div>
-          <h2 className="text-5xl font-black text-white tracking-tight leading-none">
-            Hedge Fund Master <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">Matrix Playbook</span>
+          <h2 className="text-5xl font-black text-white tracking-tight leading-none print:text-black print:text-3xl">
+            Hedge Fund Master <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 print:text-black print:bg-none">Matrix Playbook</span>
           </h2>
-          <p className="text-xl text-neutral-400 font-medium leading-relaxed">
+          <p className="text-xl text-neutral-400 font-medium leading-relaxed print:text-black print:text-sm">
             This is the complete, unified mathematical blueprint for all four states of the market. 
-            <span className="block mt-2 text-white font-bold">Print this document. It is the absolute law for protecting and growing your $850 account.</span>
+            <span className="block mt-2 text-white font-bold opacity-80 italic">True Fractal Symmetry: These scenarios apply to Forex, Gold, and Crypto identically.</span>
+            <span className="block mt-2 text-white font-bold print:text-black">Print this document. It is the absolute law for protecting and growing your ${accountBalance.toLocaleString()} account.</span>
           </p>
           
-          <div className="flex flex-wrap gap-4 pt-4">
-            <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/5 border border-white/10">
-              <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Account Balance</div>
-              <div className="text-xl font-black text-white">$850</div>
+          <div className="flex flex-wrap gap-4 pt-4 print:pt-2">
+            <div className="flex flex-col gap-1 px-6 py-4 rounded-2xl bg-white/5 border border-white/10 print:border-neutral-300 print:p-2">
+              <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest print:text-neutral-600">Account Balance</div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-black text-white print:text-black">$</span>
+                <input 
+                  type="number" 
+                  value={accountBalance}
+                  onChange={(e) => setAccountBalance(Number(e.target.value))}
+                  className="bg-transparent text-xl font-black text-white w-28 focus:outline-none focus:ring-1 focus:ring-yellow-500 rounded px-1 print:hidden"
+                />
+                <span className="text-xl font-black text-white hidden print:inline">{accountBalance.toLocaleString()}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-400">
-              <div className="text-[10px] text-red-400/50 font-bold uppercase tracking-widest">Max Risk Per Trade</div>
-              <div className="text-xl font-black">$17 (2%)</div>
+            <div className="flex flex-col gap-1 px-6 py-4 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-100 print:border-neutral-300 print:p-2 print:text-black">
+              <div className="text-[10px] text-red-400 font-bold uppercase tracking-widest print:text-neutral-600 italic">Absolute Risk Boundary</div>
+              <div className="text-xl font-black">${riskAmount.toLocaleString()} ({riskPercent}%)</div>
+              <div className="text-[9px] text-red-400/50 font-bold uppercase tracking-widest leading-none">Scaling: 1X FX | 0.3X Crypto</div>
             </div>
           </div>
         </div>
@@ -1745,7 +1768,7 @@ function StrategySection() {
           The Institutional Tool Kit
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <ToolCard 
             title="Macro Anchor" 
             value="1-Hour Chart" 
@@ -1766,6 +1789,13 @@ function StrategySection() {
             desc="Defines the precise execution and entry." 
             icon={Zap}
             color="yellow"
+          />
+          <ToolCard 
+             title="Crypto Variance" 
+             value="3x - 5x Volatility" 
+             desc="24/7 Regime: No session-based risk windows. Down-size positions." 
+             icon={Sparkles}
+             color="orange"
           />
         </div>
 
@@ -1878,10 +1908,10 @@ function StrategySection() {
             <p className="text-neutral-400 font-medium">The 1-Minute trigger sequence is exactly the same for all scenarios. One discipline. One result.</p>
           </div>
           
-          <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-blue-500 border border-blue-400 shadow-[0_0_50px_rgba(59,130,246,0.3)] min-w-[200px]">
-            <Shield className="text-white mb-2" size={32} />
-            <div className="text-[10px] text-white/70 font-black uppercase tracking-widest">Risk Shield</div>
-            <div className="text-3xl font-black text-white">$17</div>
+          <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-blue-500 border border-blue-400 shadow-[0_0_50px_rgba(59,130,246,0.3)] min-w-[200px] print:bg-white print:border-neutral-300 print:text-black print:shadow-none">
+            <Shield className="text-white mb-2 print:text-black" size={32} />
+            <div className="text-[10px] text-white/70 font-black uppercase tracking-widest print:text-neutral-600">Risk Shield</div>
+            <div className="text-3xl font-black text-white print:text-black">${riskAmount.toLocaleString()}</div>
           </div>
         </div>
 
@@ -1907,8 +1937,8 @@ function StrategySection() {
           <ExecutionStep 
             num="4" 
             title="Sizing" 
-            subtitle="The $17 Rule"
-            desc="Calculate lot size so the distance to the SL is exactly $17. No exceptions." 
+            subtitle={`The $${riskAmount.toLocaleString()} Rule`}
+            desc={`Calculate lot size so the distance to the SL is exactly $${riskAmount.toLocaleString()}. For Crypto (3-5x Vol), use tiny lot sizes. Absolute Law.`} 
           />
         </div>
       </div>
