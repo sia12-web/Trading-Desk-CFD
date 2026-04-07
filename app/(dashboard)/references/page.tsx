@@ -1,17 +1,17 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { BookMarked, CandlestickChart, LineChart, Search, Waves, Target, Activity, Zap, Landmark, Building2, Calendar, AlertTriangle, TrendingUp, TrendingDown, Brain, ArrowRight, CheckCircle, AlertCircle, Cpu, Eye, Calculator, GitMerge, ChevronRight, Clock, Bell, Play, CheckSquare, BarChart3, CheckCircle2, RefreshCw, Gauge } from 'lucide-react'
+import { BookMarked, CandlestickChart, LineChart, Search, Waves, Target, Activity, Zap, Landmark, Building2, Calendar, AlertTriangle, TrendingUp, TrendingDown, Brain, ArrowRight, CheckCircle, AlertCircle, Cpu, Eye, Calculator, GitMerge, ChevronRight, Clock, Bell, Play, CheckSquare, BarChart3, CheckCircle2, RefreshCw, Gauge, Shield, Gem, Microscope } from 'lucide-react'
 import { CANDLESTICK_PATTERNS } from '@/lib/utils/candlestick-patterns'
 import { CHART_PATTERNS } from '@/lib/references/chart-patterns'
 import { CandlestickPatternCard } from './_components/CandlestickPatternCard'
 import { ChartPatternCard } from './_components/ChartPatternCard'
 import { WaveCalculator } from './_components/WaveCalculator'
 
-type Tab = 'patterns' | 'fibonacci' | 'volume' | 'oscillators' | 'smc' | 'elliot-waves'
+type Tab = 'strategy' | 'patterns' | 'fibonacci' | 'volume' | 'oscillators' | 'smc' | 'elliot-waves'
 
 export default function ReferencesPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('patterns')
+  const [activeTab, setActiveTab] = useState<Tab>('strategy')
   const [searchQuery, setSearchQuery] = useState('')
   const [patternType, setPatternType] = useState<'candlestick' | 'chart'>('candlestick')
 
@@ -74,6 +74,12 @@ export default function ReferencesPage() {
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap">
         <TabButton
+          active={activeTab === 'strategy'}
+          onClick={() => setActiveTab('strategy')}
+          icon={Zap}
+          label="My Strategy"
+        />
+        <TabButton
           active={activeTab === 'patterns'}
           onClick={() => setActiveTab('patterns')}
           icon={CandlestickChart}
@@ -112,6 +118,8 @@ export default function ReferencesPage() {
       </div>
 
       {/* Content */}
+      {activeTab === 'strategy' && <StrategySection />}
+
       {activeTab === 'patterns' && (
         <PatternsSection
           patternType={patternType}
@@ -1692,6 +1700,313 @@ function ElliotWavesSection() {
         </h4>
         <p className="text-sm text-neutral-400">Enter your wave pivot points to calculate all Fibonacci extension and retracement targets. Works for any wave projection — Wave 3 targets, Wave 5 targets, or Wave C targets.</p>
         <WaveCalculator />
+      </div>
+    </div>
+  )
+}
+function StrategySection() {
+  return (
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-[3rem] bg-neutral-900 border border-neutral-800 p-10 shadow-2xl">
+        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+          <Zap size={200} className="text-yellow-500" />
+        </div>
+        
+        <div className="relative z-10 max-w-4xl space-y-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-black uppercase tracking-[0.2em]">
+            <Shield size={14} /> Official Playbook
+          </div>
+          <h2 className="text-5xl font-black text-white tracking-tight leading-none">
+            Hedge Fund Master <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">Matrix Playbook</span>
+          </h2>
+          <p className="text-xl text-neutral-400 font-medium leading-relaxed">
+            This is the complete, unified mathematical blueprint for all four states of the market. 
+            <span className="block mt-2 text-white font-bold">Print this document. It is the absolute law for protecting and growing your $850 account.</span>
+          </p>
+          
+          <div className="flex flex-wrap gap-4 pt-4">
+            <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Account Balance</div>
+              <div className="text-xl font-black text-white">$850</div>
+            </div>
+            <div className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-red-500/5 border border-red-500/10 text-red-400">
+              <div className="text-[10px] text-red-400/50 font-bold uppercase tracking-widest">Max Risk Per Trade</div>
+              <div className="text-xl font-black">$17 (2%)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tool Kit */}
+      <div className="space-y-6">
+        <h3 className="text-2xl font-black text-white flex items-center gap-3">
+          <Cpu className="text-blue-500" size={28} />
+          The Institutional Tool Kit
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <ToolCard 
+            title="Macro Anchor" 
+            value="1-Hour Chart" 
+            desc="Defines the fundamental trend direction." 
+            icon={Landmark}
+            color="blue"
+          />
+          <ToolCard 
+            title="Trap Anchor" 
+            value="15-Minute Chart" 
+            desc="Defines the market geometry and key levels." 
+            icon={Target}
+            color="purple"
+          />
+          <ToolCard 
+            title="Trigger Anchor" 
+            value="1-Minute Chart" 
+            desc="Defines the precise execution and entry." 
+            icon={Zap}
+            color="yellow"
+          />
+        </div>
+
+        <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] p-8">
+          <h4 className="text-sm font-black text-neutral-500 uppercase tracking-[0.2em] mb-6">Required Indicators</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <IndicatorBadge label="1/Price Overlay" icon={GitMerge} />
+            <IndicatorBadge label="Fibonacci" icon={Target} />
+            <IndicatorBadge label="Volume + MA" icon={BarChart3} />
+            <IndicatorBadge label="RSI (14)" icon={Activity} />
+            <IndicatorBadge label="MACD" icon={Gauge} />
+            <IndicatorBadge label="Stochastic" icon={LineChart} />
+          </div>
+        </div>
+      </div>
+
+      {/* Matrix Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Bullish Matrix */}
+        <div className="space-y-8">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-green-500/10 border border-green-500/20">
+              <TrendingUp className="text-green-500" size={24} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-white">The Bullish Matrix</h3>
+              <p className="text-xs text-green-500/70 font-bold uppercase tracking-widest">1-Hour making HH and HL</p>
+            </div>
+          </div>
+
+          <ScenarioCard 
+            scenario="Scenario A"
+            title="Bullish Wave 2 (The Crash Trap)"
+            desc="The market impulsed up (Wave 1) and is now violently crashing down to scare retail."
+            steps={[
+              { label: "Target Zone", content: "Fib 50% to 61.8% Golden Pocket on 15M chart." },
+              { label: "Momentum", content: "Bullish Divergence on RSI (Price LL, RSI HL) + MACD weakening." },
+              { label: "The Fakeout", content: "1M chart: Violent red candle below 61.8% with Massive Volume Climax." },
+              { label: "The Reversal", content: "Price instantly rejects upward, closing green back above 61.8%." }
+            ]}
+            color="green"
+          />
+
+          <ScenarioCard 
+            scenario="Scenario B"
+            title="Bullish Wave 4 (The Diamond Chop)"
+            desc="The market impulsed up (Wave 3) and is now chopping sideways, frustrating retail."
+            steps={[
+              { label: "Target Zone", content: "15M Peak W3 1/Price Overlay. Draw Equilibrium Box. Wait 6-9 candles." },
+              { label: "Momentum", content: "Bullish Divergence on RSI as price touches the bottom of your box." },
+              { label: "The Fakeout", content: "1M chart: Red candle drop below box with Massive Volume Climax." },
+              { label: "The Reversal", content: "Price instantly rejects and closes green back inside the box." }
+            ]}
+            color="blue"
+          />
+        </div>
+
+        {/* Bearish Matrix */}
+        <div className="space-y-8">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20">
+              <TrendingDown className="text-red-500" size={24} />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-white">The Bearish Matrix</h3>
+              <p className="text-xs text-red-500/70 font-bold uppercase tracking-widest">1-Hour making LL and LH</p>
+            </div>
+          </div>
+
+          <ScenarioCard 
+            scenario="Scenario C"
+            title="Bearish Wave 2 (The Relief Trap)"
+            desc="The market crashed down (Wave 1) and is now aggressively spiking upward to trick retail."
+            steps={[
+              { label: "Target Zone", content: "Fib 50% to 61.8% Golden Pocket on 15M chart." },
+              { label: "Momentum", content: "Bearish Divergence on RSI (Price HH, RSI LH) + MACD weakening." },
+              { label: "The Fakeout", content: "1M chart: Violent green candle above 61.8% with Massive Volume Climax." },
+              { label: "The Reversal", content: "Price instantly rejects downward, closing red back below 61.8%." }
+            ]}
+            color="orange"
+          />
+
+          <ScenarioCard 
+            scenario="Scenario D"
+            title="Bearish Wave 4 (The Diamond Chop)"
+            desc="The market crashed down (Wave 3) and is now chopping sideways, letting retail catch their breath."
+            steps={[
+              { label: "Target Zone", content: "15M Bottom W3 1/Price Overlay. Draw Equilibrium Box. Wait 6-9 candles." },
+              { label: "Momentum", content: "Bearish Divergence on RSI as price touches the top of your box." },
+              { label: "The Fakeout", content: "1M chart: Green candle spike above box with Massive Volume Climax." },
+              { label: "The Reversal", content: "Price instantly rejects and closes red back inside the box." }
+            ]}
+            color="red"
+          />
+        </div>
+      </div>
+
+      {/* Sniper Execution */}
+      <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 border border-neutral-700/50 rounded-[3rem] p-10 space-y-10 relative overflow-hidden shadow-2xl">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+        
+        <div className="flex flex-col md:flex-row justify-between gap-8">
+          <div className="space-y-4 max-w-xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                <Target className="text-blue-500" size={24} />
+              </div>
+              <h3 className="text-3xl font-black text-white italic">UNIVERSAL SNIPER EXECUTION</h3>
+            </div>
+            <p className="text-neutral-400 font-medium">The 1-Minute trigger sequence is exactly the same for all scenarios. One discipline. One result.</p>
+          </div>
+          
+          <div className="flex flex-col items-center justify-center p-6 rounded-3xl bg-blue-500 border border-blue-400 shadow-[0_0_50px_rgba(59,130,246,0.3)] min-w-[200px]">
+            <Shield className="text-white mb-2" size={32} />
+            <div className="text-[10px] text-white/70 font-black uppercase tracking-widest">Risk Shield</div>
+            <div className="text-3xl font-black text-white">$17</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <ExecutionStep 
+            num="1" 
+            title="Structural Break" 
+            subtitle="CHoCH"
+            desc="Wait for the price to break local structure on 1M. BULL: Break LH. BEAR: Break HL." 
+          />
+          <ExecutionStep 
+            num="2" 
+            title="Stochastic Reload" 
+            subtitle="Micro Wave 2"
+            desc="Wait for micro-pullback. BULL: Cross UP below 20. BEAR: Cross DOWN above 80." 
+          />
+          <ExecutionStep 
+            num="3" 
+            title="Execute" 
+            subtitle="Market Order"
+            desc="Enter exactly at the Stochastic cross. Ironclad stop 1 pip from extreme wick." 
+          />
+          <ExecutionStep 
+            num="4" 
+            title="Sizing" 
+            subtitle="The $17 Rule"
+            desc="Calculate lot size so the distance to the SL is exactly $17. No exceptions." 
+          />
+        </div>
+      </div>
+
+      {/* Profits */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] p-8 flex items-center gap-6 group hover:border-green-500/20 transition-all">
+          <div className="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-500 group-hover:scale-110 transition-transform">
+            <CheckCircle2 size={32} />
+          </div>
+          <div>
+            <div className="text-[10px] text-neutral-500 font-black uppercase tracking-[0.2em] mb-1">Target 1: Risk Free</div>
+            <h4 className="text-lg font-bold text-white mb-2">100% Fibonacci Extension</h4>
+            <p className="text-xs text-neutral-400">Sell 50% of position. Risk eliminated. Move stop to breakeven.</p>
+          </div>
+        </div>
+        
+        <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] p-8 flex items-center gap-6 group hover:border-blue-500/20 transition-all">
+          <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
+            <TrendingUp size={32} />
+          </div>
+          <div>
+            <div className="text-[10px] text-neutral-500 font-black uppercase tracking-[0.2em] mb-1">Target 2: The Runner</div>
+            <h4 className="text-lg font-bold text-white mb-2">161.8% Fibonacci Extension</h4>
+            <p className="text-xs text-neutral-400">Sell remaining 50%. Close the charts. You are done for the day.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ToolCard({ title, value, desc, icon: Icon, color }: any) {
+  const colors: any = {
+    blue: 'text-blue-400 bg-blue-400/5 border-blue-400/20',
+    purple: 'text-purple-400 bg-purple-400/5 border-purple-400/20',
+    yellow: 'text-yellow-400 bg-yellow-400/5 border-yellow-400/20'
+  }
+  
+  return (
+    <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl hover:border-white/10 transition-all">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${colors[color]}`}>
+        <Icon size={20} />
+      </div>
+      <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-1">{title}</div>
+      <div className="text-xl font-black text-white mb-2">{value}</div>
+      <p className="text-xs text-neutral-400 leading-relaxed">{desc}</p>
+    </div>
+  )
+}
+
+function IndicatorBadge({ label, icon: Icon }: any) {
+  return (
+    <div className="flex flex-col items-center gap-3 p-4 rounded-2xl bg-neutral-800/40 border border-neutral-700/50 hover:bg-neutral-800 transition-colors">
+      <Icon size={20} className="text-neutral-500" />
+      <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest text-center">{label}</span>
+    </div>
+  )
+}
+
+function ScenarioCard({ scenario, title, desc, steps, color }: any) {
+  const colorMap: any = {
+    green: 'text-green-400 border-green-500/20',
+    blue: 'text-blue-400 border-blue-500/20',
+    orange: 'text-orange-400 border-orange-500/20',
+    red: 'text-red-400 border-red-500/20'
+  }
+  
+  return (
+    <div className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] p-8 space-y-6 hover:border-neutral-700 transition-all">
+      <div className="space-y-1">
+        <div className={`text-[10px] font-black uppercase tracking-[0.2em] ${colorMap[color].split(' ')[0]}`}>{scenario}</div>
+        <h4 className="text-xl font-bold text-white">{title}</h4>
+        <p className="text-sm text-neutral-500">{desc}</p>
+      </div>
+      
+      <div className="space-y-4">
+        {steps.map((step: any, i: number) => (
+          <div key={i} className="flex gap-4 p-3 rounded-2xl bg-neutral-800/30 border border-neutral-700/30">
+            <div className={`text-[10px] font-black w-24 shrink-0 uppercase tracking-widest ${colorMap[color].split(' ')[0]}`}>{step.label}</div>
+            <div className="text-xs text-neutral-300 font-medium">{step.content}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ExecutionStep({ num, title, subtitle, desc }: any) {
+  return (
+    <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-3xl space-y-4 hover:bg-neutral-900 transition-all group">
+      <div className="flex justify-between items-start">
+        <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-black text-xs group-hover:scale-110 transition-transform">{num}</div>
+        <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{subtitle}</div>
+      </div>
+      <div className="space-y-1">
+        <h5 className="font-bold text-white uppercase italic">{title}</h5>
+        <p className="text-xs text-neutral-500 leading-relaxed">{desc}</p>
       </div>
     </div>
   )
