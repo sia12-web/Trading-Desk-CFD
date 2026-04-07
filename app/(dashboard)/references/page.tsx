@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { BookMarked, CandlestickChart, LineChart, Search, Waves, Target, Activity, Zap, Landmark, Building2, Calendar, AlertTriangle, TrendingUp, TrendingDown, Brain, ArrowRight, CheckCircle, AlertCircle, Cpu, Eye, Calculator, GitMerge, ChevronRight, Clock, Bell, Play, CheckSquare, BarChart3, CheckCircle2, RefreshCw, Gauge, Shield, Gem, Microscope } from 'lucide-react'
+import { BookMarked, CandlestickChart, LineChart, Search, Waves, Target, Activity, Zap, Landmark, Building2, Calendar, AlertTriangle, TrendingUp, TrendingDown, Brain, ArrowRight, CheckCircle, AlertCircle, Cpu, Eye, Calculator, GitMerge, ChevronRight, Clock, Bell, Play, CheckSquare, BarChart3, CheckCircle2, RefreshCw, Gauge, Shield, Gem, Microscope, Sparkles } from 'lucide-react'
 import { CANDLESTICK_PATTERNS } from '@/lib/utils/candlestick-patterns'
 import { CHART_PATTERNS } from '@/lib/references/chart-patterns'
 import { CandlestickPatternCard } from './_components/CandlestickPatternCard'
@@ -496,17 +496,26 @@ function VolumeSection() {
             { num: 4, title: "Enter at 61.8% with Low Volume", desc: "Price touches or approaches the 61.8% Fibonacci zone AND volume is dry. This is your entry. Stop loss just below Wave 1 start.", color: "green" },
             { num: 5, title: "Ride Wave 3 to 1.618x Target", desc: "Calculate: Wave 2 low + (Wave 1 length × 1.618). This is your minimum target. Volume should surge during Wave 3—this is the crowd joining in.", color: "yellow" },
             { num: 6, title: "Exit Warning: Wave 5 Low Volume", desc: "If Wave 5 shows declining volume compared to Wave 3, the trend is exhausting. Tighten stops. Don't add to position. Prepare for ABC correction.", color: "red" }
-          ].map((step, i) => (
-            <div key={i} className="flex gap-4">
-              <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-${step.color}-500/20 border border-${step.color}-500/30 flex items-center justify-center text-${step.color}-400 font-bold`}>
-                {step.num}
+          ].map((step, i) => {
+            const colorClasses: any = {
+              green: 'bg-green-500/20 border-green-500/30 text-green-400',
+              blue: 'bg-blue-500/20 border-blue-500/30 text-blue-400',
+              purple: 'bg-purple-500/20 border-purple-500/30 text-purple-400',
+              yellow: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400',
+              red: 'bg-red-500/20 border-red-500/30 text-red-400'
+            }
+            return (
+              <div key={i} className="flex gap-4">
+                <div className={`flex-shrink-0 w-10 h-10 rounded-full border flex items-center justify-center font-bold ${colorClasses[step.color]}`}>
+                  {step.num}
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-neutral-200 mb-1">{step.title}</p>
+                  <p className="text-sm text-neutral-400">{step.desc}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-base font-semibold text-neutral-200 mb-1">{step.title}</p>
-                <p className="text-sm text-neutral-400">{step.desc}</p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
@@ -876,17 +885,26 @@ function OscillatorsSection() {
             { num: 3, title: "Time Entry with RSI or Stochastic", desc: "In an uptrend, wait for RSI to pull back to 40-50 zone (not oversold) before entering. In a range, buy at RSI 30 / Stochastic 20 oversold readings.", color: "blue" },
             { num: 4, title: "Set Stops with ATR", desc: "Place stop-loss at 1.5× ATR below entry for longs. This adapts to current volatility — tight stops in quiet markets, wider stops in volatile markets.", color: "orange" },
             { num: 5, title: "Trail with Parabolic SAR", desc: "Once in profit, use SAR dots as a trailing stop. When dots flip above price, exit the trade. This locks in profits while letting winners run in trending conditions.", color: "pink" },
-          ].map((step) => (
-            <div key={step.num} className="flex gap-4">
-              <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-${step.color}-500/20 border border-${step.color}-500/30 flex items-center justify-center text-${step.color}-400 font-bold`}>
-                {step.num}
+          ].map((step) => {
+            const colorClasses: any = {
+              teal: 'bg-teal-500/20 border-teal-500/30 text-teal-400',
+              purple: 'bg-purple-500/20 border-purple-500/30 text-purple-400',
+              blue: 'bg-blue-500/20 border-blue-500/30 text-blue-400',
+              orange: 'bg-orange-500/20 border-orange-500/30 text-orange-400',
+              pink: 'bg-pink-500/20 border-pink-500/30 text-pink-400'
+            }
+            return (
+              <div key={step.num} className="flex gap-4">
+                <div className={`flex-shrink-0 w-10 h-10 rounded-full border flex items-center justify-center font-bold ${colorClasses[step.color]}`}>
+                  {step.num}
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-neutral-200 mb-1">{step.title}</p>
+                  <p className="text-sm text-neutral-400">{step.desc}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-base font-semibold text-neutral-200 mb-1">{step.title}</p>
-                <p className="text-sm text-neutral-400">{step.desc}</p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
