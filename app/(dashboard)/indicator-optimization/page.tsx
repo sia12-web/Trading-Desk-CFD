@@ -234,7 +234,7 @@ export default function IndicatorOptimizationPage() {
 function InstrumentCalibrationRow({ pair, calibrations, onDelete }: { pair: string, calibrations: Calibration[], onDelete: () => void }) {
     const [deleting, setDeleting] = React.useState(false)
     const [isExpanded, setIsExpanded] = React.useState(false)
-    const tfs = ['M', 'W', 'D', 'H4', 'H3', 'H1']
+    const tfs = ['M', 'W', 'D', 'H4', 'H3', 'H1', 'M15', 'M1']
 
     const handleDelete = async () => {
         if (!confirm(`Are you sure you want to delete all calibrations for ${pair}?`)) {
@@ -298,7 +298,7 @@ function InstrumentCalibrationRow({ pair, calibrations, onDelete }: { pair: stri
             </div>
 
             {isExpanded && (
-                <div className="grid grid-cols-1 md:grid-cols-6 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                 {tfs.map(tf => {
                     const cal = calibrations.find(c => c.timeframe === tf)
                     return (

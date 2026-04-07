@@ -4,7 +4,7 @@ import { callDeepSeek } from '@/lib/ai/clients/deepseek'
 import { createServiceClient } from '@/lib/supabase/service'
 import { OandaCandle } from '@/lib/types/oanda'
 
-export type Timeframe = 'M' | 'W' | 'D' | 'H4' | 'H3' | 'H1'
+export type Timeframe = 'M' | 'W' | 'D' | 'H4' | 'H3' | 'H1' | 'M15' | 'M1'
 
 export interface IndicatorSettings {
     RSI: { period: number; overbought: number; oversold: number }
@@ -28,7 +28,7 @@ export interface IndicatorSettings {
  */
 export async function runGlobalOptimization(userId: string, onProgress?: (msg: string) => void) {
     const subscriptions = await getSubscribedPairs(userId)
-    const timeframes: Timeframe[] = ['M', 'W', 'D', 'H4', 'H3', 'H1']
+    const timeframes: Timeframe[] = ['M', 'W', 'D', 'H4', 'H3', 'H1', 'M15', 'M1']
     
     onProgress?.(`Found ${subscriptions.length} instruments to calibrate...`)
 
