@@ -259,37 +259,33 @@ Your job: assess the current position and recommend the next action.
             ? `\n\nIMPORTANT: ${data.pair} is a stock INDEX (${assetConfig.indexMeta!.displayName}), NOT a currency pair. FUNDAMENTALS DRIVE THE STORY — Fed/ECB policy, earnings, sector rotation, and macro data are the PRIMARY narrative drivers. Technical levels provide entry/exit precision but do NOT lead the story. Use "${assetConfig.pointLabel}" not "pips" for price movements.`
             : ''
 
-    return `You are an analytical voice tracking the Harmonic Convergence Matrix. Describe what phase we are in, what geometric structure is forming, what the market needs to do next. No metaphors. No entertainment. Pure strategy analysis unfolding phase by phase until edge appears.
+    return `You are an analytical voice tracking The Fast Matrix. Describe which scenario (A/B/C/D) is active, what confirmations are present, what the market needs to do next. No metaphors. No entertainment. Pure strategy analysis until edge appears.
 
-# HARMONIC CONVERGENCE MATRIX — ${data.pair}
+# THE FAST MATRIX — ${data.pair}
 
-Each analysis is a new phase update in an ongoing strategic assessment. Track institutional flow, geometric structure, and convergence signals.${assetContextNote}
+Each analysis is a new update in an ongoing strategic assessment. Track H1 macro direction, scenario identification, M15 confirmations, and M1 execution triggers.${assetContextNote}
 
-## INSTITUTIONAL FLOW FRAMEWORK
-- **Demand-side flow** = institutional accumulation. Identified via: demand zones, support levels, bullish structural patterns.
-- **Supply-side flow** = institutional distribution. Identified via: supply zones, resistance levels, bearish structural patterns.
-- **Institutional positioning** = large-scale players engineering liquidity grabs before executing primary directional moves.
-- **AMD Cycle** = the structural rhythm: Accumulation (institutional position building; quiet compression) → Manipulation (liquidity engineering; false breakout to trap retail) → Distribution (institutional execution of the primary directional move).
+## THE FAST MATRIX DOCTRINE (OUR EDGE)
+A systematic 3-timeframe framework: H1 establishes direction, M15 confirms the setup, M1 executes the entry. No ambiguity. No discretion.
 
-## REGIME ASSESSMENT DOCTRINE (HOW WE IDENTIFY EDGE)
-Edge identification is the first step. We do not chase price; we wait for the market to reach statistically mispriced levels.
-1. **RSI Regime**: Use RSI to identify oversold or overbought extremes — areas of statistical mispricing.
-2. **Momentum Confirmation**: Momentum confirms the regime is shifting and directional flow is resuming.
-3. **Structural Patience**: If price pulls back within a trend but the RSI/Momentum regime remains intact, the position holds. Exiting on noise without regime change is a process violation. Structural conditions have not changed.
-4. **Mindset Inversion**: Fear is common in both winning and losing. Winning triggers fear of losing gains. Losing triggers hope of a turnaround. We invert this: Be strict on risk (no hope), be optimistic on winners (no fear).
+**H1 Macro Direction (Dow Theory Filter)**: Count swing structure on H1. Higher Highs + Higher Lows = buy_only. Lower Highs + Lower Lows = sell_only. Mixed/ranging = no_trade. No trade without confirmed trend direction. This is the non-negotiable gatekeeper.
 
-## THE HARMONIC CONVERGENCE MATRIX DOCTRINE (OUR EDGE)
-Three classical theories viewing the same institutional capital flow through different lenses. Dow Theory shows us the trend. Wyckoff shows us what institutional flow is doing. Elliott Wave gives us the precision entry.
+**4 Scenario Matrix** (only 1 active at a time):
+- **Scenario A — Bullish Wave 2 (Crash Trap)**: Price retraces into the Golden Pocket (61.8-65% Fib of the impulse). This is the "crash trap" — retail panics, smart money loads. Deep retracement, high reward.
+- **Scenario B — Bullish Wave 4 (Diamond Chop)**: Price consolidates in a Diamond Box around equilibrium (50% of the range). Shallow, choppy correction. Breakout from the box signals Wave 5 continuation.
+- **Scenario C — Bearish Wave 2 (Relief Trap)**: Mirror of A for shorts. Price rallies into the Golden Pocket from below. Retail gets hopeful, smart money sells the relief.
+- **Scenario D — Bearish Wave 4 (Diamond Chop)**: Mirror of B for shorts. Price consolidates at equilibrium before the final leg down.
 
-**Phase 1 — Dow Theory Filter (Weekly/Daily)**: Is the macro trend established? Count swing highs and lows on Daily: 2+ consecutive HH/HL = bullish, 2+ LH/LL = bearish. Weekly must align. Volume on trending candles must be above average. Without Dow confirmation, there is no trade.
+**M15 Confirmation**: RSI divergence + MACD divergence at the target zone (Golden Pocket or Diamond Box). Both must be present to confirm the scenario is live. Without M15 confirmation, we wait.
 
-**Phase 2 — Wyckoff Battleground (Daily/H4)**: The correction after the trend IS Wyckoff Accumulation (for longs) or Distribution (for shorts). Institutional flow is loading while retail is bored (low ADX, tight range, declining volume). Wait for the **Spring** — a sharp liquidity sweep below the accumulation range that traps retail stops.
+**M1 Execution** (3 triggers, need at least 2):
+- **Volume Climax**: 2x+ average volume with rejection wick = Spring (longs) or Upthrust (shorts). The liquidity grab that traps the last retail participants.
+- **CHoCH (Change of Character)**: Break above previous Lower High (for bulls) or below previous Higher Low (for bears). Structural proof that the micro-trend has shifted.
+- **Stochastic Reload**: K crosses D from extreme (<20 for longs, >80 for shorts). Momentum has reset and is firing in our direction.
 
-**Phase 3 �� EW Precision Entry (H4/H1)**: After the Spring, watch for the **Sign of Strength (SOS)** — a breakout above the accumulation range with volume conviction (1.5x+ average). Then wait for the **Last Point of Support (LPS)** — a pullback to the 50-61.8% Fibonacci retracement of the SOS move. Entry MUST hold above the Spring price.
+**Execution Rules**: SL 1 pip below Spring wick (longs) or above Upthrust wick (shorts). TP1 at 100% Fibonacci extension (close 50%). TP2 at 161.8% extension (close remaining 50%). Position size = 2% risk ($17 on $850 account).
 
-**Phase 4 — Risk/Reward Engineering**: Stop loss below the Spring price (Wyckoff thesis invalidation). Take profit at 161.8% Fibonacci extension. R:R must be >= 3:1. Execute the plan — no second-guessing.
-
-**In the analysis**: Always reference which HCM phase the pair is in. Frame scenarios through phase progression: "Spring detected — watching for SOS breakout to advance to Phase 3." The HCM phase IS the phase progression.
+**In the analysis**: Always reference which scenario (A/B/C/D) is active and its score. Frame analysis through matrix progression: "Scenario A active at 72/100 — RSI divergence confirmed on M15, waiting for M1 volume climax to trigger entry."
 
 
 ${archiveBlock}
@@ -336,16 +332,15 @@ ${news.avoidTrading ? '\n⚠️ HIGH-IMPACT NEWS IMMINENT — factor this into t
 ### AMD Phase Summary
 ${Object.entries(data.amdPhases).map(([tf, p]) => `- ${tf}: ${p.phase} (${p.confidence}%)`).join('\n')}
 
-### HARMONIC CONVERGENCE MATRIX STATUS (PRIMARY STRATEGY)
-${data.harmonicConvergence ? `**Phase ${data.harmonicConvergence.overallPhase}/4** | Score: ${data.harmonicConvergence.overallScore}/100 | Direction: **${data.harmonicConvergence.direction.toUpperCase()}**
-- Phase 1 (Macro Direction): **${data.harmonicConvergence.phase1.status.toUpperCase()}** (${data.harmonicConvergence.phase1.score}%) — ${data.harmonicConvergence.phase1.details}
-  Trend: ${data.harmonicConvergence.phase1.primaryTrend} | Filter: ${data.harmonicConvergence.phase1.directionalFilter} | Swing HH: ${data.harmonicConvergence.phase1.dailySwingHighs} | Swing HL: ${data.harmonicConvergence.phase1.dailySwingLows} | Weekly Aligned: ${data.harmonicConvergence.phase1.weeklyAligned ? 'YES' : 'NO'} | Volume: ${data.harmonicConvergence.phase1.volumeConfirms ? 'CONFIRMS' : 'weak'}
-- Phase 2 (Harmonic Time): **${data.harmonicConvergence.phase2.status.toUpperCase()}** (${data.harmonicConvergence.phase2.score}%) — ${data.harmonicConvergence.phase2.details}
-  M45 Correction: ${data.harmonicConvergence.phase2.m45CorrectionDetected ? 'YES' : 'NO'} | M15 Sub-waves: ${data.harmonicConvergence.phase2.m15SubWaveCount}/3 | M45 Cycles: ${data.harmonicConvergence.phase2.m45CyclesElapsed}/6 | Temporal Exhaustion: ${data.harmonicConvergence.phase2.temporalExhaustionReached ? 'YES' : 'NO'}
-- Phase 3 (Trap Geometry): **${data.harmonicConvergence.phase3.status.toUpperCase()}** (${data.harmonicConvergence.phase3.score}%) — ${data.harmonicConvergence.phase3.details}
-  Eulerian Eq: ${data.harmonicConvergence.phase3.eulerianEquilibrium?.toFixed(5) ?? 'N/A'} | Bowtie Apex: ${data.harmonicConvergence.phase3.bowtieApex ? data.harmonicConvergence.phase3.bowtieApex.price.toFixed(5) : 'N/A'} | Apex@Eq: ${data.harmonicConvergence.phase3.bowtieApexAtEquilibrium ? 'YES' : 'NO'} | Spring: ${data.harmonicConvergence.phase3.wyckoffSpringDetected ? `YES at ${data.harmonicConvergence.phase3.springPrice?.toFixed(5)}` : 'NOT YET'}
-- Phase 4 (Execution): Entry=${data.harmonicConvergence.phase4.entryTrigger ? 'TRIGGERED' : 'waiting'} | SL=${data.harmonicConvergence.phase4.stopLoss?.toFixed(5) ?? 'N/A'} | TP1=${data.harmonicConvergence.phase4.tp1?.toFixed(5) ?? 'N/A'} | TP2=${data.harmonicConvergence.phase4.tp2?.toFixed(5) ?? 'N/A'} | R:R(TP2)=${data.harmonicConvergence.phase4.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1 | Valid: ${data.harmonicConvergence.phase4.positionValid ? 'YES' : 'NO'}
-- **${data.harmonicConvergence.narrative}**` : 'Harmonic Convergence detection unavailable (missing W/D/M15/M45/H1 data).'}
+### THE FAST MATRIX STATUS (PRIMARY STRATEGY)
+${data.fastMatrix ? `**Active Scenario: ${data.fastMatrix.activeScenario || 'NONE'}** | Score: ${data.fastMatrix.overallScore}/100 | Direction: **${data.fastMatrix.direction.toUpperCase()}**
+- H1 Macro: Trend ${data.fastMatrix.macro.trend.toUpperCase()} | Filter: ${data.fastMatrix.macro.filter} | HH: ${data.fastMatrix.macro.higherHighs} | HL: ${data.fastMatrix.macro.higherLows} | LH: ${data.fastMatrix.macro.lowerHighs} | LL: ${data.fastMatrix.macro.lowerLows}
+- Scenario A (Bull W2 Crash Trap): Score ${data.fastMatrix.scenarios.A.score}/100 | ${data.fastMatrix.scenarios.A.status} | GP: ${data.fastMatrix.scenarios.A.goldenPocket ? 'YES' : 'NO'} | RSI Div: ${data.fastMatrix.scenarios.A.rsiDivergence.detected ? 'YES' : 'NO'} | MACD Div: ${data.fastMatrix.scenarios.A.macdDivergence.detected ? 'YES' : 'NO'} | Vol Climax: ${data.fastMatrix.scenarios.A.volumeClimax.detected ? 'YES' : 'NO'} | CHoCH: ${data.fastMatrix.scenarios.A.choch.detected ? \`YES (${data.fastMatrix.scenarios.A.choch.direction} @ ${data.fastMatrix.scenarios.A.choch.breakPrice?.toFixed(5)})\` : 'NO'} | Stoch Reload: ${data.fastMatrix.scenarios.A.stochasticReload.detected ? 'YES' : 'NO'}
+- Scenario B (Bull W4 Diamond): Score ${data.fastMatrix.scenarios.B.score}/100 | ${data.fastMatrix.scenarios.B.status} | Diamond Box: ${data.fastMatrix.scenarios.B.diamondBox ? 'YES' : 'NO'} | RSI Div: ${data.fastMatrix.scenarios.B.rsiDivergence.detected ? 'YES' : 'NO'} | MACD Div: ${data.fastMatrix.scenarios.B.macdDivergence.detected ? 'YES' : 'NO'} | Vol Climax: ${data.fastMatrix.scenarios.B.volumeClimax.detected ? 'YES' : 'NO'} | CHoCH: ${data.fastMatrix.scenarios.B.choch.detected ? \`YES (${data.fastMatrix.scenarios.B.choch.direction} @ ${data.fastMatrix.scenarios.B.choch.breakPrice?.toFixed(5)})\` : 'NO'} | Stoch Reload: ${data.fastMatrix.scenarios.B.stochasticReload.detected ? 'YES' : 'NO'}
+- Scenario C (Bear W2 Relief Trap): Score ${data.fastMatrix.scenarios.C.score}/100 | ${data.fastMatrix.scenarios.C.status} | GP: ${data.fastMatrix.scenarios.C.goldenPocket ? 'YES' : 'NO'} | RSI Div: ${data.fastMatrix.scenarios.C.rsiDivergence.detected ? 'YES' : 'NO'} | MACD Div: ${data.fastMatrix.scenarios.C.macdDivergence.detected ? 'YES' : 'NO'} | Vol Climax: ${data.fastMatrix.scenarios.C.volumeClimax.detected ? 'YES' : 'NO'} | CHoCH: ${data.fastMatrix.scenarios.C.choch.detected ? \`YES (${data.fastMatrix.scenarios.C.choch.direction} @ ${data.fastMatrix.scenarios.C.choch.breakPrice?.toFixed(5)})\` : 'NO'} | Stoch Reload: ${data.fastMatrix.scenarios.C.stochasticReload.detected ? 'YES' : 'NO'}
+- Scenario D (Bear W4 Diamond): Score ${data.fastMatrix.scenarios.D.score}/100 | ${data.fastMatrix.scenarios.D.status} | Diamond Box: ${data.fastMatrix.scenarios.D.diamondBox ? 'YES' : 'NO'} | RSI Div: ${data.fastMatrix.scenarios.D.rsiDivergence.detected ? 'YES' : 'NO'} | MACD Div: ${data.fastMatrix.scenarios.D.macdDivergence.detected ? 'YES' : 'NO'} | Vol Climax: ${data.fastMatrix.scenarios.D.volumeClimax.detected ? 'YES' : 'NO'} | CHoCH: ${data.fastMatrix.scenarios.D.choch.detected ? \`YES (${data.fastMatrix.scenarios.D.choch.direction} @ ${data.fastMatrix.scenarios.D.choch.breakPrice?.toFixed(5)})\` : 'NO'} | Stoch Reload: ${data.fastMatrix.scenarios.D.stochasticReload.detected ? 'YES' : 'NO'}
+- Key Levels: GP ${data.fastMatrix.keyLevels.goldenPocketLow?.toFixed(5) ?? 'N/A'}–${data.fastMatrix.keyLevels.goldenPocketHigh?.toFixed(5) ?? 'N/A'} | Diamond ${data.fastMatrix.keyLevels.diamondBoxLow?.toFixed(5) ?? 'N/A'}–${data.fastMatrix.keyLevels.diamondBoxHigh?.toFixed(5) ?? 'N/A'} | Eq: ${data.fastMatrix.keyLevels.equilibriumPrice?.toFixed(5) ?? 'N/A'} | Entry: ${data.fastMatrix.keyLevels.entryPrice?.toFixed(5) ?? 'N/A'} | SL: ${data.fastMatrix.keyLevels.stopLoss?.toFixed(5) ?? 'N/A'} | TP1: ${data.fastMatrix.keyLevels.tp1?.toFixed(5) ?? 'N/A'} | TP2: ${data.fastMatrix.keyLevels.tp2?.toFixed(5) ?? 'N/A'}
+- **${data.fastMatrix.narrative}**` : 'Fast Matrix detection unavailable (missing required timeframe data).'}
 
 ### Bill Williams Fractal Analysis (Algorithmic)
 ${data.timeframes.map(tf => {
@@ -417,7 +412,7 @@ ${data.timeframes.filter(tf => ['D', 'H4', 'H1'].includes(tf.timeframe)).map(tf 
 
 **TOKEN BUDGET: Your entire JSON response must be ≤2000 tokens. Be ruthlessly concise.**
 
-Write Phase Update ${currentEpisodeNumber} of the ${data.pair} HCM analysis AND the Desk's huddle. Respond with this exact JSON structure:
+Write Phase Update ${currentEpisodeNumber} of the ${data.pair} Fast Matrix analysis AND the Desk's huddle. Respond with this exact JSON structure:
 
 {
   "story_title": "A concise phase-descriptive title (e.g. 'Phase 2 Compression Deepens at 1.0850')",

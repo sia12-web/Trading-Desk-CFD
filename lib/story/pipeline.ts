@@ -457,34 +457,43 @@ Fix these issues and regenerate the COMPLETE JSON response. Remember:
                 signals: dailyTF.fractalAnalysis.signals,
             } : undefined
 
-            const harmonicConvergence = data.harmonicConvergence ? {
-                overallPhase: data.harmonicConvergence.overallPhase,
-                overallScore: data.harmonicConvergence.overallScore,
-                direction: data.harmonicConvergence.direction,
-                narrative: data.harmonicConvergence.narrative,
-                primaryTrend: data.harmonicConvergence.phase1.primaryTrend,
-                directionalFilter: data.harmonicConvergence.phase1.directionalFilter,
-                m45CorrectionDetected: data.harmonicConvergence.phase2.m45CorrectionDetected,
-                temporalExhaustionReached: data.harmonicConvergence.phase2.temporalExhaustionReached,
-                bowtieApexDetected: data.harmonicConvergence.phase3.bowtieApexAtEquilibrium,
-                wyckoffSpringDetected: data.harmonicConvergence.phase3.wyckoffSpringDetected,
-                entryTriggered: data.harmonicConvergence.phase4.entryTrigger,
-                riskRewardToTP2: data.harmonicConvergence.phase4.riskRewardToTP2,
-                eulerianEquilibrium: data.harmonicConvergence.keyLevels.eulerianEquilibrium,
-                bowtieApex: data.harmonicConvergence.keyLevels.bowtieApex,
-                springPrice: data.harmonicConvergence.keyLevels.springPrice,
-                entryPrice: data.harmonicConvergence.keyLevels.entryPrice,
-                stopLoss: data.harmonicConvergence.keyLevels.stopLoss,
-                tp1: data.harmonicConvergence.keyLevels.tp1,
-                tp2: data.harmonicConvergence.keyLevels.tp2,
-            } : undefined
+            const fastMatrix = data.fastMatrix ? (() => {
+                const fm = data.fastMatrix!
+                const activeId = fm.activeScenario
+                const active = activeId ? fm.scenarios[activeId] : null
+                return {
+                    activeScenario: activeId,
+                    overallScore: fm.overallScore,
+                    direction: fm.direction,
+                    narrative: fm.narrative,
+                    h1Trend: fm.macro.trend,
+                    directionalFilter: fm.macro.filter,
+                    waveType: active?.waveType ?? null,
+                    scenarioLabel: active?.label ?? null,
+                    rsiDivergence: active?.rsiDivergence.detected ?? false,
+                    macdDivergence: active?.macdDivergence.detected ?? false,
+                    volumeClimax: active?.volumeClimax.detected ?? false,
+                    chochDetected: active?.choch.detected ?? false,
+                    stochasticReload: active?.stochasticReload.detected ?? false,
+                    goldenPocketHigh: active?.goldenPocket?.goldenPocketHigh ?? null,
+                    goldenPocketLow: active?.goldenPocket?.goldenPocketLow ?? null,
+                    diamondBoxHigh: active?.diamondBox?.boxHigh ?? null,
+                    diamondBoxLow: active?.diamondBox?.boxLow ?? null,
+                    springPrice: fm.keyLevels.springPrice,
+                    entryPrice: fm.keyLevels.entryPrice,
+                    stopLoss: fm.keyLevels.stopLoss,
+                    tp1: fm.keyLevels.tp1,
+                    tp2: fm.keyLevels.tp2,
+                    riskRewardToTP2: active?.riskRewardToTP2 ?? null,
+                }
+            })() : undefined
 
             const reactionCtx: StoryReactionContext = {
                 userId, pair, episodeId: episode.id,
                 episodeNumber, seasonNumber, episodeType,
                 currentPrice: data.currentPrice, atr14: data.atr14,
                 atr50: data.atr50, volatilityStatus: data.volatilityStatus,
-                fractalAnalysis, harmonicConvergence,
+                fractalAnalysis, fastMatrix,
             }
 
             if (episodeType === 'position_entry') {

@@ -106,16 +106,15 @@ ${amdSummary}
 ## LIQUIDITY ZONES
 ${liquiditySummary}
 
-## HARMONIC CONVERGENCE MATRIX STATUS
-${data.harmonicConvergence ? `**Overall Phase**: ${data.harmonicConvergence.overallPhase}/4 | Score: ${data.harmonicConvergence.overallScore}/100 | Direction: ${data.harmonicConvergence.direction}
-- Phase 1 (Macro Direction): ${data.harmonicConvergence.phase1.status} (${data.harmonicConvergence.phase1.score}%) ��� ${data.harmonicConvergence.phase1.details}
-  Trend: ${data.harmonicConvergence.phase1.primaryTrend} | Filter: ${data.harmonicConvergence.phase1.directionalFilter} | HH: ${data.harmonicConvergence.phase1.dailySwingHighs} | HL: ${data.harmonicConvergence.phase1.dailySwingLows} | Weekly Aligned: ${data.harmonicConvergence.phase1.weeklyAligned} | Volume: ${data.harmonicConvergence.phase1.volumeConfirms}
-- Phase 2 (Harmonic Time): ${data.harmonicConvergence.phase2.status} (${data.harmonicConvergence.phase2.score}%) — ${data.harmonicConvergence.phase2.details}
-  M45 Correction: ${data.harmonicConvergence.phase2.m45CorrectionDetected ? 'YES' : 'NO'} | M15 Sub-waves: ${data.harmonicConvergence.phase2.m15SubWaveCount}/3 | M45 Cycles: ${data.harmonicConvergence.phase2.m45CyclesElapsed}/6 | Temporal Exhaustion: ${data.harmonicConvergence.phase2.temporalExhaustionReached ? 'YES' : 'NO'} | Harmonic×9: ${data.harmonicConvergence.phase2.harmonicMultipleOf9 ? 'YES' : 'NO'}
-- Phase 3 (Trap Geometry): ${data.harmonicConvergence.phase3.status} (${data.harmonicConvergence.phase3.score}%) — ${data.harmonicConvergence.phase3.details}
-  Eulerian Eq: ${data.harmonicConvergence.phase3.eulerianEquilibrium?.toFixed(5) ?? 'N/A'} | Bowtie Apex: ${data.harmonicConvergence.phase3.bowtieApex ? `${data.harmonicConvergence.phase3.bowtieApex.price.toFixed(5)}` : 'N/A'} | Apex@Eq: ${data.harmonicConvergence.phase3.bowtieApexAtEquilibrium ? 'YES' : 'NO'} | Spring: ${data.harmonicConvergence.phase3.wyckoffSpringDetected ? `YES at ${data.harmonicConvergence.phase3.springPrice?.toFixed(5)}` : 'NO'}
-- Phase 4 (Execution): Entry=${data.harmonicConvergence.phase4.entryTrigger ? 'TRIGGERED' : 'waiting'} | SL=${data.harmonicConvergence.phase4.stopLoss?.toFixed(5) ?? 'N/A'} | TP1=${data.harmonicConvergence.phase4.tp1?.toFixed(5) ?? 'N/A'} | TP2=${data.harmonicConvergence.phase4.tp2?.toFixed(5) ?? 'N/A'} | R:R(TP2)=${data.harmonicConvergence.phase4.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1 | Valid: ${data.harmonicConvergence.phase4.positionValid ? 'YES' : 'NO'}
-- **Narrative**: ${data.harmonicConvergence.narrative}` : 'Harmonic Convergence detection unavailable (missing W/D/M15/M45/H1 data).'}
+## THE FAST MATRIX STATUS
+${data.fastMatrix ? `**Active Scenario**: ${data.fastMatrix.activeScenario ?? 'NONE'} | Overall Score: ${data.fastMatrix.overallScore}/100 | Direction: ${data.fastMatrix.direction}
+- **H1 Macro**: Trend: ${data.fastMatrix.macro.trend} | Filter: ${data.fastMatrix.macro.filter} | HH: ${data.fastMatrix.macro.higherHighs} | HL: ${data.fastMatrix.macro.higherLows} | LH: ${data.fastMatrix.macro.lowerHighs} | LL: ${data.fastMatrix.macro.lowerLows}
+- **Scenario A** (${data.fastMatrix.scenarios.A.label}): ${data.fastMatrix.scenarios.A.active ? 'ACTIVE' : 'inactive'} | Score: ${data.fastMatrix.scenarios.A.score}/100 | Dir: ${data.fastMatrix.scenarios.A.direction} | Wave: ${data.fastMatrix.scenarios.A.waveType} | RSI Div: ${data.fastMatrix.scenarios.A.rsiDivergence.detected ? 'YES' : 'NO'} | MACD Div: ${data.fastMatrix.scenarios.A.macdDivergence.detected ? 'YES' : 'NO'} | Vol Climax: ${data.fastMatrix.scenarios.A.volumeClimax.detected ? 'YES' : 'NO'} | CHoCH: ${data.fastMatrix.scenarios.A.choch.detected ? 'YES' : 'NO'} | Stoch Reload: ${data.fastMatrix.scenarios.A.stochasticReload.detected ? 'YES' : 'NO'} | Status: ${data.fastMatrix.scenarios.A.status}
+- **Scenario B** (${data.fastMatrix.scenarios.B.label}): ${data.fastMatrix.scenarios.B.active ? 'ACTIVE' : 'inactive'} | Score: ${data.fastMatrix.scenarios.B.score}/100 | Dir: ${data.fastMatrix.scenarios.B.direction} | Wave: ${data.fastMatrix.scenarios.B.waveType} | RSI Div: ${data.fastMatrix.scenarios.B.rsiDivergence.detected ? 'YES' : 'NO'} | MACD Div: ${data.fastMatrix.scenarios.B.macdDivergence.detected ? 'YES' : 'NO'} | Vol Climax: ${data.fastMatrix.scenarios.B.volumeClimax.detected ? 'YES' : 'NO'} | CHoCH: ${data.fastMatrix.scenarios.B.choch.detected ? 'YES' : 'NO'} | Stoch Reload: ${data.fastMatrix.scenarios.B.stochasticReload.detected ? 'YES' : 'NO'} | Status: ${data.fastMatrix.scenarios.B.status}
+- **Scenario C** (${data.fastMatrix.scenarios.C.label}): ${data.fastMatrix.scenarios.C.active ? 'ACTIVE' : 'inactive'} | Score: ${data.fastMatrix.scenarios.C.score}/100 | Dir: ${data.fastMatrix.scenarios.C.direction} | Wave: ${data.fastMatrix.scenarios.C.waveType} | RSI Div: ${data.fastMatrix.scenarios.C.rsiDivergence.detected ? 'YES' : 'NO'} | MACD Div: ${data.fastMatrix.scenarios.C.macdDivergence.detected ? 'YES' : 'NO'} | Vol Climax: ${data.fastMatrix.scenarios.C.volumeClimax.detected ? 'YES' : 'NO'} | CHoCH: ${data.fastMatrix.scenarios.C.choch.detected ? 'YES' : 'NO'} | Stoch Reload: ${data.fastMatrix.scenarios.C.stochasticReload.detected ? 'YES' : 'NO'} | Status: ${data.fastMatrix.scenarios.C.status}
+- **Scenario D** (${data.fastMatrix.scenarios.D.label}): ${data.fastMatrix.scenarios.D.active ? 'ACTIVE' : 'inactive'} | Score: ${data.fastMatrix.scenarios.D.score}/100 | Dir: ${data.fastMatrix.scenarios.D.direction} | Wave: ${data.fastMatrix.scenarios.D.waveType} | RSI Div: ${data.fastMatrix.scenarios.D.rsiDivergence.detected ? 'YES' : 'NO'} | MACD Div: ${data.fastMatrix.scenarios.D.macdDivergence.detected ? 'YES' : 'NO'} | Vol Climax: ${data.fastMatrix.scenarios.D.volumeClimax.detected ? 'YES' : 'NO'} | CHoCH: ${data.fastMatrix.scenarios.D.choch.detected ? 'YES' : 'NO'} | Stoch Reload: ${data.fastMatrix.scenarios.D.stochasticReload.detected ? 'YES' : 'NO'} | Status: ${data.fastMatrix.scenarios.D.status}
+- **Key Levels**: Golden Pocket: ${data.fastMatrix.keyLevels.goldenPocketLow?.toFixed(5) ?? 'N/A'}–${data.fastMatrix.keyLevels.goldenPocketHigh?.toFixed(5) ?? 'N/A'} | Diamond Box: ${data.fastMatrix.keyLevels.diamondBoxLow?.toFixed(5) ?? 'N/A'}–${data.fastMatrix.keyLevels.diamondBoxHigh?.toFixed(5) ?? 'N/A'} | Equilibrium: ${data.fastMatrix.keyLevels.equilibriumPrice?.toFixed(5) ?? 'N/A'} | Spring: ${data.fastMatrix.keyLevels.springPrice?.toFixed(5) ?? 'N/A'} | Entry: ${data.fastMatrix.keyLevels.entryPrice?.toFixed(5) ?? 'N/A'} | SL: ${data.fastMatrix.keyLevels.stopLoss?.toFixed(5) ?? 'N/A'} | TP1: ${data.fastMatrix.keyLevels.tp1?.toFixed(5) ?? 'N/A'} | TP2: ${data.fastMatrix.keyLevels.tp2?.toFixed(5) ?? 'N/A'}
+- **Narrative**: ${data.fastMatrix.narrative}` : 'Fast Matrix detection unavailable (missing required timeframe data).'}
 
 ## YOUR TASK
 Analyze ALL the data above and produce a JSON response:
@@ -134,27 +133,28 @@ Analyze ALL the data above and produce a JSON response:
   "optimization_suggestions": ["What indicators are most relevant given current structure?"]
 }
 
-**CONFLUENCE STRATEGY ASSESSMENT (PRIMARY FRAMEWORK)**: Frame your entire structural analysis through the 4-phase Confluence system (Dow Theory + Wyckoff + Elliott Wave):
-- **Phase 1 (Dow Theory Filter)**: Is the Daily trend established (2+ HH/HL or LH/LL)? Does the Weekly align? Does volume confirm? No trade without a confirmed trend.
-- **Phase 2 (Wyckoff Battleground)**: Is there an accumulation/distribution range? Has a Spring (liquidity sweep below range) or UTAD (sweep above) occurred? Smart money trapping retail.
-- **Phase 3 (EW Sniper Entry)**: After the Spring, did a Sign of Strength (SOS) breakout occur? Is price pulling back to the 50-61.8% Fib zone (Last Point of Support / LPS)? Holds above Spring?
-- **Phase 4 (Risk/Reward)**: SL below Spring price (thesis invalidation). TP at 161.8% Fibonacci extension. R:R must be >= 3:1.
-- State which Confluence phase this pair is currently in and what needs to happen to advance.
-- If no setup is active, state "Phase 0 — waiting for Dow Theory trend confirmation on Daily."
+**THE FAST MATRIX ASSESSMENT (PRIMARY FRAMEWORK)**: Frame your entire structural analysis through the Fast Matrix system (Dow Theory + Elliott Wave + Smart Money Concepts):
+- **Phase 1 (H1 Macro Trend)**: Is the H1 Dow Theory structure established? Look for 2+ Higher Highs/Higher Lows (bullish) or Lower Highs/Lower Lows (bearish). Check the directional filter alignment. No trade without a confirmed H1 macro trend.
+- **Scenario Identification**: Which of A/B/C/D is active? Scenario A/B are Wave 2 corrections (bullish/bearish). Scenario C/D are Wave 4 corrections (bullish/bearish). Identify the corrective wave type and whether price is in the Golden Pocket (61.8-65% Fib retracement).
+- **Confirmation (M15)**: RSI divergence detected on M15? MACD divergence detected on M15? These confirm the correction is exhausting and reversal is imminent.
+- **Trigger (M1)**: Volume climax on M1 (institutional footprint). Change of Character (CHoCH) — structural break confirming direction shift. Stochastic reload from oversold/overbought. All three must fire for entry.
+- **Execution**: SL below/above the Spring price (thesis invalidation). TP1 at 100% Fibonacci extension. TP2 at 161.8% Fibonacci extension. Risk 2% of account per trade. R:R must be >= 2:1 to TP2.
+- State which Fast Matrix scenario this pair is currently in and what needs to happen to advance to the next stage.
+- If no setup is active, state "No active scenario — waiting for H1 macro trend confirmation."
 
 **Wyckoff + AMD Integration**: The AMD detector's "accumulation" IS Wyckoff accumulation. The liquidity mapper's "stop_hunt" IS a Wyckoff Spring. Connect these explicitly in your analysis.
 
-**Elliott Wave Structure**: Wave analysis validates the Confluence framework:
+**Elliott Wave Structure**: Wave analysis validates the Fast Matrix framework:
 - **IMPULSIVE waves (5-wave)**: Wave 3 is the post-Spring markup — the explosive move after accumulation.
 - **CORRECTIVE waves (3-wave)**: The LPS pullback IS the corrective wave before Wave 3 continuation.
 - **Fibonacci levels**: 50-61.8% retracements for LPS entry. 161.8% extensions for TP.
 
-**Volume Flow Intelligence**: Use volume data to validate Confluence entries:
+**Volume Flow Intelligence**: Use volume data to validate Fast Matrix entries:
 - **VPOC** = strongest S/R level. If it aligns with the LPS entry zone, that's triple confluence.
 - **HVN** = real S/R where big money sits. Accumulation range at an HVN = highest conviction.
 - **Volume Exhaustion** during accumulation = Phase 2 confirmation (smart money absorbing supply).
 
-**Cross-Market Validation**: If your Confluence thesis contradicts the cross-market risk appetite, note this tension explicitly. Cross-market divergences can invalidate even high-scoring setups.
+**Cross-Market Validation**: If your Fast Matrix thesis contradicts the cross-market risk appetite, note this tension explicitly. Cross-market divergences can invalidate even high-scoring setups.
 
 Be precise with price levels. Reference specific timeframes. Look for confluences where multiple TFs tell the same story.`
 }
