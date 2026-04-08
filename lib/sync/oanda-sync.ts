@@ -34,14 +34,20 @@ export async function syncOandaTrades(userId: string): Promise<SyncResult> {
         errors: []
     }
 
-    // Get reset timestamp to filter old trades (demo account resets)
+    // Get reset timestamp AND last sync timestamp to filter old trades
     const { data: profile } = await supabase
         .from('trader_profile')
-        .select('last_demo_reset_at')
+        .select('last_demo_reset_at, last_sync_at')
         .eq('user_id', userId)
         .single()
 
     const resetCutoff = profile?.last_demo_reset_at ? new Date(profile.last_demo_reset_at) : null
+    const syncCutoff = profile?.last_sync_at ? new Date(profile.last_sync_at) : null
+
+    // Use the most recent cutoff (whichever is later)
+    const effectiveCutoff = resetCutoff && syncCutoff
+        ? (resetCutoff > syncCutoff ? resetCutoff : syncCutoff)
+        : (resetCutoff || syncCutoff)
 
     // 1. Fetch from OANDA (no cache)
     const [openResult, closedResult] = await Promise.all([
@@ -56,17 +62,17 @@ export async function syncOandaTrades(userId: string): Promise<SyncResult> {
         throw new Error(`Failed to fetch closed trades: ${JSON.stringify(closedResult.error)}`)
     }
 
-    // Filter out trades that were opened before the reset timestamp
-    const filterByResetDate = (trades: OandaTrade[]) => {
-        if (!resetCutoff) return trades
+    // Filter out trades that were opened before the effective cutoff (reset or last sync)
+    const filterByDate = (trades: OandaTrade[]) => {
+        if (!effectiveCutoff) return trades
         return trades.filter(t => {
             const openTime = new Date(t.openTime)
-            return openTime >= resetCutoff
+            return openTime >= effectiveCutoff
         })
     }
 
-    const oandaOpenTrades = filterByResetDate(openResult.data)
-    const oandaClosedTrades = filterByResetDate(closedResult.data)
+    const oandaOpenTrades = filterByDate(openResult.data)
+    const oandaClosedTrades = filterByDate(closedResult.data)
 
     // 2. Load all local trades with oanda_trade_id
     const { data: localTrades, error: localErr } = await supabase
@@ -264,6 +270,16 @@ export async function syncOandaTrades(userId: string): Promise<SyncResult> {
         closed_updated: result.closedUpdated,
         errors: result.errors
     })
+
+    // 6. Update last_sync_at timestamp (for next sync to start from this point)
+    await supabase
+        .from('trader_profile')
+        .upsert({
+            user_id: userId,
+            last_sync_at: new Date().toISOString()
+        }, {
+            onConflict: 'user_id'
+        })
 
     return result
 }

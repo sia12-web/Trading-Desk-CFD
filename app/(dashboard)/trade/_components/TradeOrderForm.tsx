@@ -555,8 +555,8 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                     />
                                     <p className="text-[10px] text-neutral-500 font-mono">
                                         {sizeMode === 'margin'
-                                            ? (isCrypto ? `≈ ${units} ${baseCurrency}` : `≈ ${units.toLocaleString()} units`)
-                                            : (isCrypto ? `≈ $${marginRequired.toFixed(2)} position value` : `≈ ${marginRequired.toFixed(2)} ${accountCurrency} margin`)}
+                                            ? (isCrypto ? `≈ ${units.toFixed(8)} ${baseCurrency}` : `≈ ${units.toLocaleString()} units`)
+                                            : (isCrypto ? `≈ $${marginRequired.toFixed(2)} USD` : `≈ ${marginRequired.toFixed(2)} ${accountCurrency} margin`)}
                                     </p>
                                 </div>
                                 <div className="space-y-4">
