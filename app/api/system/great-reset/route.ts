@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
  * - All trades and positions (manual + story-driven)
  * - All trade screenshots, strategies, P&L records + storage files
  * - All execution logs
+ * - All fundamentals sessions and messages
  * - All AI memory (desk state, messages, meetings, trader profile, process scores)
  * - All story content (episodes, bible, scenarios, agent reports)
  * - All CMS results
@@ -16,7 +17,7 @@ import { NextResponse } from 'next/server'
  * KEEPS:
  * - Trading gurus (system-level)
  * - Indicator calibrations (optimization results)
- * - Strategy templates (True Fractal checklist)
+ * - Strategy templates (Fast Matrix checklist)
  * - Risk rules (user preferences)
  * - Story subscriptions (which pairs to watch)
  * - OANDA connection
@@ -93,6 +94,7 @@ export async function POST() {
             'execution_log',               // FK: trade_id (NO CASCADE — must delete before trades)
             'process_scores',              // FK: trade_id (has CASCADE but clean up explicitly)
             'story_episodes',              // FK: triggered_scenario_id (sometimes)
+            'fundamental_messages',        // FK: session_id (fundamentals messages)
         ]
 
         for (const table of phase1Tables) {
@@ -109,6 +111,9 @@ export async function POST() {
             // Trading History (journal = trades + trade_screenshots + trade_strategies + trade_pnl)
             'trades',                       // All trades (manual + story)
             'story_positions',              // Story-driven positions
+
+            // Fundamentals
+            'fundamental_sessions',         // Fundamentals analysis sessions
 
             // AI Memory
             'desk_state',                   // Character memory + trading scars
@@ -159,6 +164,7 @@ export async function POST() {
 
         const categories = {
             trading_history: ['trades', 'story_positions', 'story_position_adjustments', 'trade_screenshots', 'trade_strategies', 'trade_pnl', 'execution_log'],
+            fundamentals: ['fundamental_sessions', 'fundamental_messages'],
             ai_memory: ['desk_state', 'desk_messages', 'desk_meetings', 'trader_profile', 'process_scores'],
             story_content: ['story_episodes', 'story_scenarios', 'story_bibles', 'story_seasons', 'story_agent_reports'],
             cms_analysis: ['cms_results', 'cms_analyses', 'scenario_analyses'],
