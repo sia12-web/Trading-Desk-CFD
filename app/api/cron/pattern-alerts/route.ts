@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { monitorPatternTriggers, formatTriggerMessage } from '@/lib/correlation/pattern-monitor'
+import { shouldRunCron, getMontrealTime } from '@/lib/utils/trading-hours'
 
 /**
  * CRON: Pattern Alert Monitor
  *
- * Runs every 15 minutes to detect pattern triggers and send Telegram alerts
+ * Runs every 15 minutes during ACTIVE trading sessions only.
+ *
+ * MONTREAL FAST MATRIX SCHEDULE:
+ * ✅ 7:30 AM - 11:30 AM EST (NY core + recon)
+ * ✅ 2:00 AM - 4:00 AM EST (London killzone on Tue/Wed only)
+ * ❌ 8:00 PM - 2:00 AM EST (Asian dead zone)
+ * ❌ 11:30 AM - 8:00 PM EST (NY afternoon noise)
  *
  * Railway Cron: every 15 minutes (cron expression: star-slash-15 star star star star)
  */
@@ -15,7 +22,24 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  console.log('[PatternAlertsCron] Starting pattern monitoring...')
+  // ═══════════════════════════════════════════════════════════════════
+  // MONTREAL FAST MATRIX: Check if we should run during this session
+  // ═══════════════════════════════════════════════════════════════════
+  const cronCheck = shouldRunCron()
+  const montrealTime = getMontrealTime()
+
+  if (!cronCheck.shouldRun) {
+    console.log(`[PatternAlertsCron] SKIPPED at ${montrealTime.toLocaleTimeString('en-US', { timeZone: 'America/Toronto' })} — ${cronCheck.reason}`)
+    return NextResponse.json({
+      skipped: true,
+      session: cronCheck.session,
+      day: cronCheck.day,
+      reason: cronCheck.reason,
+      montrealTime: montrealTime.toISOString(),
+    })
+  }
+
+  console.log(`[PatternAlertsCron] RUNNING at ${montrealTime.toLocaleTimeString('en-US', { timeZone: 'America/Toronto' })} — ${cronCheck.reason}`)
   const startTime = Date.now()
 
   try {
@@ -111,7 +135,10 @@ export async function GET(req: NextRequest) {
       users_monitored: users.length,
       total_triggers: totalTriggers,
       duration,
-      results
+      results,
+      session: cronCheck.session,
+      day: cronCheck.day,
+      montrealTime: montrealTime.toISOString(),
     })
   } catch (error) {
     console.error('[PatternAlertsCron] Fatal error:', error)
