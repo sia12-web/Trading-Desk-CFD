@@ -51,9 +51,8 @@ export async function runGlobalOptimization(userId: string, onProgress?: (msg: s
  */
 export async function calibrateForPairAndTimeframe(userId: string, pair: string, timeframe: Timeframe) {
     // 1. Fetch historical data (250 candles should be enough for DeepSeek to see trends/volatility)
-    // OANDA Granularity Mapping: M -> MN (Monthly). Crypto (CoinGecko) stays 'M'.
-    const isCrypto = pair.startsWith('CRYPTO_')
-    const granularity = (timeframe === 'M' && !isCrypto) ? 'MN' : timeframe
+    // Note: OANDA uses 'M' for monthly, same as our internal timeframe notation
+    const granularity = timeframe
 
     const { data: candles, error } = await getCandles({
         instrument: pair,
