@@ -2,7 +2,7 @@ import { ChecklistItem } from '@/lib/types/database'
 
 export const TRUE_FRACTAL_STRATEGY = {
     name: "The Fast Matrix",
-    description: "H1 Macro Direction → 4 Scenario Matrix (A/B/C/D) → M1 Precision Entry. Scenario A: Bullish Wave 2 (Crash Trap — Golden Pocket on M15). Scenario B: Bullish Wave 4 (Diamond Chop — 1/Price equilibrium box on M15). Scenario C: Bearish Wave 2 (Relief Trap). Scenario D: Bearish Wave 4 (Diamond Chop). Universal execution: M1 CHoCH + Stochastic reload. SL: 1 pip below Spring/above Upthrust. TP1: 100% ext (50% close). TP2: 161.8% ext (50% close). 2% risk.",
+    description: "H1 Macro Direction → 4 Scenario Matrix (A/B/C/D) → M1 Precision Entry. Scenario A: Bullish Wave 2 (Crash Trap — Golden Pocket on M15). Scenario B: Bullish Wave 4 (Diamond Chop — 1/Price equilibrium box on M15). Scenario C: Bearish Wave 2 (Relief Trap). Scenario D: Bearish Wave 4 (Diamond Chop). Universal execution: M1 CHoCH + Stochastic reload. SL: 1 pip below Spring/above Upthrust. TP1: 100% ext (50% close). TP2: 161.8% ext (50% close). 1% risk.",
     checklist_items: [
         {
             id: "fm-1",
@@ -49,8 +49,8 @@ export const TRUE_FRACTAL_STRATEGY = {
         {
             id: "fm-8",
             category: "execution",
-            label: "Position sized at exactly 2% risk ($17 on $850)",
-            logical_condition: "Units = (accountBalance * 0.02) / |entryPrice - stopLoss|. No exceptions. After TP1 hit, move SL to entry for risk-free runner to TP2."
+            label: "Position sized at exactly 1% risk ($8.50 on $850)",
+            logical_condition: "Units = (accountBalance * 0.01) / |entryPrice - stopLoss|. No exceptions. After TP1 hit, move SL to entry for risk-free runner to TP2."
         }
     ] as ChecklistItem[]
 }

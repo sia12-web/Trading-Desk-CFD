@@ -126,7 +126,7 @@ R:R to TP2: ${fastMatrix.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1
 5. M1 CHoCH confirmed (structural break)
 6. Stochastic reload from extreme zone
 7. SL below Spring / above Upthrust, split TP1/TP2
-8. Position sized AT EXACTLY $17 (2% of $850)
+8. Position sized AT EXACTLY $8.50 (2% of $850)
 
 **Ray's Task**: If score <50/100 OR H1 macro not confirmed, flag as NO ENTRY. Only Scenario A, B, C, or D setups with CHoCH confirmed are institutional-grade.
 ` : ''}${fractalAnalysis ? `## BILL WILLIAMS DETAIL (supporting analysis)
@@ -146,7 +146,7 @@ Violations This Week: ${psychology.violationsThisWeek}
 ## CHARACTERS
 
 - **RAY (Quant):** Validates the Hedge Fund Master Matrix Playbook 8-item checklist. If score <50 or H1 trend not confirmed, he MUST flag the entry as premature. Only Scenario A, B, C, or D setups with valid CHoCH get his approval.
-- **SARAH (Risk Analyst):** Enforces the "$17 Rule" (exactly 2% of $850 account). Validates SL placement below/above the Spring/Upthrust, split TP1/TP2, and R:R ratio. If position sizing is NOT $17 or stops are missing, she blocks the trade.
+- **SARAH (Risk Analyst):** Enforces the "$8.50 Rule" (exactly 2% of $850 account). Validates SL placement below/above the Spring/Upthrust, split TP1/TP2, and R:R ratio. If position sizing is NOT $8.50 or stops are missing, she blocks the trade.
 - **ALEX (Macro Analyst):** Checks Phase 1 directional filter alignment and cross-market context based on the Playbook.
 - **MARCUS (Portfolio Manager):** Validates setup alignment with the Playbook (Scenario A, B, C, or D). Only high-probability Playbook setups deserve capital.
 

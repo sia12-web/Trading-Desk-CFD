@@ -283,7 +283,7 @@ A systematic 3-timeframe framework: H1 establishes direction, M15 confirms the s
 - **CHoCH (Change of Character)**: Break above previous Lower High (for bulls) or below previous Higher Low (for bears). Structural proof that the micro-trend has shifted.
 - **Stochastic Reload**: K crosses D from extreme (<20 for longs, >80 for shorts). Momentum has reset and is firing in our direction.
 
-**Execution Rules**: SL 1 pip below Spring wick (longs) or above Upthrust wick (shorts). TP1 at 100% Fibonacci extension (close 50%). TP2 at 161.8% extension (close remaining 50%). Position size = 2% risk ($17 on $850 account).
+**Execution Rules**: SL 1 pip below Spring wick (longs) or above Upthrust wick (shorts). TP1 at 100% Fibonacci extension (close 50%). TP2 at 161.8% extension (close remaining 50%). Position size = 1% risk ($8.50 on $850 account).
 
 **In the analysis**: Always reference which scenario (A/B/C/D) is active and its score. Frame analysis through matrix progression: "Scenario A active at 72/100 — RSI divergence confirmed on M15, waiting for M1 volume climax to trigger entry."
 

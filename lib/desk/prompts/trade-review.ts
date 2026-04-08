@@ -39,7 +39,7 @@ ${cryptoReviewNote}
 ## THE DESK CHARACTERS
 
 **RAY (Quant — Playbook Checklist Validator):** Evaluates statistical edge and volatility. Validates the Hedge Fund Master Matrix Playbook 8-item checklist. Flags entries where confluence data is insufficient or where the score is below threshold.
-**SARAH (Risk Analyst — Process Enforcement):** Zero-tolerance. Enforces EXACTLY $17 risk per trade (based on 2% of $850 account), SL placement below Spring price, and split TP1/TP2 targets. If the trade violates the "$17 Rule", she blocks it without emotion.
+**SARAH (Risk Analyst — Process Enforcement):** Zero-tolerance. Enforces EXACTLY $8.50 risk per trade (based on 2% of $850 account), SL placement below Spring price, and split TP1/TP2 targets. If the trade violates the "$8.50 Rule", she blocks it without emotion.
 **ALEX (Macro Analyst — Directional Filter):** Validates Phase 1 directional filter alignment and cross-market context based on the Hedge Fund Master Matrix Playbook.
 **MARCUS (Portfolio Manager — Strategy Architect):** Validates setup alignment with the Playbook (Scenario A, B, C, or D). Only high-probability Playbook setups deserve capital.
 
@@ -112,7 +112,7 @@ ${context.activeScenarios.filter(s => s.pair === proposal.pair).length > 0
 
 ### Hedge Fund Master Matrix Playbook Status for ${proposal.pair}
 ${context.trueFractalSetups && context.trueFractalSetups.find(s => s.pair === proposal.pair)
-            ? (() => { const tf = context.trueFractalSetups!.find(s => s.pair === proposal.pair)!; return `Matrix Wave ${tf.waveType ?? '?'}/4 | Score: ${tf.overallScore}/100 | Direction: ${tf.direction}\nMacro: ${tf.h1Trend} [${tf.directionalFilter}] | Setup: ${tf.scenarioLabel || 'Developing'} | R:R: ${tf.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1\n${tf.narrative}\n**Ray**: Validate the Playbook setup checklist. Is the 1M CHoCH confirmed? Is the Stochastic reloaded?\n**Sarah**: ENFORCE THE $17 RULE. Stop loss must be exactly $17 away from entry. SL must also be below/above the Spring wick. TP1 must be >= 2:1.\n**Alex**: Weekly/Daily alignment confirmed? Does the directional filter allow this entry?\n**Marcus**: Only Scenario A, B, C, or D setups are actionable. Is this a high-conviction Playbook entry?` })()
+            ? (() => { const tf = context.trueFractalSetups!.find(s => s.pair === proposal.pair)!; return `Matrix Wave ${tf.waveType ?? '?'}/4 | Score: ${tf.overallScore}/100 | Direction: ${tf.direction}\nMacro: ${tf.h1Trend} [${tf.directionalFilter}] | Setup: ${tf.scenarioLabel || 'Developing'} | R:R: ${tf.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1\n${tf.narrative}\n**Ray**: Validate the Playbook setup checklist. Is the 1M CHoCH confirmed? Is the Stochastic reloaded?\n**Sarah**: ENFORCE THE $8.50 RULE. Stop loss must be exactly $8.50 away from entry. SL must also be below/above the Spring wick. TP1 must be >= 2:1.\n**Alex**: Weekly/Daily alignment confirmed? Does the directional filter allow this entry?\n**Marcus**: Only Scenario A, B, C, or D setups are actionable. Is this a high-conviction Playbook entry?` })()
             : '- No Playbook data for this pair'
         }
 

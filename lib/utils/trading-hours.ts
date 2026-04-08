@@ -177,26 +177,28 @@ export function shouldRunCron(): {
 }
 
 /**
- * Get volatility multiplier for position sizing based on day of week
+ * DEPRECATED: NOT USED
  *
- * Tuesday/Wednesday = High probability days (1.0x risk)
- * Monday = Messy, reduce risk (0.5x)
- * Thursday/Friday = Deceleration, reduce risk (0.7x)
+ * User prefers fixed 1% risk ($8.50 on $850) regardless of day.
+ * Time-of-day filtering (shouldRunCron) is active, but day-based
+ * risk multipliers are not implemented.
+ *
+ * Montreal schedule focuses on WHEN to trade (core windows),
+ * not HOW MUCH to risk (always 1%).
  */
-export function getDayVolatilityMultiplier(): number {
-  const day = getCurrentTradingDay()
-
-  switch (day) {
-    case 'tuesday':
-    case 'wednesday':
-      return 1.0 // Full $17 risk
-    case 'thursday':
-      return 0.7 // $12 risk
-    case 'monday':
-      return 0.5 // $8.50 risk (observe mode)
-    case 'friday':
-      return 0.0 // NO TRADING on Friday (trap city)
-    default:
-      return 0.5 // Conservative default
-  }
-}
+// export function getDayVolatilityMultiplier(): number {
+//   const day = getCurrentTradingDay()
+//   switch (day) {
+//     case 'tuesday':
+//     case 'wednesday':
+//       return 1.0
+//     case 'thursday':
+//       return 0.7
+//     case 'monday':
+//       return 0.5
+//     case 'friday':
+//       return 0.0
+//     default:
+//       return 0.5
+//   }
+// }
