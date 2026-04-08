@@ -8,6 +8,7 @@ import { mapLiquidityZones } from './liquidity-mapper'
 import { detectFractalSetup } from './fractal-detector'
 import { detectElliottWave } from './elliott-wave-detector'
 import { detectFastMatrix } from './true-fractal-detector'
+import { detectH1ElliottWave } from '@/lib/utils/elliott-wave-h1'
 import { getCorrelationInsights } from './correlation-integrator'
 import { displayToInternalPair, isCrypto } from './asset-config'
 import type { OandaCandle } from '@/lib/types/oanda'
@@ -177,6 +178,16 @@ export async function collectStoryData(
         )
         : undefined
 
+    // ── H1 Elliott Wave State: Only trade Wave 3 and Wave 5 at 0-20% ──
+    const h1WaveState = h1TF
+        ? detectH1ElliottWave(
+            h1TF.candles,
+            h1TF.indicators.rsi || [],
+            h1TF.indicators.macd?.line || [],
+            h1TF.indicators.macd?.signal || []
+        )
+        : undefined
+
     // ATR status from daily
     const dailyTFData = timeframes.find(t => t.timeframe === 'D')
     const atr14 = dailyTFData ? calculateATR(dailyTFData.candles, 14, pipLocation) : 0
@@ -196,6 +207,7 @@ export async function collectStoryData(
         fastMatrix,
         harmonicConvergence: fastMatrix,
         trueFractal: fastMatrix,
+        h1WaveState,
         amdPhases,
         liquidityZones,
         volatilityStatus,

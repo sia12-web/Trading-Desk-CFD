@@ -216,6 +216,7 @@ export interface StoryDataPayload {
     fastMatrix?: FastMatrixSetup                     // The Fast Matrix scenario analysis
     harmonicConvergence?: FastMatrixSetup            // Backward compat alias
     trueFractal?: FastMatrixSetup                    // Backward compat alias
+    h1WaveState?: import('@/lib/utils/elliott-wave-h1').H1WaveState  // H1 Elliott Wave position (Wave 1-5)
     correlationInsights?: CorrelationInsight  // Hedge fund grade: multi-currency pattern analysis
     recent_trades?: Array<{
         direction: string

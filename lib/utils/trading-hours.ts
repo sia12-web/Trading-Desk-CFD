@@ -1,204 +1,100 @@
 /**
- * Trading Hours Logic — Montreal Fast Matrix Schedule
+ * Trading Hours Enforcement
  *
- * Enforces time-of-day and day-of-week filtering for cron jobs
- * to respect institutional volume patterns and avoid low-liquidity traps.
+ * CRITICAL RULE: Only trade 9:00 AM - 4:30 PM EST (New York hours)
+ * - No positions held after 4:30 PM
+ * - Auto-flatten any open positions at 4:25 PM (5-minute buffer)
  */
 
-export type TradingSession =
-  | 'asian_dead'      // 8:00 PM - 2:00 AM EST (low volume, observation only)
-  | 'london_killzone' // 2:00 AM - 4:00 AM EST (optional sniper window)
-  | 'recon'           // 7:30 AM - 8:00 AM EST (pre-market analysis)
-  | 'ny_core'         // 8:00 AM - 11:30 AM EST (PRIMARY TRADING WINDOW)
-  | 'ny_afternoon'    // 11:30 AM - 8:00 PM EST (lunch noise, avoid)
-
-export type TradingDay =
-  | 'monday'          // Range setter, observation only
-  | 'tuesday'         // Macro turn, hunt judas swing
-  | 'wednesday'       // Expansion, ride Wave 3
-  | 'thursday'        // Deceleration, hit and run
-  | 'friday'          // Trap city, defensive only
-
-/**
- * Get current Montreal time (EST/EDT aware)
- */
-export function getMontrealTime(): Date {
-  // Montreal is America/Toronto timezone
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Toronto' }))
+export interface TradingHoursStatus {
+    isOpen: boolean
+    message: string
+    currentTimeEST: Date
+    marketPhase: 'pre-market' | 'active' | 'closing-soon' | 'closed'
+    minutesUntilClose: number | null
+    shouldFlattenPositions: boolean
 }
 
-/**
- * Determine current trading session based on Montreal time
- */
-export function getCurrentSession(): TradingSession {
-  const now = getMontrealTime()
-  const hour = now.getHours()
-  const minute = now.getMinutes()
-  const timeInMinutes = hour * 60 + minute
+export function checkTradingHours(now: Date = new Date()): TradingHoursStatus {
+    const estTime = convertToEST(now)
+    const hour = estTime.getHours()
+    const minute = estTime.getMinutes()
+    const currentMinutes = hour * 60 + minute
 
-  // 8:00 PM (20:00) - 2:00 AM (02:00) next day
-  if (timeInMinutes >= 20 * 60 || timeInMinutes < 2 * 60) {
-    return 'asian_dead'
-  }
+    const marketOpen = 9 * 60  // 9:00 AM
+    const marketClose = 16 * 60 + 30  // 4:30 PM
+    const flattenTime = marketClose - 5  // 4:25 PM
 
-  // 2:00 AM - 4:00 AM
-  if (timeInMinutes >= 2 * 60 && timeInMinutes < 4 * 60) {
-    return 'london_killzone'
-  }
+    const isOpen = currentMinutes >= marketOpen && currentMinutes < marketClose
+    const shouldFlatten = currentMinutes >= flattenTime && currentMinutes < marketClose
+    const minutesUntilClose = isOpen ? marketClose - currentMinutes : null
 
-  // 7:30 AM - 8:00 AM
-  if (timeInMinutes >= 7 * 60 + 30 && timeInMinutes < 8 * 60) {
-    return 'recon'
-  }
+    let marketPhase: TradingHoursStatus['marketPhase']
+    let message: string
 
-  // 8:00 AM - 11:30 AM
-  if (timeInMinutes >= 8 * 60 && timeInMinutes < 11 * 60 + 30) {
-    return 'ny_core'
-  }
+    if (currentMinutes < marketOpen) {
+        marketPhase = 'pre-market'
+        const minutesUntilOpen = marketOpen - currentMinutes
+        message = `Pre-market. NY opens in ${minutesUntilOpen} minutes`
+    } else if (currentMinutes >= marketOpen && currentMinutes < flattenTime) {
+        marketPhase = 'active'
+        message = `✅ TRADING HOURS ACTIVE (${minutesUntilClose} min until close)`
+    } else if (shouldFlatten) {
+        marketPhase = 'closing-soon'
+        message = `⚠️ CLOSING SOON - Flatten all positions (${minutesUntilClose} min left)`
+    } else {
+        marketPhase = 'closed'
+        message = `❌ MARKET CLOSED. No positions allowed.`
+    }
 
-  // 11:30 AM - 8:00 PM (rest of the day)
-  return 'ny_afternoon'
+    return { isOpen, message, currentTimeEST: estTime, marketPhase, minutesUntilClose, shouldFlattenPositions: shouldFlatten }
 }
 
-/**
- * Determine current trading day based on Montreal time
- */
-export function getCurrentTradingDay(): TradingDay {
-  const now = getMontrealTime()
-  const dayOfWeek = now.getDay() // 0 = Sunday, 1 = Monday, ..., 5 = Friday, 6 = Saturday
-
-  switch (dayOfWeek) {
-    case 1: return 'monday'
-    case 2: return 'tuesday'
-    case 3: return 'wednesday'
-    case 4: return 'thursday'
-    case 5: return 'friday'
-    default: return 'monday' // Weekend defaults to Monday (market closed anyway)
-  }
+function convertToEST(utcDate: Date): Date {
+    const estOffset = -5 * 60
+    const localOffset = utcDate.getTimezoneOffset()
+    const totalOffset = estOffset - localOffset
+    return new Date(utcDate.getTime() + (totalOffset * 60 * 1000))
 }
 
-/**
- * Should cron jobs run during this session?
- *
- * ACTIVE SESSIONS (run crons):
- * - recon (7:30-8:00 AM): Prepare for trading day
- * - ny_core (8:00-11:30 AM): PRIMARY WINDOW
- * - london_killzone (2:00-4:00 AM): Optional, only on Tuesday/Wednesday
- *
- * DEAD SESSIONS (skip crons):
- * - asian_dead (8 PM - 2 AM): Low volume, observation only
- * - ny_afternoon (11:30 AM - 8 PM): Lunch noise, no edge
- */
-export function shouldRunCron(): {
-  shouldRun: boolean
-  session: TradingSession
-  day: TradingDay
-  reason: string
-} {
-  const session = getCurrentSession()
-  const day = getCurrentTradingDay()
-
-  // Always skip weekend
-  const now = getMontrealTime()
-  const dayOfWeek = now.getDay()
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
-    return {
-      shouldRun: false,
-      session,
-      day,
-      reason: 'Weekend — market closed'
+export function canEnterTrade(now: Date = new Date()): { allowed: boolean; reason: string } {
+    const status = checkTradingHours(now)
+    if (!status.isOpen) {
+        return { allowed: false, reason: 'Trading hours closed (9 AM - 4:30 PM EST only)' }
     }
-  }
-
-  // PRIMARY WINDOW: Always run during NY core hours
-  if (session === 'ny_core') {
-    return {
-      shouldRun: true,
-      session,
-      day,
-      reason: 'NY core window — maximum volume and opportunity'
+    if (status.shouldFlattenPositions) {
+        return { allowed: false, reason: `Too close to close (${status.minutesUntilClose} min)` }
     }
-  }
-
-  // RECONNAISSANCE: Run before market open to prepare
-  if (session === 'recon') {
-    return {
-      shouldRun: true,
-      session,
-      day,
-      reason: 'Pre-market reconnaissance — mapping setups'
-    }
-  }
-
-  // LONDON KILLZONE: Only run on high-probability days (Tuesday/Wednesday)
-  if (session === 'london_killzone') {
-    if (day === 'tuesday' || day === 'wednesday') {
-      return {
-        shouldRun: true,
-        session,
-        day,
-        reason: `London killzone on ${day} — high probability macro turn/expansion`
-      }
-    }
-    return {
-      shouldRun: false,
-      session,
-      day,
-      reason: `London killzone on ${day} — low probability, skip to conserve capital`
-    }
-  }
-
-  // DEAD ZONES: Never run
-  if (session === 'asian_dead') {
-    return {
-      shouldRun: false,
-      session,
-      day,
-      reason: 'Asian session — low volume dead zone'
-    }
-  }
-
-  if (session === 'ny_afternoon') {
-    return {
-      shouldRun: false,
-      session,
-      day,
-      reason: 'NY afternoon — lunch noise, no edge'
-    }
-  }
-
-  // Fallback: skip unknown states
-  return {
-    shouldRun: false,
-    session,
-    day,
-    reason: 'Unknown session state'
-  }
+    return { allowed: true, reason: `Active (${status.minutesUntilClose} min left)` }
 }
 
-/**
- * DEPRECATED: NOT USED
- *
- * User prefers fixed 1% risk ($8.50 on $850) regardless of day.
- * Time-of-day filtering (shouldRunCron) is active, but day-based
- * risk multipliers are not implemented.
- *
- * Montreal schedule focuses on WHEN to trade (core windows),
- * not HOW MUCH to risk (always 1%).
- */
-// export function getDayVolatilityMultiplier(): number {
-//   const day = getCurrentTradingDay()
-//   switch (day) {
-//     case 'tuesday':
-//     case 'wednesday':
-//       return 1.0
-//     case 'thursday':
-//       return 0.7
-//     case 'monday':
-//       return 0.5
-//     case 'friday':
-//       return 0.0
-//     default:
-//       return 0.5
-//   }
-// }
+export function shouldForceClosePosition(now: Date = new Date()): { shouldClose: boolean; reason: string } {
+    const status = checkTradingHours(now)
+    if (status.shouldFlattenPositions || (!status.isOpen && status.marketPhase === 'closed')) {
+        return { shouldClose: true, reason: '4:25 PM EST - Auto-flatten all positions' }
+    }
+    return { shouldClose: false, reason: 'Within trading hours' }
+}
+
+export function shouldRunCron(now: Date = new Date()): { shouldRun: boolean; reason: string; session: string; day: string } {
+    const status = checkTradingHours(now)
+    const estTime = convertToEST(now)
+    const hour = estTime.getHours()
+    const dayName = estTime.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' })
+
+    // Determine trading session
+    let session = 'closed'
+    if (hour >= 0 && hour < 3) session = 'asian'
+    else if (hour >= 3 && hour < 9) session = 'london'
+    else if (hour >= 9 && hour < 16) session = 'newyork'
+    else if (hour >= 16 && hour < 24) session = 'closed'
+
+    if (status.isOpen) {
+        return { shouldRun: true, reason: 'Within trading hours', session, day: dayName }
+    }
+    return { shouldRun: false, reason: status.message, session, day: dayName }
+}
+
+export function getMontrealTime(now: Date = new Date()): Date {
+    return convertToEST(now)
+}
