@@ -174,21 +174,94 @@ export async function getKrakenPrices(pairs: string[]): Promise<any[]> {
 }
 
 /**
- * Create market order on Kraken (stub - not implemented yet)
+ * Create market order on Kraken
+ * @param params.pair - Trading pair (e.g., "XXBTZUSD")
+ * @param params.side - Order side: "buy" or "sell"
+ * @param params.volume - Order volume (units)
+ * @param params.validate - If true, validate order without executing
  */
-export async function createKrakenMarketOrder(params: any): Promise<{ data: { order_id: string } | null; error: string }> {
-    return {
-        data: null,
-        error: 'Kraken order execution not implemented yet. Use OANDA for forex or Coinbase for crypto.'
+export async function createKrakenMarketOrder(params: {
+    pair: string
+    side: 'buy' | 'sell'
+    volume: number | string
+    validate?: boolean
+}): Promise<{ data: { order_id: string; txid: string[] } | null; error: string | null }> {
+    try {
+        const result = await privateRequest('AddOrder', {
+            pair: params.pair,
+            type: params.side,
+            ordertype: 'market',
+            volume: params.volume.toString(),
+            validate: params.validate ? 'true' : undefined
+        })
+
+        // Kraken returns: { descr: {...}, txid: ["ORDER-ID-123"] }
+        if (result.txid && result.txid.length > 0) {
+            return {
+                data: {
+                    order_id: result.txid[0],
+                    txid: result.txid
+                },
+                error: null
+            }
+        }
+
+        return {
+            data: null,
+            error: 'No transaction ID returned from Kraken'
+        }
+    } catch (error: any) {
+        return {
+            data: null,
+            error: error.message || 'Failed to create market order'
+        }
     }
 }
 
 /**
- * Create limit order on Kraken (stub - not implemented yet)
+ * Create limit order on Kraken
+ * @param params.pair - Trading pair (e.g., "XXBTZUSD")
+ * @param params.side - Order side: "buy" or "sell"
+ * @param params.volume - Order volume (units)
+ * @param params.price - Limit price
+ * @param params.validate - If true, validate order without executing
  */
-export async function createKrakenLimitOrder(params: any): Promise<{ data: { order_id: string } | null; error: string }> {
-    return {
-        data: null,
-        error: 'Kraken order execution not implemented yet. Use OANDA for forex or Coinbase for crypto.'
+export async function createKrakenLimitOrder(params: {
+    pair: string
+    side: 'buy' | 'sell'
+    volume: number | string
+    price: number | string
+    validate?: boolean
+}): Promise<{ data: { order_id: string; txid: string[] } | null; error: string | null }> {
+    try {
+        const result = await privateRequest('AddOrder', {
+            pair: params.pair,
+            type: params.side,
+            ordertype: 'limit',
+            price: params.price.toString(),
+            volume: params.volume.toString(),
+            validate: params.validate ? 'true' : undefined
+        })
+
+        // Kraken returns: { descr: {...}, txid: ["ORDER-ID-123"] }
+        if (result.txid && result.txid.length > 0) {
+            return {
+                data: {
+                    order_id: result.txid[0],
+                    txid: result.txid
+                },
+                error: null
+            }
+        }
+
+        return {
+            data: null,
+            error: 'No transaction ID returned from Kraken'
+        }
+    } catch (error: any) {
+        return {
+            data: null,
+            error: error.message || 'Failed to create limit order'
+        }
     }
 }

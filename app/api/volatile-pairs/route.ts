@@ -22,12 +22,19 @@ const INSTRUMENTS = [
     { instrument: 'SPX500_USD', name: 'S&P 500', type: 'index' as const },
     { instrument: 'US30_USD', name: 'Dow Jones 30', type: 'index' as const },
     { instrument: 'DE30_EUR', name: 'DAX 40', type: 'index' as const },
+    // Crypto (CoinGecko IDs)
+    { instrument: 'bitcoin', name: 'BTC/USD', type: 'crypto' as const, coinGeckoId: 'bitcoin' },
+    { instrument: 'ethereum', name: 'ETH/USD', type: 'crypto' as const, coinGeckoId: 'ethereum' },
+    { instrument: 'solana', name: 'SOL/USD', type: 'crypto' as const, coinGeckoId: 'solana' },
+    { instrument: 'ripple', name: 'XRP/USD', type: 'crypto' as const, coinGeckoId: 'ripple' },
+    { instrument: 'dogecoin', name: 'DOGE/USD', type: 'crypto' as const, coinGeckoId: 'dogecoin' },
+    { instrument: 'cardano', name: 'ADA/USD', type: 'crypto' as const, coinGeckoId: 'cardano' },
 ]
 
 interface PairVolatility {
     instrument: string
     name: string
-    type: 'forex' | 'index'
+    type: 'forex' | 'index' | 'crypto'
     volatility: number // Percentage: (High-Low)/Close * 100
     price: number
     change1d: number
@@ -39,7 +46,14 @@ export async function GET() {
 
         for (const item of INSTRUMENTS) {
             try {
-                const data = await fetchPairVolatility(item.instrument, item.name, item.type)
+                let data: PairVolatility | null = null
+
+                if (item.type === 'crypto') {
+                    data = await fetchCryptoVolatility((item as any).coinGeckoId, item.name, item.type)
+                } else {
+                    data = await fetchPairVolatility(item.instrument, item.name, item.type)
+                }
+
                 if (data) results.push(data)
                 await new Promise(resolve => setTimeout(resolve, 100))
             } catch (err) {
@@ -88,5 +102,43 @@ async function fetchPairVolatility(instrument: string, name: string, type: 'fore
         volatility,
         price: close,
         change1d
+    }
+}
+
+async function fetchCryptoVolatility(coinGeckoId: string, name: string, type: 'crypto'): Promise<PairVolatility | null> {
+    try {
+        // CoinGecko API: market_chart endpoint for OHLC data (last 1 day)
+        const url = `https://api.coingecko.com/api/v3/coins/${coinGeckoId}/ohlc?vs_currency=usd&days=1`
+        const response = await fetch(url, {
+            headers: process.env.COINGECKO_API_KEY
+                ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
+                : {}
+        })
+
+        if (!response.ok) return null
+
+        const data = await response.json()
+
+        // OHLC format: [[timestamp, open, high, low, close], ...]
+        if (!data || data.length < 1) return null
+
+        const latest = data[data.length - 1]
+        const [, open, high, low, close] = latest
+
+        // Calculate daily range as percentage of close
+        const volatility = ((high - low) / close) * 100
+        const change1d = ((close - open) / open) * 100
+
+        return {
+            instrument: coinGeckoId,
+            name,
+            type,
+            volatility,
+            price: close,
+            change1d
+        }
+    } catch (error) {
+        console.error(`CoinGecko API error for ${coinGeckoId}:`, error)
+        return null
     }
 }
