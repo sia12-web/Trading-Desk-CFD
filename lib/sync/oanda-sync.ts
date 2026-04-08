@@ -44,6 +44,27 @@ export async function syncOandaTrades(userId: string): Promise<SyncResult> {
     const resetCutoff = profile?.last_demo_reset_at ? new Date(profile.last_demo_reset_at) : null
     const syncCutoff = profile?.last_sync_at ? new Date(profile.last_sync_at) : null
 
+    // FIRST SYNC EVER: Set sync timestamp to NOW and return without importing
+    // This prevents importing ALL historical trades on first click
+    if (!syncCutoff && !resetCutoff) {
+        await supabase
+            .from('trader_profile')
+            .upsert({
+                user_id: userId,
+                last_sync_at: new Date().toISOString()
+            }, {
+                onConflict: 'user_id'
+            })
+
+        return {
+            openImported: 0,
+            closedImported: 0,
+            closedUpdated: 0,
+            skipped: 0,
+            errors: []
+        }
+    }
+
     // Use the most recent cutoff (whichever is later)
     const effectiveCutoff = resetCutoff && syncCutoff
         ? (resetCutoff > syncCutoff ? resetCutoff : syncCutoff)
