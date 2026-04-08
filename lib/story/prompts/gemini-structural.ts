@@ -88,6 +88,11 @@ ${cryptoNote}
 **Volatility**: ${data.volatilityStatus} (ATR14: ${data.atr14.toFixed(1)} ${pointLabel})
 **Data collected at**: ${data.collectedAt}
 
+⏰ **TRADING HOURS**: 9:00 AM - 4:30 PM EST (New York hours) ONLY
+- NO positions held after 4:30 PM EST
+- Auto-flatten all positions at 4:25 PM EST (5-minute buffer)
+- Pre-market and post-market analysis is allowed, but NEVER recommend entries outside trading hours
+
 ## FUNDAMENTAL CONTEXT
 - Sentiment: ${news.sentiment}
 - Key drivers: ${news.key_drivers.join(', ')}
@@ -116,6 +121,28 @@ ${data.fastMatrix ? `**Active Scenario**: ${data.fastMatrix.activeScenario ?? 'N
 - **Key Levels**: Golden Pocket: ${data.fastMatrix.keyLevels.goldenPocketLow?.toFixed(5) ?? 'N/A'}–${data.fastMatrix.keyLevels.goldenPocketHigh?.toFixed(5) ?? 'N/A'} | Diamond Box: ${data.fastMatrix.keyLevels.diamondBoxLow?.toFixed(5) ?? 'N/A'}–${data.fastMatrix.keyLevels.diamondBoxHigh?.toFixed(5) ?? 'N/A'} | Equilibrium: ${data.fastMatrix.keyLevels.equilibriumPrice?.toFixed(5) ?? 'N/A'} | Spring: ${data.fastMatrix.keyLevels.springPrice?.toFixed(5) ?? 'N/A'} | Entry: ${data.fastMatrix.keyLevels.entryPrice?.toFixed(5) ?? 'N/A'} | SL: ${data.fastMatrix.keyLevels.stopLoss?.toFixed(5) ?? 'N/A'} | TP1: ${data.fastMatrix.keyLevels.tp1?.toFixed(5) ?? 'N/A'} | TP2: ${data.fastMatrix.keyLevels.tp2?.toFixed(5) ?? 'N/A'}
 - **Narrative**: ${data.fastMatrix.narrative}` : 'Fast Matrix detection unavailable (missing required timeframe data).'}
 
+## H1 ELLIOTT WAVE STATE (TRADE GATING SYSTEM)
+${data.h1WaveState ? `⚠️ **CRITICAL TRADE RULE**: Only trade Wave 3 and Wave 5 at 0-20% completion.
+**Current Wave**: Wave ${data.h1WaveState.currentWave} (${data.h1WaveState.direction})
+**Wave Progress**: ${data.h1WaveState.waveProgress.toFixed(1)}% complete
+**🚦 TRADE ELIGIBLE**: ${data.h1WaveState.tradeEligible ? '✅ YES — Wave 3 or 5 at entry zone (0-20%)' : '❌ NO — Wrong wave or too late in progression'}
+**Confidence**: ${data.h1WaveState.confidence.toFixed(1)}%
+**Wave Structure**:
+  - Wave 1: ${data.h1WaveState.wave1Start?.toFixed(5) ?? 'N/A'} → ${data.h1WaveState.wave1End?.toFixed(5) ?? 'N/A'}
+  - Wave 2 Target: ${data.h1WaveState.wave2End?.toFixed(5) ?? 'N/A'}
+  - Wave 3 Target: ${data.h1WaveState.wave3Target?.toFixed(5) ?? 'N/A'}
+  - Wave 4 Target: ${data.h1WaveState.wave4End?.toFixed(5) ?? 'N/A'}
+  - Wave 5 Target: ${data.h1WaveState.wave5Target?.toFixed(5) ?? 'N/A'}
+**Invalidation Level** (SL): ${data.h1WaveState.invalidationPrice?.toFixed(5) ?? 'N/A'}
+**Confirmations**:
+  - Fibonacci Ratio: ${data.h1WaveState.confirmations.fibRatio ? 'YES' : 'NO'}
+  - Volume Confirm: ${data.h1WaveState.confirmations.volumeConfirm ? 'YES' : 'NO'}
+  - RSI Confirm: ${data.h1WaveState.confirmations.rsiConfirm ? 'YES' : 'NO'}
+  - MACD Confirm: ${data.h1WaveState.confirmations.macdConfirm ? 'YES' : 'NO'}
+  - Structure Intact: ${data.h1WaveState.confirmations.structureIntact ? 'YES' : 'NO'}
+**Narrative**: ${data.h1WaveState.narrative}
+**Signals**: ${data.h1WaveState.signals.join(' | ')}` : 'H1 Wave state detection unavailable (insufficient H1 data).'}
+
 ## YOUR TASK
 Analyze ALL the data above and produce a JSON response:
 {
@@ -133,14 +160,23 @@ Analyze ALL the data above and produce a JSON response:
   "optimization_suggestions": ["What indicators are most relevant given current structure?"]
 }
 
-**THE FAST MATRIX ASSESSMENT (PRIMARY FRAMEWORK)**: Frame your entire structural analysis through the Fast Matrix system (Dow Theory + Elliott Wave + Smart Money Concepts):
+**H1 ELLIOTT WAVE — THE MASTER GATING SYSTEM** (NON-NEGOTIABLE):
+- **Only trade Wave 3 and Wave 5**. Wave 1 and Wave 2 are NEVER tradeable (building structure). Wave 4 is consolidation (skip it).
+- **Entry window: 0-20% of wave progression**. If Wave 3 or 5 is >20% complete, it's TOO LATE — wait for next wave.
+- **If h1WaveState.tradeEligible === false**, then NO TRADE recommendations regardless of Fast Matrix score.
+- **Wave confirmation required**: Fibonacci ratios must validate (Wave 2 = 50-61.8% retrace, Wave 3 = 161.8% ext). Structure must be intact.
+- **Stop Loss**: H1 wave invalidation level (below Wave 1 low for Wave 3, below Wave 4 low for Wave 5).
+- **Take Profit**: Split targets — TP1 at next M15 significant level (close 50%, move SL to breakeven), TP2 at H1 Fibonacci target (Wave 3 → 161.8%, Wave 5 → 100%).
+
+**THE FAST MATRIX ASSESSMENT (EXECUTION FRAMEWORK)**: Frame your entire structural analysis through the Fast Matrix system (Dow Theory + Elliott Wave + Smart Money Concepts):
 - **Phase 1 (H1 Macro Trend)**: Is the H1 Dow Theory structure established? Look for 2+ Higher Highs/Higher Lows (bullish) or Lower Highs/Lower Lows (bearish). Check the directional filter alignment. No trade without a confirmed H1 macro trend.
-- **Scenario Identification**: Which of A/B/C/D is active? Scenario A/B are Wave 2 corrections (bullish/bearish). Scenario C/D are Wave 4 corrections (bullish/bearish). Identify the corrective wave type and whether price is in the Golden Pocket (61.8-65% Fib retracement).
+- **Scenario Identification**: Which of A/B/C/D is active? Scenario A/C are Wave 2 traps (crash/relief). Scenario B/D are Wave 4 chop (diamond boxes). The Fast Matrix identifies WHICH wave correction is happening (2 or 4).
+- **M15 Trap Detection**: Liquidity sweep (wick above/below key level during Asian/London sessions) + Volume spike (2x+ average) + Strong rejection candle = trap confirmed.
 - **Confirmation (M15)**: RSI divergence detected on M15? MACD divergence detected on M15? These confirm the correction is exhausting and reversal is imminent.
-- **Trigger (M1)**: Volume climax on M1 (institutional footprint). Change of Character (CHoCH) — structural break confirming direction shift. Stochastic reload from oversold/overbought. All three must fire for entry.
-- **Execution**: SL below/above the Spring price (thesis invalidation). TP1 at 100% Fibonacci extension. TP2 at 161.8% Fibonacci extension. Risk 2% of account per trade. R:R must be >= 2:1 to TP2.
+- **Trigger (M1)**: Volume climax on M1 (institutional footprint). Change of Character (CHoCH) — structural break confirming direction shift. Stochastic reload from oversold/overbought (must cross > 20 for bulls, < 80 for bears). All three must fire for entry.
+- **Execution**: Entry on M1 after all triggers. SL below/above the Spring price (thesis invalidation). TP1 at 100% Fibonacci extension (close 50%). TP2 at 161.8% Fibonacci extension (close 50%). Risk 2% of account per trade ($17 on $850). R:R must be >= 2:1 to TP2.
 - State which Fast Matrix scenario this pair is currently in and what needs to happen to advance to the next stage.
-- If no setup is active, state "No active scenario — waiting for H1 macro trend confirmation."
+- If h1WaveState.tradeEligible === false OR no Fast Matrix scenario is active, state "No tradeable setup — waiting for H1 Wave 3/5 entry zone."
 
 **Wyckoff + AMD Integration**: The AMD detector's "accumulation" IS Wyckoff accumulation. The liquidity mapper's "stop_hunt" IS a Wyckoff Spring. Connect these explicitly in your analysis.
 

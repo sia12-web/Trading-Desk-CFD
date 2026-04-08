@@ -68,6 +68,16 @@ Your job is to validate the structural analysis with hard numbers and compute pr
 ${cryptoNote}
 
 ## CROSS-VALIDATION MANDATE (MANDATORY)
+
+⚠️ **H1 ELLIOTT WAVE — MASTER TRADE GATE (NON-NEGOTIABLE)**:
+- **ONLY Wave 3 and Wave 5 at 0-20% completion are tradeable**. This is the PRIMARY filter before all other analysis.
+- If h1WaveState.tradeEligible === false, then REJECT ALL trade setups regardless of Fast Matrix score or Gemini confidence.
+- Verify Wave structure integrity: Wave 2 must retrace 50-61.8%, Wave 3 must extend 127.2-161.8%, Wave 4 must retrace 23.6-50%.
+- SL must be at H1 wave invalidation level (below Wave 1 low for Wave 3, below Wave 4 low for Wave 5).
+- TP must use H1 Fibonacci targets: Wave 3 → 161.8% extension, Wave 5 → 100% extension.
+- Flag if Gemini recommends an entry but Wave Progress > 20% — that's a "too late" error.
+- Flag if recommended direction contradicts H1 wave direction (e.g., long entry in bearish Wave 3).
+
 - Cross-check EVERY price level from Gemini's analysis against actual swing highs/lows in the indicator data.
 - Flag any Gemini level that does NOT correspond to an actual swing high/low or candle boundary within 1 ATR tolerance.
 - Cross-check fractal levels against Alligator teeth position — fractals inside the "mouth" (between jaw and teeth) are NOT valid Bill Williams signals.
@@ -95,6 +105,10 @@ ${cryptoNote}
 **Pip Location**: ${data.pipLocation}
 **Volatility**: ${data.volatilityStatus} (ATR14: ${data.atr14.toFixed(1)} pips)
 
+⏰ **TRADING HOURS**: 9:00 AM - 4:30 PM EST ONLY
+- NO trade entries outside trading hours
+- Auto-flatten all positions at 4:25 PM EST
+
 ## GEMINI'S STRUCTURAL ANALYSIS (to validate)
 ${geminiOutput}
 
@@ -116,6 +130,16 @@ Scenario B (${data.fastMatrix.scenarios.B.label}): ${data.fastMatrix.scenarios.B
 Scenario C (${data.fastMatrix.scenarios.C.label}): ${data.fastMatrix.scenarios.C.status} | Score=${data.fastMatrix.scenarios.C.score}/100 | Dir=${data.fastMatrix.scenarios.C.direction} | Wave=${data.fastMatrix.scenarios.C.waveType} | GP=${data.fastMatrix.scenarios.C.goldenPocket} | DB=${data.fastMatrix.scenarios.C.diamondBox} | RSI-Div=${data.fastMatrix.scenarios.C.rsiDivergence.detected} | MACD-Div=${data.fastMatrix.scenarios.C.macdDivergence.detected} | VolClimax=${data.fastMatrix.scenarios.C.volumeClimax.detected} | CHoCH=${data.fastMatrix.scenarios.C.choch.detected} | StochReload=${data.fastMatrix.scenarios.C.stochasticReload.detected} | R:R(TP1)=${data.fastMatrix.scenarios.C.riskRewardToTP1?.toFixed(1) ?? 'N/A'} | R:R(TP2)=${data.fastMatrix.scenarios.C.riskRewardToTP2?.toFixed(1) ?? 'N/A'}
 Scenario D (${data.fastMatrix.scenarios.D.label}): ${data.fastMatrix.scenarios.D.status} | Score=${data.fastMatrix.scenarios.D.score}/100 | Dir=${data.fastMatrix.scenarios.D.direction} | Wave=${data.fastMatrix.scenarios.D.waveType} | GP=${data.fastMatrix.scenarios.D.goldenPocket} | DB=${data.fastMatrix.scenarios.D.diamondBox} | RSI-Div=${data.fastMatrix.scenarios.D.rsiDivergence.detected} | MACD-Div=${data.fastMatrix.scenarios.D.macdDivergence.detected} | VolClimax=${data.fastMatrix.scenarios.D.volumeClimax.detected} | CHoCH=${data.fastMatrix.scenarios.D.choch.detected} | StochReload=${data.fastMatrix.scenarios.D.stochasticReload.detected} | R:R(TP1)=${data.fastMatrix.scenarios.D.riskRewardToTP1?.toFixed(1) ?? 'N/A'} | R:R(TP2)=${data.fastMatrix.scenarios.D.riskRewardToTP2?.toFixed(1) ?? 'N/A'}
 Key Levels: GP=${data.fastMatrix.keyLevels.goldenPocketLow?.toFixed(6) ?? 'N/A'}–${data.fastMatrix.keyLevels.goldenPocketHigh?.toFixed(6) ?? 'N/A'}, DB=${data.fastMatrix.keyLevels.diamondBoxLow?.toFixed(6) ?? 'N/A'}–${data.fastMatrix.keyLevels.diamondBoxHigh?.toFixed(6) ?? 'N/A'}, Eq=${data.fastMatrix.keyLevels.equilibriumPrice?.toFixed(6) ?? 'N/A'}, Spring=${data.fastMatrix.keyLevels.springPrice?.toFixed(6) ?? 'N/A'}, Entry=${data.fastMatrix.keyLevels.entryPrice?.toFixed(6) ?? 'N/A'}, SL=${data.fastMatrix.keyLevels.stopLoss?.toFixed(6) ?? 'N/A'}, TP1=${data.fastMatrix.keyLevels.tp1?.toFixed(6) ?? 'N/A'}, TP2=${data.fastMatrix.keyLevels.tp2?.toFixed(6) ?? 'N/A'}` : 'Fast Matrix unavailable.'}
+
+## H1 ELLIOTT WAVE STATE (MASTER TRADE GATE)
+${data.h1WaveState ? `⚠️ CRITICAL: Only Wave 3 and Wave 5 at 0-20% completion are tradeable.
+Current Wave: ${data.h1WaveState.currentWave} | Progress: ${data.h1WaveState.waveProgress.toFixed(1)}% | Direction: ${data.h1WaveState.direction}
+🚦 TRADE ELIGIBLE: ${data.h1WaveState.tradeEligible ? 'YES' : 'NO'}
+Confidence: ${data.h1WaveState.confidence.toFixed(1)}%
+Wave Structure: W1=${data.h1WaveState.wave1Start?.toFixed(6) ?? 'N/A'}→${data.h1WaveState.wave1End?.toFixed(6) ?? 'N/A'} | W2=${data.h1WaveState.wave2End?.toFixed(6) ?? 'N/A'} | W3_target=${data.h1WaveState.wave3Target?.toFixed(6) ?? 'N/A'} | W4=${data.h1WaveState.wave4End?.toFixed(6) ?? 'N/A'} | W5_target=${data.h1WaveState.wave5Target?.toFixed(6) ?? 'N/A'}
+Invalidation SL: ${data.h1WaveState.invalidationPrice?.toFixed(6) ?? 'N/A'}
+Confirmations: FibRatio=${data.h1WaveState.confirmations.fibRatio}, Volume=${data.h1WaveState.confirmations.volumeConfirm}, RSI=${data.h1WaveState.confirmations.rsiConfirm}, MACD=${data.h1WaveState.confirmations.macdConfirm}, Structure=${data.h1WaveState.confirmations.structureIntact}
+Narrative: ${data.h1WaveState.narrative}` : 'H1 Wave state unavailable (insufficient data).'}
 
 ## CROSS-MARKET DIVERGENCE CHECK
 ${buildCrossMarketCheck(crossMarket)}
