@@ -103,15 +103,15 @@ export function WeeklyJournalView({ weeks, currentWeekId, data }: WeeklyJournalV
             {/* Daily Grid */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 {data.days.map((day) => (
-                    <div 
+                    <div
                         key={day.name}
                         className={cn(
-                            "bg-neutral-900 border border-neutral-800 rounded-[2rem] p-6 flex flex-col min-h-[400px] transition-all hover:border-neutral-700",
+                            "bg-neutral-900 border border-neutral-800 rounded-[1.5rem] p-5 flex flex-col min-h-[400px] transition-all hover:border-neutral-700",
                             day.trades.length > 0 ? "bg-neutral-900/50" : "opacity-50"
                         )}
                     >
                         <div className="flex justify-between items-start mb-6">
-                            <div>
+                            <div className="flex-shrink-0">
                                 <h4 className="font-bold text-neutral-200">{day.name}</h4>
                                 <p className="text-xs text-neutral-500">{day.date}</p>
                             </div>
