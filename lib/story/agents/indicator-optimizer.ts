@@ -116,7 +116,7 @@ Current Alligator state: ${tf.indicators.alligator.state[tf.indicators.alligator
 BW Setup Score: ${tf.fractalAnalysis?.setupScore ?? 'N/A'}/100`
     }).join('\n\n')
 
-    return `You are a quantitative indicator optimization specialist. Analyze this ${pair} data across 5 timeframes and recommend optimal indicator parameters.
+    return `You are a quantitative indicator optimization specialist. Analyze this ${pair} data across 7 timeframes (M, W, D, H4, H1, M15, M1) and recommend optimal indicator parameters.
 
 ## CURRENT DATA FOR ${pair}
 

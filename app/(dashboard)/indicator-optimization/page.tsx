@@ -234,7 +234,7 @@ export default function IndicatorOptimizationPage() {
 function InstrumentCalibrationRow({ pair, calibrations, onDelete }: { pair: string, calibrations: Calibration[], onDelete: () => void }) {
     const [deleting, setDeleting] = React.useState(false)
     const [isExpanded, setIsExpanded] = React.useState(false)
-    const tfs = ['M', 'W', 'D', 'H4', 'H3', 'H1', 'M15', 'M1']
+    const tfs = ['M', 'W', 'D', 'H4', 'H1', 'M15', 'M1']
 
     const handleDelete = async () => {
         if (!confirm(`Are you sure you want to delete all calibrations for ${pair}?`)) {

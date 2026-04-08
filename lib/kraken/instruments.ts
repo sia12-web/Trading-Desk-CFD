@@ -15,9 +15,9 @@ export const KRAKEN_INSTRUMENTS: OandaInstrument[] = [
         minimumTradeSize: '0.0001',
         maximumTrailingStopDistance: '100000',
         minimumTrailingStopDistance: '1',
-        maximumStopLossDistance: '100000',
-        minimumStopLossDistance: '1',
-        tags: [{ name: 'CRYPTO', value: 'BTC' }],
+        maximumPositionSize: '1000',
+        maximumOrderUnits: '1000',
+        marginRate: '0.02',
         financing: { longRate: '0.02', shortRate: '0.02', financingDaysOfWeek: [] }
     },
     {
@@ -30,9 +30,9 @@ export const KRAKEN_INSTRUMENTS: OandaInstrument[] = [
         minimumTradeSize: '0.001',
         maximumTrailingStopDistance: '100000',
         minimumTrailingStopDistance: '1',
-        maximumStopLossDistance: '100000',
-        minimumStopLossDistance: '1',
-        tags: [{ name: 'CRYPTO', value: 'ETH' }],
+        maximumPositionSize: '1000',
+        maximumOrderUnits: '1000',
+        marginRate: '0.02',
         financing: { longRate: '0.02', shortRate: '0.02', financingDaysOfWeek: [] }
     },
     {
@@ -45,9 +45,9 @@ export const KRAKEN_INSTRUMENTS: OandaInstrument[] = [
         minimumTradeSize: '0.01',
         maximumTrailingStopDistance: '100000',
         minimumTrailingStopDistance: '1',
-        maximumStopLossDistance: '100000',
-        minimumStopLossDistance: '1',
-        tags: [{ name: 'CRYPTO', value: 'SOL' }],
+        maximumPositionSize: '1000',
+        maximumOrderUnits: '1000',
+        marginRate: '0.02',
         financing: { longRate: '0.02', shortRate: '0.02', financingDaysOfWeek: [] }
     },
     {
@@ -60,9 +60,9 @@ export const KRAKEN_INSTRUMENTS: OandaInstrument[] = [
         minimumTradeSize: '1',
         maximumTrailingStopDistance: '100000',
         minimumTrailingStopDistance: '1',
-        maximumStopLossDistance: '100000',
-        minimumStopLossDistance: '1',
-        tags: [{ name: 'CRYPTO', value: 'XRP' }],
+        maximumPositionSize: '1000',
+        maximumOrderUnits: '1000',
+        marginRate: '0.02',
         financing: { longRate: '0.02', shortRate: '0.02', financingDaysOfWeek: [] }
     },
     {
@@ -75,9 +75,9 @@ export const KRAKEN_INSTRUMENTS: OandaInstrument[] = [
         minimumTradeSize: '10',
         maximumTrailingStopDistance: '100000',
         minimumTrailingStopDistance: '1',
-        maximumStopLossDistance: '100000',
-        minimumStopLossDistance: '1',
-        tags: [{ name: 'CRYPTO', value: 'DOGE' }],
+        maximumPositionSize: '1000',
+        maximumOrderUnits: '1000',
+        marginRate: '0.02',
         financing: { longRate: '0.02', shortRate: '0.02', financingDaysOfWeek: [] }
     },
     {
@@ -90,9 +90,9 @@ export const KRAKEN_INSTRUMENTS: OandaInstrument[] = [
         minimumTradeSize: '1',
         maximumTrailingStopDistance: '100000',
         minimumTrailingStopDistance: '1',
-        maximumStopLossDistance: '100000',
-        minimumStopLossDistance: '1',
-        tags: [{ name: 'CRYPTO', value: 'ADA' }],
+        maximumPositionSize: '1000',
+        maximumOrderUnits: '1000',
+        marginRate: '0.02',
         financing: { longRate: '0.02', shortRate: '0.02', financingDaysOfWeek: [] }
     },
     {
@@ -105,9 +105,9 @@ export const KRAKEN_INSTRUMENTS: OandaInstrument[] = [
         minimumTradeSize: '0.01',
         maximumTrailingStopDistance: '100000',
         minimumTrailingStopDistance: '1',
-        maximumStopLossDistance: '100000',
-        minimumStopLossDistance: '1',
-        tags: [{ name: 'CRYPTO', value: 'BNB' }],
+        maximumPositionSize: '1000',
+        maximumOrderUnits: '1000',
+        marginRate: '0.02',
         financing: { longRate: '0.02', shortRate: '0.02', financingDaysOfWeek: [] }
     },
     {
@@ -120,9 +120,9 @@ export const KRAKEN_INSTRUMENTS: OandaInstrument[] = [
         minimumTradeSize: '0.01',
         maximumTrailingStopDistance: '100000',
         minimumTrailingStopDistance: '1',
-        maximumStopLossDistance: '100000',
-        minimumStopLossDistance: '1',
-        tags: [{ name: 'CRYPTO', value: 'AVAX' }],
+        maximumPositionSize: '1000',
+        maximumOrderUnits: '1000',
+        marginRate: '0.02',
         financing: { longRate: '0.02', shortRate: '0.02', financingDaysOfWeek: [] }
     },
     {
@@ -135,9 +135,9 @@ export const KRAKEN_INSTRUMENTS: OandaInstrument[] = [
         minimumTradeSize: '0.1',
         maximumTrailingStopDistance: '100000',
         minimumTrailingStopDistance: '1',
-        maximumStopLossDistance: '100000',
-        minimumStopLossDistance: '1',
-        tags: [{ name: 'CRYPTO', value: 'DOT' }],
+        maximumPositionSize: '1000',
+        maximumOrderUnits: '1000',
+        marginRate: '0.02',
         financing: { longRate: '0.02', shortRate: '0.02', financingDaysOfWeek: [] }
     },
     {
@@ -150,9 +150,9 @@ export const KRAKEN_INSTRUMENTS: OandaInstrument[] = [
         minimumTradeSize: '1',
         maximumTrailingStopDistance: '100000',
         minimumTrailingStopDistance: '1',
-        maximumStopLossDistance: '100000',
-        minimumStopLossDistance: '1',
-        tags: [{ name: 'CRYPTO', value: 'POL' }],
+        maximumPositionSize: '1000',
+        maximumOrderUnits: '1000',
+        marginRate: '0.02',
         financing: { longRate: '0.02', shortRate: '0.02', financingDaysOfWeek: [] }
     }
 ]
