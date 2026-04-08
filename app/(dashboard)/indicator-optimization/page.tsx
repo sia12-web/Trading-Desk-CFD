@@ -353,7 +353,7 @@ function TimeframeCalibrationCard({ timeframe, calibration }: { timeframe: strin
                 />
                 <CalibrationItem
                     label="Stochastic"
-                    value={`${settings.Stochastic.kPeriod}-${settings.Stochastic.dPeriod}`}
+                    value={`${settings.Stochastic.kPeriod}-${settings.Stochastic.slowing}-${settings.Stochastic.dPeriod}`}
                     icon={LineChart}
                 />
                 <CalibrationItem

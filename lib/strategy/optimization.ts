@@ -9,7 +9,7 @@ export type Timeframe = 'M' | 'W' | 'D' | 'H4' | 'H3' | 'H1' | 'M15' | 'M1'
 export interface IndicatorSettings {
     RSI: { period: number; overbought: number; oversold: number }
     MACD: { fastPeriod: number; slowPeriod: number; signalPeriod: number }
-    Stochastic: { kPeriod: number; dPeriod: number; overbought: number; oversold: number }
+    Stochastic: { kPeriod: number; slowing: number; dPeriod: number; overbought: number; oversold: number }
     'Bollinger Bands': { period: number; stdDev: number }
     EMA: { period: number }
     SMA: { period: number }
@@ -119,7 +119,7 @@ REQUIRED JSON STRUCTURE:
 {
   "RSI": { "period": 14, "overbought": 70, "oversold": 30 },
   "MACD": { "fastPeriod": 12, "slowPeriod": 26, "signalPeriod": 9 },
-  "Stochastic": { "kPeriod": 14, "dPeriod": 3, "overbought": 80, "oversold": 20 },
+  "Stochastic": { "kPeriod": 14, "slowing": 3, "dPeriod": 3, "overbought": 80, "oversold": 20 },
   "Bollinger Bands": { "period": 20, "stdDev": 2 },
   "EMA": { "period": 21 },
   "SMA": { "period": 50 },
