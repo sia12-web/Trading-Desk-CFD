@@ -1,252 +1,194 @@
 import crypto from 'crypto'
-import type { OandaPrice } from '@/lib/types/oanda'
 
-const KRAKEN_BASE_URL = 'https://api.kraken.com'
+/**
+ * Kraken REST API Client
+ * Docs: https://docs.kraken.com/rest/
+ */
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Authentication — HMAC-SHA512
-// ═══════════════════════════════════════════════════════════════════════════════
+const KRAKEN_API_URL = 'https://api.kraken.com'
 
-function getKrakenConfig() {
+interface KrakenConfig {
+    apiKey: string
+    apiSecret: string
+}
+
+function getConfig(): KrakenConfig {
     const apiKey = process.env.KRAKEN_API_KEY
     const apiSecret = process.env.KRAKEN_API_SECRET
 
     if (!apiKey || !apiSecret) {
-        throw new Error('Kraken API credentials not configured (KRAKEN_API_KEY / KRAKEN_API_SECRET)')
+        throw new Error('KRAKEN_API_KEY and KRAKEN_API_SECRET must be set in environment variables')
     }
 
     return { apiKey, apiSecret }
 }
 
-function getKrakenSignature(path: string, postData: string, nonce: string, secret: string): string {
-    const message = nonce + postData
-    const secretBuffer = Buffer.from(secret, 'base64')
-
-    const hash = crypto.createHash('sha256').update(message).digest('binary')
-    const hmac = crypto.createHmac('sha512', secretBuffer)
-    return hmac.update(path + hash, 'binary').digest('base64')
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// HTTP Client
-// ═══════════════════════════════════════════════════════════════════════════════
-
-async function krakenPublicRequest<T>(
-    endpoint: string,
-    params?: Record<string, string>,
-): Promise<{ data?: T; error?: string }> {
-    try {
-        const qs = params ? '?' + new URLSearchParams(params).toString() : ''
-        const url = `${KRAKEN_BASE_URL}/0/public/${endpoint}${qs}`
-
-        const res = await fetch(url, {
-            method: 'GET',
-            signal: AbortSignal.timeout(15000),
-        })
-
-        const json = await res.json()
-
-        if (json.error && json.error.length > 0) {
-            console.error(`[Kraken] Public ${endpoint} error:`, json.error)
-            return { error: json.error.join(', ') }
-        }
-
-        return { data: json.result as T }
-    } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        console.error(`[Kraken] Public ${endpoint} exception:`, msg)
-        return { error: msg }
-    }
-}
-
-async function krakenPrivateRequest<T>(
-    endpoint: string,
-    params: Record<string, string> = {},
-): Promise<{ data?: T; error?: string }> {
-    try {
-        const { apiKey, apiSecret } = getKrakenConfig()
-        const path = `/0/private/${endpoint}`
-        const nonce = Date.now().toString()
-
-        const postParams = { nonce, ...params }
-        const postData = new URLSearchParams(postParams).toString()
-        const signature = getKrakenSignature(path, postData, nonce, apiSecret)
-
-        const res = await fetch(`${KRAKEN_BASE_URL}${path}`, {
-            method: 'POST',
-            headers: {
-                'API-Key': apiKey,
-                'API-Sign': signature,
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: postData,
-            signal: AbortSignal.timeout(15000),
-        })
-
-        const json = await res.json()
-
-        if (json.error && json.error.length > 0) {
-            console.error(`[Kraken] Private ${endpoint} error:`, json.error)
-            return { error: json.error.join(', ') }
-        }
-
-        return { data: json.result as T }
-    } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        console.error(`[Kraken] Private ${endpoint} exception:`, msg)
-        return { error: msg }
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Pair Format Conversion
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/** Map our internal instrument name to Kraken pair name */
-const KRAKEN_PAIR_MAP: Record<string, string> = {
-    'CRYPTO_BTC_USD': 'XXBTZUSD',
-    'CRYPTO_ETH_USD': 'XETHZUSD',
-    'CRYPTO_SOL_USD': 'SOLUSD',
-    'CRYPTO_XRP_USD': 'XXRPZUSD',
-    'CRYPTO_DOGE_USD': 'XDGUSD',
-    'CRYPTO_ADA_USD': 'ADAUSD',
-    'CRYPTO_BNB_USD': 'BNBUSD',
-    'CRYPTO_AVAX_USD': 'AVAXUSD',
-    'CRYPTO_DOT_USD': 'DOTUSD',
-    'CRYPTO_MATIC_USD': 'MATICUSD',
-}
-
-const KRAKEN_PAIR_REVERSE: Record<string, string> = Object.fromEntries(
-    Object.entries(KRAKEN_PAIR_MAP).map(([k, v]) => [v, k])
-)
-
-/** CRYPTO_BTC_USD → XXBTZUSD */
-export function toKrakenPair(instrument: string): string {
-    return KRAKEN_PAIR_MAP[instrument] || instrument.replace('CRYPTO_', '').replace('_', '')
-}
-
-/** XXBTZUSD → CRYPTO_BTC_USD */
-export function fromKrakenPair(krakenPair: string): string {
-    return KRAKEN_PAIR_REVERSE[krakenPair] || krakenPair
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Prices (Public — no auth required)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-interface KrakenTickerInfo {
-    a: [string, string, string]   // ask: [price, wholeLotVolume, lotVolume]
-    b: [string, string, string]   // bid: [price, wholeLotVolume, lotVolume]
-    c: [string, string]           // last trade: [price, lotVolume]
-    v: [string, string]           // volume: [today, last24h]
-    p: [string, string]           // vwap: [today, last24h]
-    t: [number, number]           // trades: [today, last24h]
-    l: [string, string]           // low: [today, last24h]
-    h: [string, string]           // high: [today, last24h]
-    o: string                     // opening price today
+/**
+ * Generate Kraken API signature (HMAC-SHA512)
+ */
+function generateSignature(path: string, nonce: string, postData: string, apiSecret: string): string {
+    const message = path + crypto.createHash('sha256').update(nonce + postData).digest()
+    const signature = crypto
+        .createHmac('sha512', Buffer.from(apiSecret, 'base64'))
+        .update(message)
+        .digest('base64')
+    return signature
 }
 
 /**
- * Fetch best bid/ask for crypto pairs from Kraken.
- * Returns OandaPrice-compatible format so the UI doesn't need changes.
+ * Make authenticated Kraken API request
  */
-export async function getKrakenPrices(instruments: string[]): Promise<OandaPrice[]> {
-    const krakenPairs = instruments.map(toKrakenPair)
-    const pairParam = krakenPairs.join(',')
+async function privateRequest(endpoint: string, params: Record<string, any> = {}) {
+    const config = getConfig()
+    const path = `/0/private/${endpoint}`
+    const nonce = Date.now().toString()
 
-    const { data, error } = await krakenPublicRequest<Record<string, KrakenTickerInfo>>('Ticker', { pair: pairParam })
+    const postData = new URLSearchParams({
+        nonce,
+        ...params
+    }).toString()
 
-    if (error || !data) {
-        console.error('[Kraken] Failed to fetch prices:', error)
-        return []
+    const signature = generateSignature(path, nonce, postData, config.apiSecret)
+
+    const response = await fetch(`${KRAKEN_API_URL}${path}`, {
+        method: 'POST',
+        headers: {
+            'API-Key': config.apiKey,
+            'API-Sign': signature,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: postData
+    })
+
+    const data = await response.json()
+
+    if (data.error && data.error.length > 0) {
+        throw new Error(`Kraken API Error: ${data.error.join(', ')}`)
     }
 
-    return Object.entries(data).map(([krakenPair, ticker]) => {
-        const instrument = fromKrakenPair(krakenPair)
+    return data.result
+}
+
+/**
+ * Make public Kraken API request (no auth required)
+ */
+async function publicRequest(endpoint: string, params: Record<string, any> = {}) {
+    const queryString = new URLSearchParams(params).toString()
+    const url = `${KRAKEN_API_URL}/0/public/${endpoint}${queryString ? `?${queryString}` : ''}`
+
+    const response = await fetch(url)
+    const data = await response.json()
+
+    if (data.error && data.error.length > 0) {
+        throw new Error(`Kraken API Error: ${data.error.join(', ')}`)
+    }
+
+    return data.result
+}
+
+/**
+ * Get account balance
+ */
+export async function getAccountBalance() {
+    return await privateRequest('Balance')
+}
+
+/**
+ * Get account trade balance (including margin)
+ */
+export async function getTradeBalance() {
+    return await privateRequest('TradeBalance')
+}
+
+/**
+ * Get open positions
+ */
+export async function getOpenPositions() {
+    return await privateRequest('OpenPositions')
+}
+
+/**
+ * Get open orders
+ */
+export async function getOpenOrders() {
+    return await privateRequest('OpenOrders')
+}
+
+/**
+ * Get closed orders
+ */
+export async function getClosedOrders(params?: { trades?: boolean; start?: number; end?: number }) {
+    return await privateRequest('ClosedOrders', params || {})
+}
+
+/**
+ * Get trade history
+ */
+export async function getTradeHistory(params?: { type?: 'all' | 'any position' | 'closed position' | 'closing position' | 'no position'; trades?: boolean; start?: number; end?: number }) {
+    return await privateRequest('TradesHistory', params || {})
+}
+
+/**
+ * Get ticker information (public endpoint)
+ */
+export async function getTicker(pairs: string[]) {
+    return await publicRequest('Ticker', { pair: pairs.join(',') })
+}
+
+/**
+ * Get OHLC candles (public endpoint)
+ */
+export async function getOHLC(pair: string, interval: number = 60, since?: number) {
+    return await publicRequest('OHLC', { pair, interval, ...(since && { since }) })
+}
+
+/**
+ * Test connection - verify API keys are valid
+ */
+export async function testConnection() {
+    try {
+        const balance = await getAccountBalance()
+        const tradeBalance = await getTradeBalance()
+
         return {
-            instrument,
-            bids: [{ price: ticker.b[0], liquidity: Math.round(parseFloat(ticker.b[1]) * 1000) }],
-            asks: [{ price: ticker.a[0], liquidity: Math.round(parseFloat(ticker.a[1]) * 1000) }],
-            tradeable: true,
-            time: new Date().toISOString(),
-            status: 'tradeable',
+            connected: true,
+            balance,
+            tradeBalance,
+            timestamp: new Date().toISOString()
         }
-    })
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Orders (Private — requires auth)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-interface KrakenAddOrderResult {
-    descr: { order: string; close?: string }
-    txid: string[]
-}
-
-export interface KrakenMarketOrderParams {
-    pair: string       // Internal instrument name (CRYPTO_BTC_USD)
-    side: 'buy' | 'sell'
-    volume: string     // Amount of crypto (e.g., "0.001" BTC)
-}
-
-export interface KrakenLimitOrderParams {
-    pair: string
-    side: 'buy' | 'sell'
-    volume: string
-    price: string
-}
-
-export async function createKrakenMarketOrder(
-    params: KrakenMarketOrderParams,
-): Promise<{ data?: { order_id: string }; error?: string }> {
-    const krakenPair = toKrakenPair(params.pair)
-
-    const { data, error } = await krakenPrivateRequest<KrakenAddOrderResult>('AddOrder', {
-        pair: krakenPair,
-        type: params.side,
-        ordertype: 'market',
-        volume: params.volume,
-    })
-
-    if (error) return { error }
-
-    if (!data?.txid || data.txid.length === 0) {
-        return { error: 'No transaction ID returned from Kraken' }
+    } catch (error: any) {
+        return {
+            connected: false,
+            error: error.message || 'Unknown error'
+        }
     }
-
-    return { data: { order_id: data.txid[0] } }
 }
 
-export async function createKrakenLimitOrder(
-    params: KrakenLimitOrderParams,
-): Promise<{ data?: { order_id: string }; error?: string }> {
-    const krakenPair = toKrakenPair(params.pair)
+/**
+ * Get current prices for Kraken pairs (stub - not implemented yet)
+ */
+export async function getKrakenPrices(pairs: string[]): Promise<any[]> {
+    // Return empty array - Kraken price fetching not implemented yet
+    // Use OANDA for forex or Coinbase for crypto
+    return []
+}
 
-    const { data, error } = await krakenPrivateRequest<KrakenAddOrderResult>('AddOrder', {
-        pair: krakenPair,
-        type: params.side,
-        ordertype: 'limit',
-        volume: params.volume,
-        price: params.price,
-    })
-
-    if (error) return { error }
-
-    if (!data?.txid || data.txid.length === 0) {
-        return { error: 'No transaction ID returned from Kraken' }
+/**
+ * Create market order on Kraken (stub - not implemented yet)
+ */
+export async function createKrakenMarketOrder(params: any): Promise<{ data: { order_id: string } | null; error: string }> {
+    return {
+        data: null,
+        error: 'Kraken order execution not implemented yet. Use OANDA for forex or Coinbase for crypto.'
     }
-
-    return { data: { order_id: data.txid[0] } }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Account (Private)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-export interface KrakenBalance {
-    [currency: string]: string   // e.g. { ZUSD: "1234.56", XXBT: "0.012" }
-}
-
-export async function getKrakenBalance(): Promise<{ data?: KrakenBalance; error?: string }> {
-    return await krakenPrivateRequest<KrakenBalance>('Balance')
+/**
+ * Create limit order on Kraken (stub - not implemented yet)
+ */
+export async function createKrakenLimitOrder(params: any): Promise<{ data: { order_id: string } | null; error: string }> {
+    return {
+        data: null,
+        error: 'Kraken order execution not implemented yet. Use OANDA for forex or Coinbase for crypto.'
+    }
 }

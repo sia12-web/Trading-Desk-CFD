@@ -76,6 +76,11 @@ export default function SettingsPage() {
     const [greatResetConfirm, setGreatResetConfirm] = useState('')
     const [resettingGreat, setResettingGreat] = useState(false)
 
+    // Kraken Connection state
+    const [krakenConnection, setKrakenConnection] = useState<any>(null)
+    const [krakenLoading, setKrakenLoading] = useState(false)
+    const [krakenManuallyTested, setKrakenManuallyTested] = useState(false)
+
 
 
 
@@ -115,6 +120,20 @@ export default function SettingsPage() {
         }
     }
 
+    const checkKrakenConnection = async (isManual = false) => {
+        setKrakenLoading(true)
+        if (isManual) setKrakenManuallyTested(true)
+        try {
+            const res = await fetch('/api/kraken/connection', { cache: 'no-store' })
+            const result = await res.json()
+            setKrakenConnection(result)
+        } catch (err) {
+            setKrakenConnection({ connected: false, configured: false, error: 'Failed to reach API' })
+        } finally {
+            setKrakenLoading(false)
+        }
+    }
+
     const testCronJobs = async () => {
         setCronLoading(true)
         try {
@@ -131,6 +150,7 @@ export default function SettingsPage() {
     useEffect(() => {
         checkConnection(false)
         checkAIConnections(false)
+        checkKrakenConnection(false)
         loadPreferences()
         // Read current mode from cookie
         const cookies = document.cookie.split(';').reduce((acc, c) => {
@@ -435,6 +455,89 @@ export default function SettingsPage() {
                             >
                                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                                 {loading ? 'Checking...' : 'Test Connection'}
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Kraken Crypto Exchange Connection */}
+                <section className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] overflow-hidden">
+                    <div className="p-10 border-b border-neutral-800 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-6">
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-purple-600/10 text-purple-500 flex items-center justify-center">
+                                <Globe size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold">Kraken REST API</h3>
+                                <p className="text-neutral-500 text-sm mt-1">Cryptocurrency exchange for Bitcoin, Ethereum, and altcoins.</p>
+                            </div>
+                        </div>
+                        <div className={`px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-xs uppercase tracking-widest ${krakenConnection?.connected ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                            {krakenConnection?.connected ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                            {krakenConnection?.connected ? 'Connected' : 'Disconnected'}
+                        </div>
+                    </div>
+
+                    <div className="p-10 space-y-6">
+                        <div className="p-6 rounded-2xl border bg-purple-500/5 border-purple-500/20">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Wallet size={18} className="text-purple-500" />
+                                <span className="text-sm font-bold uppercase tracking-widest text-purple-500">Kraken Account</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-neutral-500">
+                                        <CreditCard size={14} />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Status</span>
+                                    </div>
+                                    <div className="p-3 bg-neutral-800 rounded-xl border border-neutral-700 font-mono text-sm">
+                                        {krakenConnection?.configured ? 'Configured' : 'Not configured'}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-neutral-500">
+                                        <Key size={14} />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Environment</span>
+                                    </div>
+                                    <div className="p-3 bg-neutral-800 rounded-xl border border-neutral-700 font-bold text-sm">
+                                        Production (api.kraken.com)
+                                    </div>
+                                </div>
+                            </div>
+                            {krakenConnection?.connected && krakenConnection.balance && (
+                                <div className="mt-4 p-3 bg-neutral-800 rounded-xl border border-neutral-700">
+                                    <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-2">Account Balance</p>
+                                    <div className="text-sm font-mono text-neutral-300 space-y-1">
+                                        {Object.entries(krakenConnection.balance).slice(0, 5).map(([currency, amount]: [string, any]) => (
+                                            <div key={currency} className="flex justify-between">
+                                                <span className="text-neutral-500">{currency}:</span>
+                                                <span>{parseFloat(amount).toFixed(4)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="pt-6 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="space-y-2">
+                                <p className="text-sm text-neutral-500 max-w-md">
+                                    Connection keys are managed via environment variables. Update your <code className="text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded">.env.local</code> with KRAKEN_API_KEY and KRAKEN_API_SECRET.
+                                </p>
+                                {krakenManuallyTested && krakenConnection && (
+                                    <div className={`flex items-center gap-1.5 mt-1 font-bold text-xs ${krakenConnection.connected ? 'text-green-400' : 'text-red-400'}`}>
+                                        {krakenConnection.connected ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                        {krakenConnection.connected ? 'Connected Successfully!' : `Failed: ${krakenConnection.error || 'Check details'}`}
+                                    </div>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => checkKrakenConnection(true)}
+                                disabled={krakenLoading}
+                                className="flex items-center gap-2 px-10 py-4 bg-neutral-800 hover:bg-neutral-700 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-neutral-700/50 hover:border-neutral-600 transition-all active:scale-95 disabled:opacity-50 shadow-lg hover:shadow-xl"
+                            >
+                                <RefreshCw size={14} className={krakenLoading ? 'animate-spin' : ''} />
+                                {krakenLoading ? 'Checking...' : 'Test Connection'}
                             </button>
                         </div>
                     </div>

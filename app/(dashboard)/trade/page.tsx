@@ -3,7 +3,6 @@ import { getAccountInstruments, getAccountSummary } from '@/lib/oanda/client'
 import { redirect } from 'next/navigation'
 import { TradeOrderForm } from '@/app/(dashboard)/trade/_components/TradeOrderForm'
 import { ALLOWED_INSTRUMENTS } from '@/lib/constants/instruments'
-import { KRAKEN_INSTRUMENTS } from '@/lib/kraken/instruments'
 
 export default async function TradePage() {
     const user = await getAuthUser()
@@ -14,7 +13,7 @@ export default async function TradePage() {
 
     const filteredInstruments = [
         ...instruments.filter(i => ALLOWED_INSTRUMENTS.includes(i.name as any)),
-        ...KRAKEN_INSTRUMENTS,
+        // TODO: Add Kraken instruments once full trading integration is complete
     ]
 
     return (
