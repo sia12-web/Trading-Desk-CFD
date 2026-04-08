@@ -342,6 +342,44 @@ ${data.fastMatrix ? `**Active Scenario: ${data.fastMatrix.activeScenario || 'NON
 - Key Levels: GP ${data.fastMatrix.keyLevels.goldenPocketLow?.toFixed(5) ?? 'N/A'}–${data.fastMatrix.keyLevels.goldenPocketHigh?.toFixed(5) ?? 'N/A'} | Diamond ${data.fastMatrix.keyLevels.diamondBoxLow?.toFixed(5) ?? 'N/A'}–${data.fastMatrix.keyLevels.diamondBoxHigh?.toFixed(5) ?? 'N/A'} | Eq: ${data.fastMatrix.keyLevels.equilibriumPrice?.toFixed(5) ?? 'N/A'} | Entry: ${data.fastMatrix.keyLevels.entryPrice?.toFixed(5) ?? 'N/A'} | SL: ${data.fastMatrix.keyLevels.stopLoss?.toFixed(5) ?? 'N/A'} | TP1: ${data.fastMatrix.keyLevels.tp1?.toFixed(5) ?? 'N/A'} | TP2: ${data.fastMatrix.keyLevels.tp2?.toFixed(5) ?? 'N/A'}
 - **${data.fastMatrix.narrative}**` : 'Fast Matrix detection unavailable (missing required timeframe data).'}
 
+### H1 ELLIOTT WAVE STATE — THE MASTER TRADE GATE ⚠️
+${data.h1WaveState ? `**CRITICAL**: Only Wave 3 and Wave 5 at 0-20% completion are tradeable. This is the PRIMARY filter before ALL other analysis.
+
+**Current Wave**: Wave ${data.h1WaveState.currentWave} (${data.h1WaveState.direction})
+**Wave Progress**: ${data.h1WaveState.waveProgress.toFixed(1)}% complete
+**🚦 TRADE ELIGIBLE**: ${data.h1WaveState.tradeEligible ? '✅ YES — Wave 3 or 5 at entry zone (0-20%)' : '❌ NO — Wrong wave or too late in progression'}
+**Confidence**: ${data.h1WaveState.confidence.toFixed(1)}%
+
+**Wave Structure**:
+  - Wave 1: ${data.h1WaveState.wave1Start?.toFixed(5) ?? 'N/A'} → ${data.h1WaveState.wave1End?.toFixed(5) ?? 'N/A'}
+  - Wave 2 Target: ${data.h1WaveState.wave2End?.toFixed(5) ?? 'N/A'}
+  - Wave 3 Target: ${data.h1WaveState.wave3Target?.toFixed(5) ?? 'N/A'} (161.8% extension)
+  - Wave 4 Target: ${data.h1WaveState.wave4End?.toFixed(5) ?? 'N/A'}
+  - Wave 5 Target: ${data.h1WaveState.wave5Target?.toFixed(5) ?? 'N/A'} (100% extension)
+
+**Invalidation Level** (Stop Loss): ${data.h1WaveState.invalidationPrice?.toFixed(5) ?? 'N/A'}
+  - For Wave 3 entries: SL below Wave 1 low
+  - For Wave 5 entries: SL below Wave 4 low
+
+**Confirmations**: ${Object.entries(data.h1WaveState.confirmations).map(([k, v]) => `${k}: ${v ? 'YES' : 'NO'}`).join(' | ')}
+
+**${data.h1WaveState.narrative}**
+
+**Signals**: ${data.h1WaveState.signals.join(' | ')}` : 'H1 Wave state unavailable (insufficient H1 data).'}
+
+**H1 Wave Rules for Narrative (NON-NEGOTIABLE)**:
+- **Only Wave 3 and Wave 5 are tradeable**. Wave 1 = building structure. Wave 2 = correction (skip). Wave 4 = consolidation (skip).
+- **Entry window: 0-20% of wave progression only**. If Wave 3 or 5 is >20% complete, say "the train has left — wait for next wave."
+- **If h1WaveState.tradeEligible === false**, do NOT recommend any trade entries in position_guidance, regardless of Fast Matrix score.
+- **Stop Loss**: Always at H1 wave invalidation level (below Wave 1 low for Wave 3, below Wave 4 low for Wave 5).
+- **Take Profit**: Split targets — TP1 at next M15 significant level (close 50%, move SL to breakeven), TP2 at H1 Fibonacci target (close 50%). Wave 3 → 161.8% extension. Wave 5 → 100% extension.
+- **In your narrative**: Reference the wave state explicitly. Example: "We're in Wave 3 at 12% completion — the optimal entry zone" or "Wave 5 is 67% complete — too late for new entries, manage existing positions to targets."
+
+⏰ **TRADING HOURS**: 9:00 AM - 4:30 PM EST (New York hours) ONLY
+- NO position entries outside these hours
+- Auto-flatten all positions at 4:25 PM EST (5-minute buffer)
+- If generating episode outside trading hours, position_guidance action must be "wait" with reason: "Outside trading hours (9 AM - 4:30 PM EST)"
+
 ### Bill Williams Fractal Analysis (Algorithmic)
 ${data.timeframes.map(tf => {
     const fa = tf.fractalAnalysis
@@ -611,6 +649,19 @@ SCENARIO LEVEL RULES (STRICT — for monitoring bot):
 - These levels must come from key_levels or the Gemini/DeepSeek analysis — never invented
 
 POSITION GUIDANCE RULES (MANDATORY):
+
+⚠️ **H1 WAVE ELIGIBILITY CHECK (FIRST FILTER)**:
+- Before recommending ANY trade entry (enter_long, enter_short, set_limit_long, set_limit_short), CHECK h1WaveState.tradeEligible
+- If h1WaveState.tradeEligible === false, action MUST be "wait" with reasoning: "H1 Wave state not eligible for entry — [explain wave state: wrong wave or too late in progression]"
+- If h1WaveState.tradeEligible === true, then evaluate Fast Matrix and other confluences normally
+- For existing positions: h1WaveState does NOT block management (hold/adjust/close) — only blocks new entries
+
+⏰ **TRADING HOURS CHECK (SECOND FILTER)**:
+- If current time is outside 9:00 AM - 4:30 PM EST, action MUST be "wait" with reasoning: "Outside trading hours (9 AM - 4:30 PM EST only)"
+- If within 25 minutes of 4:30 PM (4:05 PM - 4:30 PM), no new entries — action MUST be "wait" with reasoning: "Too close to market close (4:30 PM EST cutoff)"
+- For existing positions approaching 4:25 PM: recommend "close" with reasoning: "Auto-flatten approaching 4:25 PM EST"
+
+**GENERAL GUIDANCE RULES**:
 - Every episode MUST include a position_guidance object
 - If no existing position is active: recommend 'enter_long', 'enter_short', 'set_limit_long', 'set_limit_short', or 'wait'
 - If an existing position is active (see ACTIVE STORY POSITION section above): recommend 'hold', 'adjust', or 'close'
