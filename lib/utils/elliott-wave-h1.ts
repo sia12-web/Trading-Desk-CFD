@@ -34,7 +34,13 @@ export interface H1WaveState {
         rsiConfirm: boolean         // RSI behavior correct
         macdConfirm: boolean        // MACD alignment
         structureIntact: boolean    // No invalidation
+        wave2Complete: boolean      // Wave 2 correction finished (if in Wave 3)
+        wave4Complete: boolean      // Wave 4 correction finished (if in Wave 5)
     }
+
+    // Corrective wave analysis (for Wave 2/4)
+    correctivePattern: 'abc' | 'zigzag' | 'flat' | 'triangle' | 'simple' | 'unknown'
+    correctiveCompleteConfidence: number  // 0-100% confidence that Wave 2/4 is truly finished
 
     // Details
     narrative: string
@@ -81,6 +87,9 @@ export function detectH1ElliottWave(
     // Step 4: Validate with Fibonacci ratios
     const fibValidation = validateFibonacciRatios(waveStructure, direction)
 
+    // Step 4.5: Check if Wave 2/4 corrections are complete
+    const correctiveCompletion = detectCorrectiveCompletion(candles, rsi, macdLine, waveStructure, direction)
+
     // Step 5: Confirm with volume, RSI, MACD
     const confirmations = validateConfirmations(
         waveStructure,
@@ -88,7 +97,8 @@ export function detectH1ElliottWave(
         rsi,
         macdLine,
         macdSignal,
-        direction
+        direction,
+        correctiveCompletion
     )
 
     // Step 6: Calculate wave progress
@@ -123,6 +133,9 @@ export function detectH1ElliottWave(
 
         confidence: fibValidation.confidence,
         confirmations,
+
+        correctivePattern: correctiveCompletion.pattern,
+        correctiveCompleteConfidence: correctiveCompletion.confidence,
 
         narrative: buildNarrative(waveStructure, waveProgress, tradeEligible, direction),
         signals: buildSignals(waveStructure, waveProgress, confirmations, tradeEligible)
@@ -360,6 +373,121 @@ function mapSwingsToWaves(
 }
 
 /**
+ * Detect if Wave 2 or Wave 4 correction is complete
+ * Wave 2/4 can be complex (ABC, zigzag, flat, triangle)
+ * We need to ensure they're FINISHED before signaling Wave 3/5 entry
+ */
+function detectCorrectiveCompletion(
+    candles: OandaCandle[],
+    rsi: number[],
+    macdLine: number[],
+    structure: WaveStructure,
+    direction: 'bullish' | 'bearish' | 'unclear'
+): {
+    wave2Complete: boolean
+    wave4Complete: boolean
+    pattern: 'abc' | 'zigzag' | 'flat' | 'triangle' | 'simple' | 'unknown'
+    confidence: number
+} {
+    if (direction === 'unclear') {
+        return { wave2Complete: false, wave4Complete: false, pattern: 'unknown', confidence: 0 }
+    }
+
+    const currentPrice = parseFloat(candles[candles.length - 1].mid.c)
+    const latestRSI = rsi[rsi.length - 1]
+    const latestMACD = macdLine[macdLine.length - 1]
+
+    // Check Wave 2 completion (if we're in or past Wave 2)
+    let wave2Complete = false
+    let wave2Confidence = 0
+    if (typeof structure.currentWave === 'number' && structure.currentWave >= 2 && structure.wave1End && structure.wave2End) {
+        const wave1Length = Math.abs(structure.wave1End - structure.wave1Start!)
+        const wave2Retrace = Math.abs(structure.wave2End - structure.wave1End) / wave1Length
+
+        // Wave 2 complete if:
+        // 1. Retraced 50-78.6% (deep enough)
+        // 2. Price reversed back in Wave 1 direction
+        // 3. RSI showing reversal
+        // 4. MACD showing reversal
+
+        const retracedEnough = wave2Retrace >= 0.50 && wave2Retrace <= 0.786
+
+        let priceReversed = false
+        if (direction === 'bullish') {
+            priceReversed = currentPrice > structure.wave2End
+        } else {
+            priceReversed = currentPrice < structure.wave2End
+        }
+
+        const rsiReversed = direction === 'bullish' ? latestRSI > 50 : latestRSI < 50
+        const macdReversed = direction === 'bullish'
+            ? latestMACD > macdLine[macdLine.length - 2]
+            : latestMACD < macdLine[macdLine.length - 2]
+
+        wave2Confidence = [retracedEnough, priceReversed, rsiReversed, macdReversed]
+            .filter(Boolean).length * 25
+
+        wave2Complete = wave2Confidence >= 75 // Need 3 of 4 confirmations
+    }
+
+    // Check Wave 4 completion (if we're in or past Wave 4)
+    let wave4Complete = false
+    let wave4Confidence = 0
+    if (typeof structure.currentWave === 'number' && structure.currentWave >= 4 && structure.wave3Target && structure.wave4End) {
+        const wave3Length = structure.wave3Target - structure.wave2End!
+        const wave4Retrace = Math.abs(structure.wave4End - structure.wave3Target) / wave3Length
+
+        // Wave 4 complete if:
+        // 1. Retraced 23.6-50% (shallower than Wave 2)
+        // 2. Did NOT overlap Wave 1 (Elliott Rule)
+        // 3. Price reversed back in Wave 3 direction
+        // 4. RSI/MACD showing reversal
+
+        const retracedEnough = wave4Retrace >= 0.236 && wave4Retrace <= 0.50
+
+        const noOverlap = direction === 'bullish'
+            ? structure.wave4End > structure.wave1End!
+            : structure.wave4End < structure.wave1End!
+
+        let priceReversed = false
+        if (direction === 'bullish') {
+            priceReversed = currentPrice > structure.wave4End
+        } else {
+            priceReversed = currentPrice < structure.wave4End
+        }
+
+        const rsiReversed = direction === 'bullish' ? latestRSI > 50 : latestRSI < 50
+
+        wave4Confidence = [retracedEnough, noOverlap, priceReversed, rsiReversed]
+            .filter(Boolean).length * 25
+
+        wave4Complete = wave4Confidence >= 75 // Need 3 of 4 confirmations
+    }
+
+    // Detect corrective pattern type (simplified - full detection would need more data)
+    let pattern: 'abc' | 'zigzag' | 'flat' | 'triangle' | 'simple' | 'unknown' = 'simple'
+    if (structure.currentWave === 2 || structure.currentWave === 4) {
+        const retrace = structure.currentWave === 2
+            ? (structure.wave2End && structure.wave1End ? Math.abs(structure.wave2End - structure.wave1End) / Math.abs(structure.wave1End - structure.wave1Start!) : 0)
+            : 0
+
+        if (retrace > 0.618) pattern = 'zigzag' // Deep sharp correction
+        else if (retrace > 0.50) pattern = 'abc' // Regular ABC
+        else if (retrace > 0.236) pattern = 'flat' // Shallow consolidation
+        else pattern = 'simple'
+    }
+
+    const overallConfidence = Math.max(wave2Confidence, wave4Confidence)
+
+    return {
+        wave2Complete,
+        wave4Complete,
+        pattern,
+        confidence: overallConfidence
+    }
+}
+
+/**
  * Validate Fibonacci ratios
  */
 function validateFibonacciRatios(
@@ -423,7 +551,8 @@ function validateConfirmations(
     rsi: number[],
     macdLine: number[],
     macdSignal: number[],
-    direction: 'bullish' | 'bearish' | 'unclear'
+    direction: 'bullish' | 'bearish' | 'unclear',
+    correctiveCompletion: ReturnType<typeof detectCorrectiveCompletion>
 ): H1WaveState['confirmations'] {
     const latestRSI = rsi[rsi.length - 1]
     const latestMACD = macdLine[macdLine.length - 1]
@@ -487,7 +616,9 @@ function validateConfirmations(
         volumeConfirm,
         rsiConfirm,
         macdConfirm,
-        structureIntact
+        structureIntact,
+        wave2Complete: correctiveCompletion.wave2Complete,
+        wave4Complete: correctiveCompletion.wave4Complete
     }
 }
 
@@ -511,6 +642,7 @@ function calculateWaveProgress(
 /**
  * Determine if trade eligible
  * Only Wave 3 or 5 at 0-20% progress with high confidence
+ * CRITICAL: Wave 2 or Wave 4 must be COMPLETE before entering Wave 3 or Wave 5
  */
 function isTradeEligible(
     currentWave: 1 | 2 | 3 | 4 | 5 | 'unknown',
@@ -520,6 +652,12 @@ function isTradeEligible(
 ): boolean {
     // Must be Wave 3 or 5
     if (currentWave !== 3 && currentWave !== 5) return false
+
+    // CRITICAL: If Wave 3, Wave 2 must be COMPLETE
+    // If Wave 5, Wave 4 must be COMPLETE
+    // This prevents entering too early when correction is still ongoing
+    if (currentWave === 3 && !confirmations.wave2Complete) return false
+    if (currentWave === 5 && !confirmations.wave4Complete) return false
 
     // Must be in first 20% of wave (beginning only)
     if (waveProgress > 20) return false
@@ -533,7 +671,7 @@ function isTradeEligible(
     // Fibonacci ratios must validate
     if (!confirmations.fibRatio) return false
 
-    // At least 3 of 4 other confirmations must pass
+    // At least 2 of 3 other confirmations must pass
     const otherConfirms = [
         confirmations.volumeConfirm,
         confirmations.rsiConfirm,
@@ -635,8 +773,12 @@ function createUnknownWaveState(candles: OandaCandle[]): H1WaveState {
             volumeConfirm: false,
             rsiConfirm: false,
             macdConfirm: false,
-            structureIntact: false
+            structureIntact: false,
+            wave2Complete: false,
+            wave4Complete: false
         },
+        correctivePattern: 'unknown',
+        correctiveCompleteConfidence: 0,
         narrative: 'H1 Elliott Wave structure unclear. Insufficient data or ranging market. Standby.',
         signals: ['No clear wave pattern detected']
     }

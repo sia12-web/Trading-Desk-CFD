@@ -9,6 +9,7 @@ import { detectFractalSetup } from './fractal-detector'
 import { detectElliottWave } from './elliott-wave-detector'
 import { detectFastMatrix } from './true-fractal-detector'
 import { detectH1ElliottWave } from '@/lib/utils/elliott-wave-h1'
+import { calculateGannMatrix, estimateSunriseSunset } from '@/lib/utils/gann-calculator'
 import { getCorrelationInsights } from './correlation-integrator'
 import { displayToInternalPair, isCrypto } from './asset-config'
 import type { OandaCandle } from '@/lib/types/oanda'
@@ -188,6 +189,29 @@ export async function collectStoryData(
         )
         : undefined
 
+    // ── W.D. Gann Matrix: Time & Price Analysis ──
+    let gannMatrix
+    if (h1TF && h1TF.candles.length >= 20) {
+        const recentH1 = h1TF.candles.slice(-20)
+        const highPrice = Math.max(...recentH1.map(c => parseFloat(c.mid.h)))
+        const lowPrice = Math.min(...recentH1.map(c => parseFloat(c.mid.l)))
+
+        // NYC coordinates for sunrise/sunset (can be made configurable later)
+        const NYC_LAT = 40.7128
+        const NYC_LON = -74.0060
+        const { sunrise, sunset } = estimateSunriseSunset(new Date(), NYC_LAT)
+
+        gannMatrix = calculateGannMatrix(
+            currentPrice,
+            highPrice,
+            lowPrice,
+            sunrise,
+            sunset,
+            NYC_LAT,
+            NYC_LON
+        )
+    }
+
     // ATR status from daily
     const dailyTFData = timeframes.find(t => t.timeframe === 'D')
     const atr14 = dailyTFData ? calculateATR(dailyTFData.candles, 14, pipLocation) : 0
@@ -208,6 +232,7 @@ export async function collectStoryData(
         harmonicConvergence: fastMatrix,
         trueFractal: fastMatrix,
         h1WaveState,
+        gannMatrix,
         amdPhases,
         liquidityZones,
         volatilityStatus,

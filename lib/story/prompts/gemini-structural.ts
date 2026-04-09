@@ -123,6 +123,7 @@ ${data.fastMatrix ? `**Active Scenario**: ${data.fastMatrix.activeScenario ?? 'N
 
 ## H1 ELLIOTT WAVE STATE (TRADE GATING SYSTEM)
 ${data.h1WaveState ? `⚠️ **CRITICAL TRADE RULE**: Only trade Wave 3 and Wave 5 at 0-20% completion.
+⚠️ **ANTI-HALLUCINATION**: All wave levels below are DETECTED from actual H1 swing points. DO NOT fabricate or modify these levels.
 **Current Wave**: Wave ${data.h1WaveState.currentWave} (${data.h1WaveState.direction})
 **Wave Progress**: ${data.h1WaveState.waveProgress.toFixed(1)}% complete
 **🚦 TRADE ELIGIBLE**: ${data.h1WaveState.tradeEligible ? '✅ YES — Wave 3 or 5 at entry zone (0-20%)' : '❌ NO — Wrong wave or too late in progression'}
@@ -140,8 +141,47 @@ ${data.h1WaveState ? `⚠️ **CRITICAL TRADE RULE**: Only trade Wave 3 and Wave
   - RSI Confirm: ${data.h1WaveState.confirmations.rsiConfirm ? 'YES' : 'NO'}
   - MACD Confirm: ${data.h1WaveState.confirmations.macdConfirm ? 'YES' : 'NO'}
   - Structure Intact: ${data.h1WaveState.confirmations.structureIntact ? 'YES' : 'NO'}
+  - **Wave 2 Complete**: ${data.h1WaveState.confirmations.wave2Complete ? '✅ YES' : '❌ NO'} (Confidence: ${data.h1WaveState.correctiveCompleteConfidence.toFixed(0)}%)
+  - **Wave 4 Complete**: ${data.h1WaveState.confirmations.wave4Complete ? '✅ YES' : '❌ NO'} (Confidence: ${data.h1WaveState.correctiveCompleteConfidence.toFixed(0)}%)
+**Corrective Pattern**: ${data.h1WaveState.correctivePattern === 'unknown' ? 'Not yet determined' : data.h1WaveState.correctivePattern.toUpperCase()}
+**⚠️ CRITICAL GATING RULES**:
+  - **Wave 3 Entry**: ONLY if Wave 2 Complete = YES (correction must be finished)
+  - **Wave 5 Entry**: ONLY if Wave 4 Complete = YES (correction must be finished)
+  - **Sub-wave Noise**: M15/M1 pullbacks WITHIN Wave 3/5 are NORMAL — DO NOT confuse them with wave invalidation
+  - **Stop Loss Strategy**: Place SL at H1 invalidation level (survives M15/M1 sub-wave pullbacks)
+  - **Take Profit Strategy**: Split exits — TP1 at M15 significant level (close 50%, move SL to breakeven), TP2 at H1 Fibonacci target (close remaining 50%)
 **Narrative**: ${data.h1WaveState.narrative}
 **Signals**: ${data.h1WaveState.signals.join(' | ')}` : 'H1 Wave state detection unavailable (insufficient H1 data).'}
+
+## W.D. GANN MATRIX — TIME & PRICE ANALYSIS
+${data.gannMatrix ? `⚠️ **ANTI-HALLUCINATION**: All Gann levels are CALCULATED from actual H1 high/low prices (last 20 candles). DO NOT fabricate or modify these levels.
+**Methodology**: W.D. Gann's time-price geometry using Master Calculator (daylight fractions), Solar Fire (Ascendant clock), and price-to-degree conversion.
+
+**TIME FRACTIONS** (Algorithmic Reversal Windows):
+${data.gannMatrix.timeFractions.map(tf => `  - ${tf.label}: ${tf.time} (${tf.minutesFromSunrise} min from sunrise)`).join('\n')}
+- **Daylight Duration**: ${data.gannMatrix.daylightDuration.hours}h ${data.gannMatrix.daylightDuration.minutes}m (${data.gannMatrix.daylightDuration.totalMinutes} total minutes)
+
+**PRICE-TO-DEGREE ANALYSIS** (Solar Fire method — price mod 360):
+- **Current Price**: ${data.gannMatrix.current.originalPrice.toFixed(5)} → ${data.gannMatrix.current.degree}° (${data.gannMatrix.current.zodiacSign})${data.gannMatrix.current.cardinalCross ? ' ⚠️ AT CARDINAL CROSS (major reversal point)' : ''}
+- **High**: ${data.gannMatrix.high.originalPrice.toFixed(5)} → ${data.gannMatrix.high.degree}° (${data.gannMatrix.high.zodiacSign})${data.gannMatrix.high.cardinalCross ? ' ⚠️ AT CARDINAL CROSS' : ''}
+- **Low**: ${data.gannMatrix.low.originalPrice.toFixed(5)} → ${data.gannMatrix.low.degree}° (${data.gannMatrix.low.zodiacSign})${data.gannMatrix.low.cardinalCross ? ' ⚠️ AT CARDINAL CROSS' : ''}
+- **Degree Range**: ${data.gannMatrix.priceRange.degreeRange.toFixed(1)}° (price range: ${data.gannMatrix.priceRange.absolute.toFixed(5)})
+
+**HARMONIC LEVELS** (0°, 90°, 180°, 270° cardinal points):
+${data.gannMatrix.harmonicLevels.map((level, idx) => `  - ${['0°', '90°', '180°', '270°', '360°'][idx]}: ${level.toFixed(5)}`).join('\n')}
+
+${data.gannMatrix.ascendant ? `**ASCENDANT CLOCK** (Real-time Earth rotation — Solar Fire equivalent):
+- **Ascendant**: ${data.gannMatrix.ascendant.ascendant.toFixed(2)}°${data.gannMatrix.ascendant.cardinalAlignment ? ' ⚠️ AT CARDINAL ALIGNMENT (major reversal window)' : ''}
+- **Midheaven**: ${data.gannMatrix.ascendant.midheaven.toFixed(2)}°
+- **Local Sidereal Time**: ${data.gannMatrix.ascendant.localSiderealTime}
+- **Next Cardinal Degree**: ${data.gannMatrix.ascendant.nextCardinalDegree}° in ${data.gannMatrix.ascendant.minutesToNextCardinal} minutes
+- **Note**: Ascendant moves ~1° every 4 minutes. Cardinal degrees (0°, 90°, 180°, 270°) are high-probability reversal windows.` : '**Ascendant Clock**: Not available (location data not provided)'}
+
+**Gann Trading Doctrine**:
+- **Time Fractions**: Market energy shifts at daylight 1/3, 1/2, 2/3 points (algorithmic pivot zones)
+- **Cardinal Cross**: 0°, 90°, 180°, 270° degrees = major S/R levels where price + time harmonize
+- **Price-to-Degree**: When current price approaches cardinal degrees, expect resistance/support
+- **Ascendant Clock**: When Ascendant hits 0°, 90°, 180°, 270°, expect increased volatility + reversals (Earth rotation aligns with market geometry)` : 'Gann Matrix unavailable (insufficient H1 data for high/low calculation).'}
 
 ## YOUR TASK
 Analyze ALL the data above and produce a JSON response:
@@ -177,6 +217,8 @@ Analyze ALL the data above and produce a JSON response:
 - **Execution**: Entry on M1 after all triggers. SL below/above the Spring price (thesis invalidation). TP1 at 100% Fibonacci extension (close 50%). TP2 at 161.8% Fibonacci extension (close 50%). Risk 2% of account per trade ($17 on $850). R:R must be >= 2:1 to TP2.
 - State which Fast Matrix scenario this pair is currently in and what needs to happen to advance to the next stage.
 - If h1WaveState.tradeEligible === false OR no Fast Matrix scenario is active, state "No tradeable setup — waiting for H1 Wave 3/5 entry zone."
+- **If h1WaveState.currentWave === 'unknown'**: Explicitly state "H1 Elliott Wave structure unclear — insufficient swing data for wave mapping. Cannot validate Fast Matrix scenarios without wave confirmation."
+- **If gannMatrix is unavailable**: Do NOT fabricate Gann levels. State "Gann Matrix unavailable — insufficient H1 candle history for harmonic level calculation."
 
 **Wyckoff + AMD Integration**: The AMD detector's "accumulation" IS Wyckoff accumulation. The liquidity mapper's "stop_hunt" IS a Wyckoff Spring. Connect these explicitly in your analysis.
 

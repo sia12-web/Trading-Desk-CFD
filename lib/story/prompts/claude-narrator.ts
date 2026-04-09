@@ -344,6 +344,7 @@ ${data.fastMatrix ? `**Active Scenario: ${data.fastMatrix.activeScenario || 'NON
 
 ### H1 ELLIOTT WAVE STATE — THE MASTER TRADE GATE ⚠️
 ${data.h1WaveState ? `**CRITICAL**: Only Wave 3 and Wave 5 at 0-20% completion are tradeable. This is the PRIMARY filter before ALL other analysis.
+⚠️ **ANTI-HALLUCINATION**: All wave levels are DETECTED from actual H1 swing points (not estimated). Use these exact levels in your narrative. DO NOT round, approximate, or "adjust" them.
 
 **Current Wave**: Wave ${data.h1WaveState.currentWave} (${data.h1WaveState.direction})
 **Wave Progress**: ${data.h1WaveState.waveProgress.toFixed(1)}% complete
@@ -363,9 +364,52 @@ ${data.h1WaveState ? `**CRITICAL**: Only Wave 3 and Wave 5 at 0-20% completion a
 
 **Confirmations**: ${Object.entries(data.h1WaveState.confirmations).map(([k, v]) => `${k}: ${v ? 'YES' : 'NO'}`).join(' | ')}
 
+**Corrective Wave Completion** (Wave 2/4 can be complex patterns — ABC, zigzag, flat, triangle):
+  - **Wave 2 Complete**: ${data.h1WaveState.confirmations.wave2Complete ? '✅ YES' : '❌ NO'} (${data.h1WaveState.correctivePattern}, Confidence: ${data.h1WaveState.correctiveCompleteConfidence.toFixed(0)}%)
+  - **Wave 4 Complete**: ${data.h1WaveState.confirmations.wave4Complete ? '✅ YES' : '❌ NO'} (${data.h1WaveState.correctivePattern}, Confidence: ${data.h1WaveState.correctiveCompleteConfidence.toFixed(0)}%)
+  - **⚠️ CRITICAL**: Wave 3 entries require Wave 2 Complete = YES. Wave 5 entries require Wave 4 Complete = YES. Do NOT enter if correction is still ongoing.
+
+**Stop Loss & Take Profit Strategy** (Multi-Timeframe Execution):
+  - **Stop Loss**: Placed at **H1** invalidation level (survives normal M15/M1 sub-wave pullbacks within the impulse)
+  - **Take Profit**: Split approach for optimal risk management
+    - **TP1** (M15): First target at M15 significant level (Fib 38.2-50% of H1 target) → Close 50% of position, move SL to breakeven
+    - **TP2** (H1): Final target at H1 Fibonacci extension (100% for Wave 3, 161.8% for Wave 5) → Close remaining 50%
+  - **Sub-wave Noise**: M15/M1 pullbacks WITHIN Wave 3/5 are NORMAL impulse sub-structure. Do NOT confuse them with wave invalidation. The H1 SL protects against this noise.
+
 **${data.h1WaveState.narrative}**
 
 **Signals**: ${data.h1WaveState.signals.join(' | ')}` : 'H1 Wave state unavailable (insufficient H1 data).'}
+
+### W.D. GANN MATRIX — Time & Price Geometry ⏰📐
+${data.gannMatrix ? `⚠️ **ANTI-HALLUCINATION**: Gann harmonic levels are CALCULATED from actual H1 high/low (last 20 candles). Time fractions are CALCULATED from real sunrise/sunset. Ascendant is CALCULATED from real date/time. Use these exact values in your narrative—do NOT fabricate "nearby" Gann levels.
+**Methodology**: W.D. Gann's time-price analysis combines daylight division (Master Calculator), price-to-degree conversion (Solar Fire method), and real-time Ascendant tracking. When time and price harmonize at cardinal degrees (0°, 90°, 180°, 270°), expect major reversals.
+
+**TIME FRACTIONS** (Algorithmic Reversal Windows):
+${data.gannMatrix.timeFractions.map(tf => `  - ${tf.label}: **${tf.time}** (${tf.minutesFromSunrise} min from sunrise)`).join('\n')}
+- **Daylight Duration**: ${data.gannMatrix.daylightDuration.hours}h ${data.gannMatrix.daylightDuration.minutes}m
+
+**PRICE-TO-DEGREE ANALYSIS** (Price mod 360):
+- **Current**: ${data.gannMatrix.current.originalPrice.toFixed(5)} → **${data.gannMatrix.current.degree}°** (${data.gannMatrix.current.zodiacSign})${data.gannMatrix.current.cardinalCross ? ' ⚠️ **AT CARDINAL CROSS** (major reversal point)' : ''}
+- **High**: ${data.gannMatrix.high.originalPrice.toFixed(5)} → ${data.gannMatrix.high.degree}° (${data.gannMatrix.high.zodiacSign})${data.gannMatrix.high.cardinalCross ? ' ⚠️ CARDINAL' : ''}
+- **Low**: ${data.gannMatrix.low.originalPrice.toFixed(5)} → ${data.gannMatrix.low.degree}° (${data.gannMatrix.low.zodiacSign})${data.gannMatrix.low.cardinalCross ? ' ⚠️ CARDINAL' : ''}
+- **Degree Range**: ${data.gannMatrix.priceRange.degreeRange.toFixed(1)}° (price range: ${data.gannMatrix.priceRange.absolute.toFixed(5)})
+
+**HARMONIC LEVELS** (Cardinal degree price points):
+${data.gannMatrix.harmonicLevels.map((level, idx) => `  - ${['0°', '90°', '180°', '270°', '360°'][idx]}: **${level.toFixed(5)}**`).join('\n')}
+
+${data.gannMatrix.ascendant ? `**ASCENDANT CLOCK** (Real-time Earth rotation):
+- **Ascendant**: **${data.gannMatrix.ascendant.ascendant.toFixed(2)}°**${data.gannMatrix.ascendant.cardinalAlignment ? ' ⚠️ **AT CARDINAL ALIGNMENT** — high-probability reversal window' : ''}
+- **Midheaven**: ${data.gannMatrix.ascendant.midheaven.toFixed(2)}°
+- **Local Sidereal Time**: ${data.gannMatrix.ascendant.localSiderealTime}
+- **Next Cardinal**: ${data.gannMatrix.ascendant.nextCardinalDegree}° in ${data.gannMatrix.ascendant.minutesToNextCardinal} minutes
+- **Note**: Ascendant moves ~1° every 4 minutes. Cardinal alignments create reversal windows.` : '**Ascendant Clock**: Not available (location data not provided).'}
+
+**Gann Trading Doctrine for Narrative**:
+- **Time Fractions**: Market energy shifts at 1/3, 1/2, 2/3 of daylight (reversal windows). Weave these into timing analysis — "approaching the 2/3 daylight point at ${data.gannMatrix.timeFractions[3]?.time}, a known pivot zone."
+- **Cardinal Cross**: When current price degree is within 5° of 0°, 90°, 180°, or 270°, treat it as major S/R in the narrative. Example: "Price at 178° — just 2° from the cardinal 180° cross, expect strong resistance."
+- **Harmonic Levels**: The 5 cardinal price levels are mathematically derived S/R points. Reference them alongside traditional swing levels for confluence.
+- **Ascendant Alignment**: When Ascendant hits 0°, 90°, 180°, 270° AND price is at a cardinal degree, it's the **"Gann Square"** — maximum probability reversal window. Highlight this in narrative.
+- **Integration with Fast Matrix**: Use Gann levels to confirm M15 Golden Pocket or Diamond Box zones. If a Gann harmonic level aligns with a Fast Matrix scenario entry, that's institutional-grade confluence.` : 'W.D. Gann Matrix unavailable (insufficient H1 data for high/low calculation).'}
 
 **H1 Wave Rules for Narrative (NON-NEGOTIABLE)**:
 - **Only Wave 3 and Wave 5 are tradeable**. Wave 1 = building structure. Wave 2 = correction (skip). Wave 4 = consolidation (skip).

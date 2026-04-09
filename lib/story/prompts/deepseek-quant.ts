@@ -133,13 +133,45 @@ Key Levels: GP=${data.fastMatrix.keyLevels.goldenPocketLow?.toFixed(6) ?? 'N/A'}
 
 ## H1 ELLIOTT WAVE STATE (MASTER TRADE GATE)
 ${data.h1WaveState ? `⚠️ CRITICAL: Only Wave 3 and Wave 5 at 0-20% completion are tradeable.
+⚠️ ANTI-HALLUCINATION: Wave levels are DETECTED from actual H1 swing highs/lows. Validate against raw candle data. DO NOT accept fabricated levels from Gemini.
 Current Wave: ${data.h1WaveState.currentWave} | Progress: ${data.h1WaveState.waveProgress.toFixed(1)}% | Direction: ${data.h1WaveState.direction}
 🚦 TRADE ELIGIBLE: ${data.h1WaveState.tradeEligible ? 'YES' : 'NO'}
 Confidence: ${data.h1WaveState.confidence.toFixed(1)}%
 Wave Structure: W1=${data.h1WaveState.wave1Start?.toFixed(6) ?? 'N/A'}→${data.h1WaveState.wave1End?.toFixed(6) ?? 'N/A'} | W2=${data.h1WaveState.wave2End?.toFixed(6) ?? 'N/A'} | W3_target=${data.h1WaveState.wave3Target?.toFixed(6) ?? 'N/A'} | W4=${data.h1WaveState.wave4End?.toFixed(6) ?? 'N/A'} | W5_target=${data.h1WaveState.wave5Target?.toFixed(6) ?? 'N/A'}
 Invalidation SL: ${data.h1WaveState.invalidationPrice?.toFixed(6) ?? 'N/A'}
-Confirmations: FibRatio=${data.h1WaveState.confirmations.fibRatio}, Volume=${data.h1WaveState.confirmations.volumeConfirm}, RSI=${data.h1WaveState.confirmations.rsiConfirm}, MACD=${data.h1WaveState.confirmations.macdConfirm}, Structure=${data.h1WaveState.confirmations.structureIntact}
+Confirmations: FibRatio=${data.h1WaveState.confirmations.fibRatio}, Volume=${data.h1WaveState.confirmations.volumeConfirm}, RSI=${data.h1WaveState.confirmations.rsiConfirm}, MACD=${data.h1WaveState.confirmations.macdConfirm}, Structure=${data.h1WaveState.confirmations.structureIntact}, Wave2Complete=${data.h1WaveState.confirmations.wave2Complete}, Wave4Complete=${data.h1WaveState.confirmations.wave4Complete}
+Corrective Pattern: ${data.h1WaveState.correctivePattern} | Completion Confidence: ${data.h1WaveState.correctiveCompleteConfidence.toFixed(0)}%
+⚠️ GATING LOGIC:
+- Wave 3: ONLY tradeable if Wave2Complete=true (correction finished, verified by Fib retrace 50-78.6%, price reversal, RSI/MACD reversal)
+- Wave 5: ONLY tradeable if Wave4Complete=true (correction finished, verified by Fib retrace 23.6-50%, no Wave 1 overlap, price reversal)
+- Sub-wave Noise: M15/M1 pullbacks within H1 Wave 3/5 are NORMAL impulse sub-structure — validate SL is at H1 invalidation level to survive them
+- SL Strategy: H1 invalidation level (survives M15/M1 sub-wave pullbacks)
+- TP Strategy: TP1 at M15 significant level (Fib 38.2-50% of H1 target, close 50%), TP2 at H1 Fib target (100% for W3, 161.8% for W5, close 50%)
 Narrative: ${data.h1WaveState.narrative}` : 'H1 Wave state unavailable (insufficient data).'}
+
+## W.D. GANN MATRIX — TIME & PRICE VALIDATION
+${data.gannMatrix ? `⚠️ ANTI-HALLUCINATION: Gann harmonics calculated from actual H1 high/low (last 20 candles). Cardinal cross detection is mathematical (degree % 90). Validate these against raw price data.
+**TIME FRACTIONS** (Daylight division for reversal windows):
+${data.gannMatrix.timeFractions.map(tf => `${tf.label}: ${tf.time} (${tf.minutesFromSunrise}min)`).join(' | ')}
+Daylight: ${data.gannMatrix.daylightDuration.hours}h ${data.gannMatrix.daylightDuration.minutes}m
+
+**PRICE-TO-DEGREE** (Price mod 360):
+Current: ${data.gannMatrix.current.originalPrice.toFixed(6)} → ${data.gannMatrix.current.degree}° (${data.gannMatrix.current.zodiacSign})${data.gannMatrix.current.cardinalCross ? ' ⚠️ CARDINAL' : ''}
+High: ${data.gannMatrix.high.originalPrice.toFixed(6)} → ${data.gannMatrix.high.degree}°${data.gannMatrix.high.cardinalCross ? ' ⚠️ CARDINAL' : ''}
+Low: ${data.gannMatrix.low.originalPrice.toFixed(6)} → ${data.gannMatrix.low.degree}°${data.gannMatrix.low.cardinalCross ? ' ⚠️ CARDINAL' : ''}
+Degree Range: ${data.gannMatrix.priceRange.degreeRange.toFixed(1)}°
+
+**HARMONIC LEVELS** (cardinal degrees 0°/90°/180°/270°):
+${data.gannMatrix.harmonicLevels.map((lvl, idx) => `${['0°', '90°', '180°', '270°', '360°'][idx]}=${lvl.toFixed(6)}`).join(' | ')}
+
+${data.gannMatrix.ascendant ? `**ASCENDANT CLOCK**: ${data.gannMatrix.ascendant.ascendant.toFixed(2)}°${data.gannMatrix.ascendant.cardinalAlignment ? ' ⚠️ AT CARDINAL' : ''} | MC=${data.gannMatrix.ascendant.midheaven.toFixed(2)}° | LST=${data.gannMatrix.ascendant.localSiderealTime} | Next Cardinal: ${data.gannMatrix.ascendant.nextCardinalDegree}° in ${data.gannMatrix.ascendant.minutesToNextCardinal}min` : ''}
+
+**Gann Validation Rules**:
+- Cardinal Cross (0°/90°/180°/270°): If current price degree is within 5° of cardinal, validate as major S/R
+- Time Fractions: Cross-check if Gemini's reversal timing aligns with daylight 1/3, 1/2, 2/3 points
+- Harmonic Levels: Add cardinal price levels to your own precise_levels if missing from Gemini
+- Ascendant Alignment: If Ascendant at cardinal AND price at cardinal, flag as high-probability reversal window
+- If Gemini cites a price level that matches a Gann harmonic level (±0.5 ATR), upgrade its reliability` : 'Gann Matrix unavailable (insufficient data).'}
 
 ## CROSS-MARKET DIVERGENCE CHECK
 ${buildCrossMarketCheck(crossMarket)}

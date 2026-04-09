@@ -31,6 +31,7 @@ import {
     BarChart3,
     Menu,
     X,
+    Crosshair,
 } from 'lucide-react'
 import LinkNext from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -81,6 +82,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
     const navItems = [
         { label: 'Dashboard', href: '/', icon: LayoutDashboard },
         { label: 'Calendar', href: '/calendar', icon: Calendar },
+        { label: 'Gann Calendar', href: '/gann-calendar', icon: Radio },
         { label: 'Story', href: '/story', icon: ScrollText },
         { label: 'Fundamentals', href: '/fundamentals', icon: BarChart3 },
         { label: 'Trading Gurus', href: '/trading-gurus', icon: GraduationCap },
@@ -88,6 +90,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         { label: 'Indicator Optimization', href: '/indicator-optimization', icon: FlaskConical },
         { label: 'Correlation Scenarios', href: '/correlation-scenarios', icon: TrendingUp },
         { label: 'Trade', href: '/trade', icon: Zap },
+        { label: 'The Matrix', href: '/matrix', icon: Crosshair },
         { label: 'Journal', href: '/journal', icon: BookOpen },
         { label: 'Positions', href: '/positions', icon: Activity },
         { label: 'Analytics', href: '/pnl', icon: TrendingUp },

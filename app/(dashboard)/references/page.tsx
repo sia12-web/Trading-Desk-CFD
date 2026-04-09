@@ -1985,6 +1985,115 @@ function StrategySection() {
           </div>
         </div>
       </div>
+
+      {/* Algorithmic Time Projections */}
+      <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 border border-neutral-700/50 rounded-[3rem] p-10 space-y-10 relative overflow-hidden shadow-2xl">
+        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none print:hidden">
+          <Clock size={200} className="text-orange-500" />
+        </div>
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500" />
+        
+        <div className="relative z-10 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
+              <Clock className="text-orange-500" size={24} />
+            </div>
+            <h3 className="text-3xl font-black text-white italic">ALGORITHMIC TIME PROJECTIONS</h3>
+          </div>
+          <p className="text-neutral-400 font-medium leading-relaxed">
+            Institutions do not just project where the price is going to go; they project exactly <strong>when</strong> it is going to get there. Using <strong>Trend-Based Fib Time</strong> allows you to predict exact "Escape Times". 
+            <span className="block mt-2 text-white font-bold opacity-80 italic">The Mathematics of Time (Elliott Waves Master).</span>
+          </p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
+            <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-3xl p-8 space-y-6">
+              <h4 className="text-xl font-bold text-red-400 flex items-center gap-3">
+                <Activity size={24} />
+                Corrective Waves (Time Traps)
+              </h4>
+              <p className="text-sm text-neutral-400 mb-2">Because Wave 2 and Wave 4 must balance each other out, they are mathematically linked by Time.</p>
+              <div className="space-y-4">
+                <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-2 hover:bg-red-500/10 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs font-black text-red-500 uppercase tracking-widest">Wave 2 Time</p>
+                    <span className="text-[10px] bg-red-500/20 text-red-400 px-2.5 py-1 rounded-full font-bold">0.618x or 1.0x</span>
+                  </div>
+                  <p className="text-base font-bold text-white">Multiplier of Wave 1</p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">Measure the duration of Wave 1. Wave 2 typically completes a sharp pullback within 61.8% to 100% of the time Wave 1 took.</p>
+                </div>
+                <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl space-y-2 hover:bg-orange-500/10 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs font-black text-orange-500 uppercase tracking-widest">Wave 4 Escape</p>
+                    <span className="text-[10px] bg-orange-500/20 text-orange-400 px-2.5 py-1 rounded-full font-bold">1.618x or 2.618x</span>
+                  </div>
+                  <p className="text-base font-bold text-white">Multiplier of Wave 2</p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">If Wave 2 took 10 candles to finish its drop, a slow, grinding Wave 4 acts as a trap. The algorithm typically breaks out exactly 16 (1.618x) or 26 candles (2.618x) later.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-3xl p-8 space-y-6">
+              <h4 className="text-xl font-bold text-green-400 flex items-center gap-3">
+                <Zap size={24} />
+                Impulsive Waves (Breakout Timers)
+              </h4>
+              <p className="text-sm text-neutral-400 mb-2">Impulse waves carry the primary energy and adhere strictly to Fibonacci expansion in duration.</p>
+              <div className="space-y-4">
+                <div className="p-4 bg-green-500/5 border border-green-500/10 rounded-2xl space-y-2 hover:bg-green-500/10 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs font-black text-green-500 uppercase tracking-widest">Wave 1</p>
+                    <span className="text-[10px] bg-green-500/20 text-green-400 px-2.5 py-1 rounded-full font-bold">Base Rhythm</span>
+                  </div>
+                  <p className="text-xs text-neutral-500 leading-relaxed">Forms the base time signature. Starts the time cycle. All future waves reference its duration.</p>
+                </div>
+                <div className="p-4 bg-green-500/5 border border-green-500/10 rounded-2xl space-y-2 hover:bg-green-500/10 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs font-black text-green-500 uppercase tracking-widest">Wave 3 Time</p>
+                    <span className="text-[10px] bg-green-500/20 text-green-400 px-2.5 py-1 rounded-full font-bold">1.0x, 1.618x, 2.618x</span>
+                  </div>
+                  <p className="text-base font-bold text-white">Multiplier of Wave 1</p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">Wave 3 is the longest wave. It will usually reach its explosive peak practically colliding with the 1.618 or 2.618 target time.</p>
+                </div>
+                <div className="p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-2xl space-y-2 hover:bg-yellow-500/10 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs font-black text-yellow-500 uppercase tracking-widest">Wave 5 Time</p>
+                    <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-bold">1.0x (Equality)</span>
+                  </div>
+                  <p className="text-base font-bold text-white">Multiplier of Wave 1</p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">Exhaustion wave. It frequently mimics Wave 1 in its exact duration, or completes at 0.618x the time from W1 start to W3 end.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-600/10 border border-blue-500/20 rounded-3xl p-8 mt-4">
+            <h4 className="text-lg font-bold text-blue-400 mb-6 flex items-center gap-3">
+              <Target size={24} />
+              How to Find Your Exact "Escape Time" Right Now
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <ExecutionStep 
+                num="1" 
+                title="Find the Time Tool" 
+                subtitle="TradingView"
+                desc="Left-hand toolbar (where Fib Retracement lives). Search for 'Trend-Based Fib Time' (vertical lines)." 
+              />
+              <ExecutionStep 
+                num="2" 
+                title="Measure Wave 2 Shock" 
+                subtitle="The 3-Click Protocol"
+                desc="Click the exact peak where Wave 1 ended. Drag to bottom where Wave 2 ended. Double-click the bottom to lock it." 
+              />
+              <ExecutionStep 
+                num="3" 
+                title="Read the Matrix" 
+                subtitle="Algorithmic Alarm"
+                desc="Watch the vertical lines pointing to the future labeled 1.618 and 2.618. Wait for price to touch them." 
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
