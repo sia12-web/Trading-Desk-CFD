@@ -42,33 +42,6 @@ export async function syncOandaTrades(userId: string): Promise<SyncResult> {
         .single()
 
     const resetCutoff = profile?.last_demo_reset_at ? new Date(profile.last_demo_reset_at) : null
-    const syncCutoff = profile?.last_sync_at ? new Date(profile.last_sync_at) : null
-
-    // FIRST SYNC EVER: Set sync timestamp to NOW and return without importing
-    // This prevents importing ALL historical trades on first click
-    if (!syncCutoff && !resetCutoff) {
-        await supabase
-            .from('trader_profile')
-            .upsert({
-                user_id: userId,
-                last_sync_at: new Date().toISOString()
-            }, {
-                onConflict: 'user_id'
-            })
-
-        return {
-            openImported: 0,
-            closedImported: 0,
-            closedUpdated: 0,
-            skipped: 0,
-            errors: []
-        }
-    }
-
-    // Use the most recent cutoff (whichever is later)
-    const effectiveCutoff = resetCutoff && syncCutoff
-        ? (resetCutoff > syncCutoff ? resetCutoff : syncCutoff)
-        : (resetCutoff || syncCutoff)
 
     // 1. Fetch from OANDA (no cache)
     const [openResult, closedResult] = await Promise.all([
@@ -83,12 +56,12 @@ export async function syncOandaTrades(userId: string): Promise<SyncResult> {
         throw new Error(`Failed to fetch closed trades: ${JSON.stringify(closedResult.error)}`)
     }
 
-    // Filter out trades that were opened before the effective cutoff (reset or last sync)
+    // Filter out trades that were opened before the reset cutoff (if demo account was reset)
     const filterByDate = (trades: OandaTrade[]) => {
-        if (!effectiveCutoff) return trades
+        if (!resetCutoff) return trades
         return trades.filter(t => {
             const openTime = new Date(t.openTime)
-            return openTime >= effectiveCutoff
+            return openTime >= resetCutoff
         })
     }
 
