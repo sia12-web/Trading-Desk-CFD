@@ -1,314 +1,280 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import type { GannMatrixData } from '@/lib/utils/gann-calculator'
+import React, { useState, useEffect, useMemo } from 'react'
+import {
+    Moon, Star, Globe, ChevronLeft, ChevronRight, 
+    AlertTriangle, Info, Calendar as CalendarIcon,
+    TrendingUp, Zap, Wind, Navigation
+} from 'lucide-react'
+import {
+    format, startOfWeek, endOfWeek, addDays, addMonths, subMonths,
+    isSameDay, isSameMonth, startOfMonth, endOfMonth, isToday,
+    startOfDay, endOfDay
+} from 'date-fns'
 
-interface GannMatrixResponse {
-    pair: string
-    gannMatrix: GannMatrixData
-    currentPrice: number
-    highPrice: number
-    lowPrice: number
-    location: {
-        latitude: number
-        longitude: number
-        name: string
-    }
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+interface AstroEvent {
+    id: string
+    title: string
+    description: string
+    start_time: string
+    event_type: 'astrological'
+    category: 'moon' | 'retrograde' | 'eclipse' | 'transit' | 'aspect'
+    priority: 'low' | 'normal' | 'high'
 }
 
-const PAIRS = [
-    'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD',
-    'NZD/USD', 'EUR/GBP', 'EUR/JPY', 'GBP/JPY',
-    'XAU/USD', 'US30', 'NAS100', 'SPX500',
-    'BTC/USD', 'ETH/USD', 'SOL/USD'
-]
+interface MoonPhaseData {
+    date: string
+    fraction: number
+    phase: number
+    angle: number
+}
+
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string; glow: string }> = {
+    moon:        { bg: 'bg-slate-500/10',    border: 'border-slate-500/20',     text: 'text-slate-300',    glow: 'shadow-slate-500/20' },
+    retrograde:  { bg: 'bg-amber-500/10',    border: 'border-amber-500/30',     text: 'text-amber-400',    glow: 'shadow-amber-500/30' },
+    eclipse:     { bg: 'bg-rose-500/10',     border: 'border-rose-500/30',      text: 'text-rose-400',     glow: 'shadow-rose-500/30' },
+    transit:     { bg: 'bg-indigo-500/10',   border: 'border-indigo-500/20',    text: 'text-indigo-400',   glow: 'shadow-indigo-500/20' },
+    aspect:      { bg: 'bg-cyan-500/10',     border: 'border-cyan-500/20',      text: 'text-cyan-400',     glow: 'shadow-cyan-500/20' },
+}
+
+// ─── Components ─────────────────────────────────────────────────────────────
+
+function MoonIcon({ phase, size = 16 }: { phase: number; size?: number }) {
+    return (
+        <div className="relative flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
+            <div className={`rounded-full border border-neutral-700/50 flex items-center justify-center overflow-hidden bg-neutral-900`} style={{ width: size, height: size }}>
+                <div 
+                    className="absolute inset-0 bg-amber-100/10" 
+                    style={{ 
+                        width: '100%', 
+                        height: '100%',
+                        borderRadius: '50%',
+                        opacity: phase > 0.4 && phase < 0.6 ? 0.8 : 0.2
+                    }} 
+                />
+                <div 
+                    className="absolute bg-neutral-950"
+                    style={{
+                        width: size,
+                        height: size,
+                        left: phase > 0.5 ? '0' : '50%',
+                        opacity: phase === 0.5 ? 0 : 0.8,
+                        transform: `scaleX(${Math.abs(Math.cos(phase * Math.PI * 2))})`
+                    }}
+                />
+            </div>
+            {(phase > 0.48 && phase < 0.52) && (
+                <div className="absolute inset-0 bg-blue-400/20 blur-sm rounded-full animate-pulse" />
+            )}
+        </div>
+    )
+}
+
+function AstroEventCard({ event }: { event: AstroEvent }) {
+    const colors = CATEGORY_COLORS[event.category] || CATEGORY_COLORS.transit
+    
+    return (
+        <div className={`p-2.5 rounded-xl border ${colors.bg} ${colors.border} transition-all hover:scale-[1.02] hover:brightness-110 cursor-help group shadow-sm ${colors.glow}`}>
+            <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-black uppercase tracking-tighter ${colors.text}`}>{event.category}</span>
+                        {event.priority === 'high' && <Zap size={10} className="text-amber-400 animate-pulse" />}
+                    </div>
+                    <h4 className="text-xs font-bold text-neutral-100 truncate mt-0.5 leading-tight">{event.title}</h4>
+                </div>
+                <div className="text-[10px] font-mono text-neutral-500 mt-0.5 shrink-0">
+                    {format(new Date(event.start_time), 'HH:mm')}
+                </div>
+            </div>
+            {event.description && (
+                <p className="text-[9px] text-neutral-500 mt-1 line-clamp-1 group-hover:line-clamp-none transition-all">
+                    {event.description}
+                </p>
+            )}
+        </div>
+    )
+}
+
+// ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function GannCalendarPage() {
-    const [selectedPair, setSelectedPair] = useState('EUR/USD')
-    const [data, setData] = useState<GannMatrixResponse | null>(null)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [autoRefresh, setAutoRefresh] = useState(true)
+    const [currentDate, setCurrentDate] = useState(new Date())
+    const [events, setEvents] = useState<AstroEvent[]>([])
+    const [moonPhases, setMoonPhases] = useState<MoonPhaseData[]>([])
+    const [loading, setLoading] = useState(true)
+    const [view, setView] = useState<'month' | 'week'>('month')
 
-    const fetchGannMatrix = async () => {
+    useEffect(() => {
+        loadAstroData()
+    }, [currentDate, view])
+
+    const loadAstroData = async () => {
         setLoading(true)
-        setError(null)
-
         try {
-            const response = await fetch(`/api/gann/matrix?pair=${encodeURIComponent(selectedPair)}`)
-            if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.message || 'Failed to fetch Gann Matrix')
+            let start: Date, end: Date
+            if (view === 'month') {
+                const ms = startOfMonth(currentDate)
+                const me = endOfMonth(currentDate)
+                start = startOfWeek(ms, { weekStartsOn: 1 })
+                end = endOfWeek(me, { weekStartsOn: 1 })
+            } else {
+                start = startOfWeek(currentDate, { weekStartsOn: 1 })
+                end = endOfWeek(currentDate, { weekStartsOn: 1 })
             }
 
-            const result: GannMatrixResponse = await response.json()
-            setData(result)
+            const res = await fetch(`/api/calendar/astro?start=${start.toISOString()}&end=${end.toISOString()}`)
+            const data = await res.json()
+            setEvents(data.events || [])
+            setMoonPhases(data.moonPhases || [])
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unknown error')
+            console.error('Failed to load astro data:', err)
         } finally {
             setLoading(false)
         }
     }
 
-    useEffect(() => {
-        fetchGannMatrix()
-    }, [selectedPair])
+    const monthGrid = useMemo(() => {
+        const ms = startOfMonth(currentDate)
+        const me = endOfMonth(currentDate)
+        const gs = startOfWeek(ms, { weekStartsOn: 1 })
+        const ge = endOfWeek(me, { weekStartsOn: 1 })
+        const days: Date[] = []
+        let d = gs
+        while (d <= ge) { days.push(d); d = addDays(d, 1) }
+        return days
+    }, [currentDate])
 
-    useEffect(() => {
-        if (!autoRefresh) return
+    const getEventsForDay = (day: Date) => events.filter(e => isSameDay(new Date(e.start_time), day))
+    const getMoonPhaseForDay = (day: Date) => moonPhases.find(m => m.date === format(day, 'yyyy-MM-dd'))
 
-        const interval = setInterval(() => {
-            fetchGannMatrix()
-        }, 60000) // Refresh every 1 minute (Ascendant moves 1° every 4 minutes)
-
-        return () => clearInterval(interval)
-    }, [autoRefresh, selectedPair])
-
-    const formatTime = (isoString: string) => {
-        return new Date(isoString).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        })
+    const navigate = (dir: 1 | -1) => {
+        setCurrentDate(view === 'month' ? addMonths(currentDate, dir) : addDays(currentDate, dir * 7))
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold mb-2">W.D. Gann Astronomical Calendar</h1>
-                <p className="text-gray-400">Time-Price Geometry • Solar Fire Method • Master Calculator</p>
-            </div>
-
-            {/* Controls */}
-            <div className="mb-6 flex items-center gap-4">
-                <select
-                    value={selectedPair}
-                    onChange={(e) => setSelectedPair(e.target.value)}
-                    className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
-                >
-                    {PAIRS.map(pair => (
-                        <option key={pair} value={pair}>{pair}</option>
-                    ))}
-                </select>
-
-                <button
-                    onClick={fetchGannMatrix}
-                    disabled={loading}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 rounded-lg font-medium transition-colors"
-                >
-                    {loading ? 'Loading...' : 'Refresh'}
-                </button>
-
-                <label className="flex items-center gap-2 text-sm text-gray-400">
-                    <input
-                        type="checkbox"
-                        checked={autoRefresh}
-                        onChange={(e) => setAutoRefresh(e.target.checked)}
-                        className="w-4 h-4"
-                    />
-                    Auto-refresh (1 min)
-                </label>
-
-                {data && (
-                    <div className="ml-auto text-sm text-gray-400">
-                        Last updated: {formatTime(data.gannMatrix.calculatedAt)}
+        <div className="max-w-[1600px] mx-auto space-y-6">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 p-4 bg-gradient-to-r from-indigo-500/5 via-transparent to-purple-500/5 rounded-3xl border border-neutral-800/50">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
+                            <Navigation size={24} className="text-indigo-400 rotate-45" />
+                        </div>
+                        <div>
+                            <h1 className="text-4xl font-black tracking-tighter text-white uppercase italic">Celestial Desk</h1>
+                            <p className="text-neutral-500 text-xs font-bold uppercase tracking-[0.2em]">Institutional Astrological Alignment</p>
+                        </div>
                     </div>
-                )}
-            </div>
-
-            {error && (
-                <div className="mb-6 p-4 bg-red-900/20 border border-red-600 rounded-lg text-red-400">
-                    {error}
                 </div>
-            )}
 
-            {data && (
-                <div className="space-y-6">
-                    {/* Price Info */}
-                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <h2 className="text-xl font-semibold mb-4">Price Range (Last 20 H1 Candles)</h2>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div>
-                                <div className="text-sm text-gray-400 mb-1">High</div>
-                                <div className="text-2xl font-mono">{data.highPrice.toFixed(5)}</div>
+                <div className="flex items-center gap-3 p-1.5 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-xl">
+                    <button onClick={() => navigate(-1)} className="p-2 hover:bg-neutral-800 rounded-xl transition-all"><ChevronLeft size={18} className="text-neutral-400" /></button>
+                    <div className="px-6 py-2 min-w-[200px] text-center border-x border-neutral-800">
+                        <span className="text-lg font-black text-white italic">{format(currentDate, 'MMMM yyyy')}</span>
+                    </div>
+                    <button onClick={() => navigate(1)} className="p-2 hover:bg-neutral-800 rounded-xl transition-all"><ChevronRight size={18} className="text-neutral-400" /></button>
+                    <button onClick={() => setCurrentDate(new Date())} className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all">Today</button>
+                    <div className="h-8 w-px bg-neutral-800" />
+                    <div className="flex p-0.5 bg-neutral-950 rounded-xl">
+                        {(['month', 'week'] as const).map(v => (
+                            <button key={v} onClick={() => setView(v)} className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === v ? 'bg-indigo-600 text-white shadow-lg' : 'text-neutral-600 hover:text-neutral-400'}`}>
+                                {v}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Grid */}
+            <div className="relative group">
+                <div className="bg-neutral-900/40 backdrop-blur-md border border-neutral-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                    <div className="grid grid-cols-7 border-b border-neutral-800/50 bg-neutral-900/80">
+                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                            <div key={day} className="py-4 text-center">
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-600">{day}</span>
                             </div>
-                            <div>
-                                <div className="text-sm text-gray-400 mb-1">Current</div>
-                                <div className="text-2xl font-mono text-yellow-400">{data.currentPrice.toFixed(5)}</div>
-                            </div>
-                            <div>
-                                <div className="text-sm text-gray-400 mb-1">Low</div>
-                                <div className="text-2xl font-mono">{data.lowPrice.toFixed(5)}</div>
-                            </div>
-                        </div>
+                        ))}
                     </div>
 
-                    {/* Time Fractions */}
-                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <h2 className="text-xl font-semibold mb-4">⏰ Time Fractions (Master Calculator)</h2>
-                        <p className="text-sm text-gray-400 mb-4">
-                            Daylight Duration: {data.gannMatrix.daylightDuration.hours}h {data.gannMatrix.daylightDuration.minutes}m
-                            ({data.gannMatrix.daylightDuration.totalMinutes} minutes)
-                        </p>
-                        <div className="space-y-2">
-                            {data.gannMatrix.timeFractions.map((tf, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-900 rounded border border-gray-700">
-                                    <div>
-                                        <div className="font-medium">{tf.label}</div>
-                                        <div className="text-sm text-gray-400">{tf.minutesFromSunrise} minutes from sunrise</div>
-                                    </div>
-                                    <div className="text-2xl font-mono text-yellow-400">{tf.time}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Price-to-Degree */}
-                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <h2 className="text-xl font-semibold mb-4">📐 Price-to-Degree Analysis (Solar Fire Method)</h2>
-                        <p className="text-sm text-gray-400 mb-4">
-                            Degree Range: {data.gannMatrix.priceRange.degreeRange.toFixed(1)}°
-                            (Price Range: {data.gannMatrix.priceRange.absolute.toFixed(5)})
-                        </p>
-                        <div className="space-y-3">
-                            <div className="p-4 bg-gray-900 rounded border border-gray-700">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className="text-sm text-gray-400">Current Price</div>
-                                        <div className="font-mono text-lg">{data.gannMatrix.current.originalPrice.toFixed(5)}</div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className={`text-2xl font-bold ${data.gannMatrix.current.cardinalCross ? 'text-red-400' : 'text-yellow-400'}`}>
-                                            {data.gannMatrix.current.degree}°
-                                            {data.gannMatrix.current.cardinalCross && ' ⚠️'}
+                    <div className="grid grid-cols-7">
+                        {monthGrid.map((day) => {
+                            const dayEvents = getEventsForDay(day)
+                            const moon = getMoonPhaseForDay(day)
+                            const inMonth = isSameMonth(day, currentDate)
+                            const today = isToday(day)
+                            
+                            return (
+                                <div 
+                                    key={day.toISOString()}
+                                    className={`relative min-h-[160px] p-4 border-b border-r border-neutral-800/30 transition-all duration-300 hover:bg-indigo-500/5 group/day ${
+                                        !inMonth ? 'bg-neutral-950/20 opacity-30 grayscale' : ''
+                                    } ${today ? 'bg-indigo-500/5 shadow-inner' : ''}`}
+                                >
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className={`text-xl font-black italic tracking-tighter ${
+                                            today ? 'text-indigo-400' : inMonth ? 'text-neutral-400 group-hover/day:text-neutral-200' : 'text-neutral-700'
+                                        }`}>
+                                            {format(day, 'd')}
                                         </div>
-                                        <div className="text-sm text-gray-400">{data.gannMatrix.current.zodiacSign}</div>
-                                        {data.gannMatrix.current.cardinalCross && (
-                                            <div className="text-xs text-red-400 mt-1">AT CARDINAL CROSS</div>
+                                        {moon && (
+                                            <div className="group/moon relative">
+                                                <MoonIcon phase={moon.phase} size={20} />
+                                                <div className="absolute bottom-full right-0 mb-2 whitespace-nowrap hidden group-hover/moon:block px-2 py-1 bg-neutral-950 border border-neutral-800 rounded text-[9px] font-mono text-neutral-400 z-50">
+                                                    Phase: {(moon.fraction * 100).toFixed(1)}%
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
-                                </div>
-                            </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="p-4 bg-gray-900 rounded border border-gray-700">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="text-sm text-gray-400">High</div>
-                                            <div className="font-mono">{data.gannMatrix.high.originalPrice.toFixed(5)}</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className={`text-xl font-bold ${data.gannMatrix.high.cardinalCross ? 'text-red-400' : 'text-blue-400'}`}>
-                                                {data.gannMatrix.high.degree}°
-                                            </div>
-                                            <div className="text-xs text-gray-400">{data.gannMatrix.high.zodiacSign}</div>
-                                        </div>
+                                    <div className="space-y-1.5">
+                                        {dayEvents.map(event => (
+                                            <AstroEventCard key={event.id} event={event} />
+                                        ))}
                                     </div>
-                                </div>
-
-                                <div className="p-4 bg-gray-900 rounded border border-gray-700">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="text-sm text-gray-400">Low</div>
-                                            <div className="font-mono">{data.gannMatrix.low.originalPrice.toFixed(5)}</div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className={`text-xl font-bold ${data.gannMatrix.low.cardinalCross ? 'text-red-400' : 'text-blue-400'}`}>
-                                                {data.gannMatrix.low.degree}°
-                                            </div>
-                                            <div className="text-xs text-gray-400">{data.gannMatrix.low.zodiacSign}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Harmonic Levels */}
-                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <h2 className="text-xl font-semibold mb-4">🎯 Harmonic Levels (Cardinal Degrees)</h2>
-                        <p className="text-sm text-gray-400 mb-4">
-                            Support & Resistance at 0°, 90°, 180°, 270°, 360° cardinal points
-                        </p>
-                        <div className="space-y-2">
-                            {data.gannMatrix.harmonicLevels.map((level, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-900 rounded border border-gray-700">
-                                    <div className="font-medium">
-                                        {['0° (0%)', '90° (25%)', '180° (50%)', '270° (75%)', '360° (100%)'][idx]}
-                                    </div>
-                                    <div className="text-xl font-mono text-blue-400">{level.toFixed(5)}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Ascendant Clock */}
-                    {data.gannMatrix.ascendant && (
-                        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                            <h2 className="text-xl font-semibold mb-4">🌍 Ascendant Clock (Real-Time Earth Rotation)</h2>
-                            <p className="text-sm text-gray-400 mb-4">
-                                Location: {data.location.name} ({data.location.latitude.toFixed(4)}°N, {Math.abs(data.location.longitude).toFixed(4)}°W)
-                            </p>
-
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div className="p-4 bg-gray-900 rounded border border-gray-700">
-                                    <div className="text-sm text-gray-400 mb-1">Ascendant</div>
-                                    <div className={`text-3xl font-bold ${data.gannMatrix.ascendant.cardinalAlignment ? 'text-red-400' : 'text-yellow-400'}`}>
-                                        {data.gannMatrix.ascendant.ascendant.toFixed(2)}°
-                                        {data.gannMatrix.ascendant.cardinalAlignment && ' ⚠️'}
-                                    </div>
-                                    {data.gannMatrix.ascendant.cardinalAlignment && (
-                                        <div className="text-xs text-red-400 mt-1">AT CARDINAL ALIGNMENT</div>
+                                    
+                                    {dayEvents.some(e => e.priority === 'high') && !today && (
+                                        <div className="absolute top-1 left-1 w-1 h-1 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                                     )}
                                 </div>
-
-                                <div className="p-4 bg-gray-900 rounded border border-gray-700">
-                                    <div className="text-sm text-gray-400 mb-1">Midheaven</div>
-                                    <div className="text-3xl font-bold text-blue-400">
-                                        {data.gannMatrix.ascendant.midheaven.toFixed(2)}°
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between p-3 bg-gray-900 rounded border border-gray-700">
-                                    <div className="text-sm text-gray-400">Local Sidereal Time</div>
-                                    <div className="font-mono text-lg">{data.gannMatrix.ascendant.localSiderealTime}</div>
-                                </div>
-
-                                <div className="flex items-center justify-between p-3 bg-gray-900 rounded border border-gray-700">
-                                    <div className="text-sm text-gray-400">Next Cardinal Degree</div>
-                                    <div className="font-mono text-lg">{data.gannMatrix.ascendant.nextCardinalDegree}° in {data.gannMatrix.ascendant.minutesToNextCardinal} minutes</div>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 p-3 bg-blue-900/20 border border-blue-600 rounded text-sm text-blue-300">
-                                <strong>Note:</strong> Ascendant moves ~1° every 4 minutes. Cardinal degrees (0°, 90°, 180°, 270°) are high-probability reversal windows.
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Trading Doctrine */}
-                    <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 rounded-lg p-6 border border-purple-600">
-                        <h2 className="text-xl font-semibold mb-4">📚 Gann Trading Doctrine</h2>
-                        <div className="space-y-3 text-sm">
-                            <div>
-                                <strong className="text-purple-400">Time Fractions:</strong> Market energy shifts at daylight 1/3, 1/2, 2/3 points — algorithmic pivot zones where reversals often occur.
-                            </div>
-                            <div>
-                                <strong className="text-purple-400">Cardinal Cross:</strong> When price degree is within 5° of 0°, 90°, 180°, or 270°, major support/resistance expected where price and time harmonize.
-                            </div>
-                            <div>
-                                <strong className="text-purple-400">Harmonic Levels:</strong> The 5 cardinal price levels (0%, 25%, 50%, 75%, 100% of range) provide algorithmic S/R confluence.
-                            </div>
-                            <div>
-                                <strong className="text-purple-400">Gann Square:</strong> When Ascendant at cardinal (0°/90°/180°/270°) AND price at cardinal degree = maximum probability reversal window.
-                            </div>
-                        </div>
+                            )
+                        })}
                     </div>
                 </div>
-            )}
+            </div>
+
+            {/* Legend */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="md:col-span-1 bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex flex-col justify-center">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-550 mb-3 ml-1">Alignment Key</h3>
+                    <div className="flex flex-wrap gap-2">
+                        {Object.entries(CATEGORY_COLORS).map(([cat, colors]) => (
+                            <div key={cat} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${colors.bg} ${colors.border}`}>
+                                <div className={`w-1 h-1 rounded-full ${colors.text.replace('text', 'bg')}`} />
+                                <span className={`text-[9px] font-black uppercase tracking-tighter ${colors.text}`}>{cat}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="md:col-span-3 bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex items-center justify-between">
+                   <div className="flex items-center gap-4">
+                        <Star size={16} className="text-amber-500/40 rotate-12" />
+                        <div>
+                            <p className="text-[10px] font-black text-white italic tracking-wide">MERCURY RETROGRADE WARNING</p>
+                            <p className="text-[9px] text-neutral-500 font-medium">Expect high volatility and technical invalidations during retrograde windows.</p>
+                        </div>
+                   </div>
+                   <div className="text-right">
+                        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">System Status</p>
+                        <p className="text-xs text-green-500 font-black animate-pulse">ALIGNED</p>
+                   </div>
+                </div>
+            </div>
         </div>
     )
 }

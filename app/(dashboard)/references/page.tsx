@@ -2061,14 +2061,6 @@ function StrategySection() {
                   <p className="text-base font-bold text-white">Multiplier of Wave 1</p>
                   <p className="text-xs text-neutral-500 leading-relaxed">Wave 3 is the longest wave. It will usually reach its explosive peak practically colliding with the 1.618 or 2.618 target time.</p>
                 </div>
-                <div className="p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-2xl space-y-2 hover:bg-yellow-500/10 transition-colors">
-                  <div className="flex justify-between items-center">
-                    <p className="text-xs font-black text-yellow-500 uppercase tracking-widest">Wave 5 Time</p>
-                    <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-bold">1.0x (Equality)</span>
-                  </div>
-                  <p className="text-base font-bold text-white">Multiplier of Wave 1</p>
-                  <p className="text-xs text-neutral-500 leading-relaxed">Exhaustion wave. It frequently mimics Wave 1 in its exact duration, or completes at 0.618x the time from W1 start to W3 end.</p>
-                </div>
               </div>
             </div>
           </div>
@@ -2107,127 +2099,242 @@ function StrategySection() {
 
 function BehaviorsSection() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       <div>
-        <h3 className="text-2xl font-bold flex items-center gap-3">
+        <h3 className="text-2xl font-black flex items-center gap-3 italic uppercase tracking-tight text-white">
           <Brain className="text-emerald-500" size={28} />
-          Algorithmic Market Behaviors
+          Algorithmic Market DNA
         </h3>
-        <p className="text-neutral-400 mt-2">Specific personality types and algorithmic signatures of different market species across the Elliott Wave cycle.</p>
+        <p className="text-neutral-500 mt-2 font-medium text-sm">Institutional analysis of asset-specific personality types and algorithmic signatures.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-8 gap-6">
-        {/* Indices */}
-        <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[2.5rem] lg:col-span-2 space-y-6 shadow-xl">
-          <div className="flex items-center gap-4 border-b border-neutral-800 pb-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500">
+      <div className="space-y-16">
+        {/* 1. THE US INDICES */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-500">
               <Building2 size={24} />
             </div>
             <div>
-              <p className="text-[10px] text-blue-500 font-black uppercase tracking-widest">Species 1</p>
-              <h4 className="text-2xl font-black text-white">INDICES (Nasdaq 100, S&P 500, Dow 30, DAX 40)</h4>
+              <h4 className="text-xl font-black text-white italic uppercase">1. THE US INDICES (The "Infinite Bid" Matrix)</h4>
+              <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mt-0.5">Focus: Nasdaq 100, S&P 500, Dow Jones 30</p>
             </div>
           </div>
-          <p className="text-sm text-neutral-300 leading-relaxed"><strong className="text-blue-400">The Algorithm: "The Infinite Bid."</strong> Driven by passive institutional money (401k inflows). The algorithm is biased to go UP and rarely waits for anyone.</p>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-blue-400 font-bold mb-2">Wave 1 (The Breakout)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">Methodical and structural. It slowly grinds out of a previous downtrend. No sudden, violent spikes, just a steady march upward.</p>
-            </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-indigo-400 font-bold mb-2">Wave 2 (The Shallow Trap)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">This is where retail traders miss the trade. Indices rarely pull back to the 61.8% pocket. The algorithm buys the 38.2% or 50% level aggressively. If you wait for a deep discount, you are left behind.</p>
-            </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-green-400 font-bold mb-2">Wave 3 (The Relentless Staircase)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">It does not explode vertically; it grinds. It constantly creates small gaps overnight and opens higher. It easily hits the 1.618 and slowly marches to the 2.618.</p>
-            </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-orange-400 font-bold mb-2">Wave 4 (The "Running" Flat)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">Indices do not drop much during Wave 4. They consolidate sideways, or they create a "Running Flat" (where the correction actually drifts upward).</p>
-            </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-red-400 font-bold mb-2">Wave 5 (The Grind)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">Slow, exhausted, but persistent. It will make a new high, but the momentum oscillators (RSI/MACD) will show massive bearish divergence.</p>
-            </div>
+          
+          <div className="bg-blue-600/5 border border-blue-600/10 p-6 rounded-[2rem] mb-6">
+            <p className="text-sm text-neutral-400 leading-relaxed">
+              <strong className="text-blue-400 uppercase tracking-tighter italic">Fuel Source:</strong> 401k plans, passive institutional inflows, and corporate buybacks. They are mathematically biased to go up.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <BehaviorCard 
+              name="NASDAQ 100" 
+              volatility="0.743%" 
+              dna="The hyper-aggressive tech engine. Fastest and most parabolic."
+              impulse="Wave 3 is a momentum monster. It completely ignores the 1.618 and routinely blasts to the 2.618 or 3.618."
+              corrective="Pullbacks are incredibly shallow. Wave 2 rarely hits 61.8%. Buy the 38.2% or 50% or miss the trend."
+              trap="Retail shorts 'overbought' Wave 5s; Nasdaq prints truncated 5, consolidates, and starts a new Wave 1 higher."
+              color="blue"
+            />
+            <BehaviorCard 
+              name="S&P 500" 
+              volatility="0.520%" 
+              dna="The global benchmark. Cleaner and more precise due to 500-stock smoothing."
+              impulse="Wave 3 is strong but respectful. Usually targets the 1.618 to 2.0 extension perfectly."
+              corrective="Respects 50% and 61.8% for Wave 2. Wave 4 often forms a 'Running Flat' (drifts upward)."
+              trap={null}
+              color="indigo"
+            />
+            <BehaviorCard 
+              name="DOW JONES 30" 
+              volatility="0.755%" 
+              dna="The industrial dinosaur. Price-weighted; clunky movers dragged by expensive stocks."
+              impulse="Struggles to go parabolic. Wave 3 often stops at 1.618. Wave 5 is weak and frequently truncates."
+              corrective="Lacks hyper-growth fuel; corrections are deeper/slower. Wave 2 easily grinds to 61.8% or 78.6%."
+              trap={null}
+              color="slate"
+            />
           </div>
         </div>
 
-        {/* Crypto */}
-        <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[2.5rem] lg:col-span-2 space-y-6 shadow-xl">
-          <div className="flex items-center gap-4 border-b border-neutral-800 pb-4">
-            <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-500">
-              <Cpu size={24} />
+        {/* 2. THE EUROPEAN INDEX */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-600/10 border border-amber-600/20 flex items-center justify-center text-amber-500">
+              <Globe size={24} />
             </div>
             <div>
-              <p className="text-[10px] text-orange-500 font-black uppercase tracking-widest">Species 2</p>
-              <h4 className="text-2xl font-black text-white">CRYPTO (BTC/USD, ETH/USD, SOL/USD)</h4>
+              <h4 className="text-xl font-black text-white italic uppercase">2. THE EUROPEAN INDEX (The Gap Monster)</h4>
+              <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mt-0.5">Focus: DAX 40</p>
             </div>
           </div>
-          <p className="text-sm text-neutral-300 leading-relaxed"><strong className="text-orange-400">The Algorithm: "The Liquidation Engine."</strong> Driven by hyper-leveraged retail traders and algorithmic short-squeezes. It spends 80% of its time doing nothing, and 20% of its time going vertical.</p>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-blue-400 font-bold mb-2">Wave 1 (The Squeeze)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">A sudden, violent vertical spike out of nowhere. It is designed to liquidate early shorters.</p>
-            </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-indigo-400 font-bold mb-2">Wave 2 (The Terrifying Flush)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">Crypto Wave 2s are designed to make you believe the asset is going to zero. They retrace 78.6% to 88.6% of Wave 1. They are sharp, terrifying, and designed to force weak hands to sell at the absolute bottom.</p>
-            </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50 md:col-span-2 lg:col-span-1">
-              <h5 className="text-green-400 font-bold mb-2">Wave 3 (The Parabolic FOMO)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">Crypto Wave 3s are the largest in the financial world. They completely ignore the 1.618. They regularly hit the 3.618 or 4.236 extensions. Once it breaks the Wave 1 high, there is no resistance—just air.</p>
-            </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-orange-400 font-bold mb-2">Wave 4 (The Violent Chop)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">Massive volatility. The price will swing 5% up and 5% down in minutes to liquidate both over-leveraged longs and shorts. It is a highly dangerous environment.</p>
-            </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-red-400 font-bold mb-2">Wave 5 (The Blow-Off Top)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">The final stage of mania. It goes perfectly vertical, prints the highest volume of the entire cycle, and then instantly crashes 30% in a single day.</p>
-            </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            <BehaviorCard 
+              name="DAX 40" 
+              volatility="1.194%" 
+              dna="Germany's top 40. High volatility from overlap with Asia close and NY open."
+              impulse="Erratic. Wave 1 and 3 feature massive overnight gaps caused by news during market close."
+              corrective="Messy. Wave 4 frequently overlaps Wave 1 (diagonal rules). Wave C often extends to 1.618 of A to hunt stops."
+              trap={null}
+              color="amber"
+            />
           </div>
         </div>
 
-        {/* Gold */}
-        <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[2.5rem] lg:col-span-2 space-y-6 shadow-xl">
-          <div className="flex items-center gap-4 border-b border-neutral-800 pb-4">
-            <div className="w-12 h-12 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-500">
-              <Gem size={24} />
+        {/* 3. THE SAFE HAVEN */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-yellow-600/10 border border-yellow-600/20 flex items-center justify-center text-yellow-500">
+              <Shield size={24} />
             </div>
             <div>
-              <p className="text-[10px] text-yellow-500 font-black uppercase tracking-widest">Species 3</p>
-              <h4 className="text-2xl font-black text-white">GOLD (XAU/USD)</h4>
+              <h4 className="text-xl font-black text-white italic uppercase">3. THE SAFE HAVEN</h4>
+              <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mt-0.5">Focus: Gold (XAU/USD)</p>
             </div>
           </div>
-          <p className="text-sm text-neutral-300 leading-relaxed"><strong className="text-yellow-400">The Algorithm: "The Hybrid / The Stop-Hunter."</strong> As we discussed, Gold has the deepest liquidity pools in the world. It is highly sensitive to geopolitical news and algorithmically programmed to actively hunt stop-losses.</p>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-blue-400 font-bold mb-2">Wave 1 (The News Nuke)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">Often triggered by CPI, Fed rates, or global conflict. It is a massive vertical block that leaves a "void" on the chart.</p>
+
+          <div className="grid grid-cols-1 gap-6">
+            <BehaviorCard 
+              name="GOLD" 
+              volatility="1.218%" 
+              dna="Ultimate hybrid stop-hunter. Driven by central banks, inflation, and geopolitical fear."
+              impulse="News-driven teleports. Wave 3 targets 2.618. Wave 5 is usually a 'measured move' equal to Wave 1."
+              corrective="Most dangerous Wave 2. Hits 61.8% but often prints a violent 'Liquidity Wick' to 78.6%/88.6% first."
+              trap="Watch out for the 'Wick of Death' just before the impulse launches."
+              color="yellow"
+            />
+          </div>
+        </div>
+
+        {/* 4. THE FOREX MATRIX */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-600/10 border border-emerald-600/20 flex items-center justify-center text-emerald-500">
+              <RefreshCw size={24} />
             </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-indigo-400 font-bold mb-2">Wave 2 (The Liquidity Sweep)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">The deadliest wave in trading. Gold will pull back to the 61.8% level, pause, and then print a massive "Wick of Death" that pierces the 78.6% line to trigger all retail stop-losses before instantly reversing upward.</p>
+            <div>
+              <h4 className="text-xl font-black text-white italic uppercase">4. THE FOREX MATRIX (Mean-Reversion Meat Grinders)</h4>
+              <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mt-0.5">Focus: USD/CHF, AUD/USD, NZD/USD</p>
             </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50 md:col-span-2 lg:col-span-1">
-              <h5 className="text-green-400 font-bold mb-2">Wave 3 (The Sustained Momentum)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">Very aggressive. It pushes hard through the 1.618 and usually exhausts perfectly at the 2.618.</p>
-            </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-orange-400 font-bold mb-2">Wave 4 (The Complex Triangle)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">Gold loves to form massive, contracting triangles during Wave 4. It slowly squeezes the price into a tighter and tighter coil, putting retail traders to sleep.</p>
-            </div>
-            <div className="bg-neutral-800/50 p-5 rounded-2xl border border-neutral-700/50">
-              <h5 className="text-red-400 font-bold mb-2">Wave 5 (The Measured Move)</h5>
-              <p className="text-xs text-neutral-400 leading-relaxed">Unlike Crypto's blow-off tops, Gold's Wave 5 is usually mathematically precise. It is almost always exactly equal in length to Wave 1.</p>
-            </div>
+          </div>
+
+          <div className="bg-emerald-600/5 border border-emerald-600/10 p-6 rounded-[2rem] mb-6">
+            <p className="text-sm text-neutral-400 leading-relaxed">
+              <strong className="text-emerald-400 uppercase tracking-tighter italic">Fuel Source:</strong> Global trade balance and Central Bank manipulation. Designed to stay in massive multi-year ranges. They actively punish breakout traders.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <BehaviorCard 
+              name="USD/CHF" 
+              volatility="0.722%" 
+              dna="The 'Swissie.' Heavily manipulated by SNB to protect exports. Mirror image of EUR/USD."
+              impulse="Rare clean impulses. Wave 3 struggles past 1.618 before violently snapping back."
+              corrective="King of W-X-Y. 80% time chopping sideways. Wave 2s go unbelievably deep, often hitting 88.6%."
+              trap="Breakout traders are punished daily. Mean reversion is the law."
+              color="emerald"
+            />
+            <BehaviorCard 
+              name="AUD/USD" 
+              volatility="0.554%" 
+              dna="The 'Aussie.' Commodity currency tied to gold, copper, and China."
+              impulse="Trends cleaner than Swissie. Textbook 5-wave impulses in commodity bull markets. Wave 3 respects 1.618."
+              corrective="Wave 2 targets 61.8% cleanly without erratic wicks. Most reliable for standard Fibonacci."
+              trap={null}
+              color="green"
+            />
+            <BehaviorCard 
+              name="NZD/USD" 
+              volatility="0.607%" 
+              dna="The 'Kiwi.' Thinner sibling of Aussie. Algorithms are more violent due to lower volume."
+              impulse="Sharp and sudden. Prone to 'Extended Wave 1'. Wave 3 often only hits 1.0; Wave 5 truncates."
+              corrective="Thinner liquidity = wider spreads. Wave 2s are deep (78.6%) with sharp, erratic wicks like Gold."
+              trap="The Extended Wave 1 trap often burns all the fuel before Wave 3 starts."
+              color="teal"
+            />
           </div>
         </div>
       </div>
     </div>
   )
 }
+
+function BehaviorCard({ name, volatility, dna, impulse, corrective, trap, color }: any) {
+  const colorMap: any = {
+    blue: 'text-blue-400 border-blue-500/20 bg-blue-500/5',
+    indigo: 'text-indigo-400 border-indigo-500/20 bg-indigo-500/5',
+    slate: 'text-slate-400 border-slate-500/20 bg-slate-500/5',
+    amber: 'text-amber-400 border-amber-500/20 bg-amber-500/5',
+    yellow: 'text-yellow-400 border-yellow-500/20 bg-yellow-500/5',
+    emerald: 'text-emerald-400 border-emerald-500/20 bg-emerald-600/5',
+    green: 'text-green-400 border-green-500/20 bg-green-500/5',
+    teal: 'text-teal-400 border-teal-500/20 bg-teal-500/5'
+  }
+
+  const dotColor: any = {
+    blue: 'bg-blue-500',
+    indigo: 'bg-indigo-500',
+    slate: 'bg-slate-500',
+    amber: 'bg-amber-500',
+    yellow: 'bg-yellow-500',
+    emerald: 'bg-emerald-500',
+    green: 'bg-green-500',
+    teal: 'bg-teal-500'
+  }
+
+  return (
+    <div className="bg-neutral-900 border border-neutral-800 rounded-[2rem] p-6 space-y-6 hover:border-neutral-700 transition-all shadow-lg group">
+      <div className="flex justify-between items-start">
+        <div>
+          <h5 className="text-xl font-black text-white italic uppercase tracking-tight">{name}</h5>
+          <div className="flex items-center gap-1.5 mt-1">
+            <div className={`w-1 h-1 rounded-full ${dotColor[color]}`} />
+            <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest text-center">Volatility: {volatility}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mb-1.5 flex items-center gap-2">
+            <Activity size={12} className={colorMap[color].split(' ')[0]} />
+            The DNA
+          </p>
+          <p className="text-xs text-neutral-300 font-medium leading-relaxed">{dna}</p>
+        </div>
+
+        <div>
+          <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mb-1.5 flex items-center gap-2">
+            <TrendingUp size={12} className="text-green-500" />
+            Impulse Waves
+          </p>
+          <p className="text-xs text-neutral-400 leading-relaxed">{impulse}</p>
+        </div>
+
+        <div>
+          <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mb-1.5 flex items-center gap-2">
+            <GitMerge size={12} className="text-blue-500" />
+            Corrective Waves
+          </p>
+          <p className="text-xs text-neutral-400 leading-relaxed">{corrective}</p>
+        </div>
+
+        {trap && (
+          <div className={`${colorMap[color]} p-4 rounded-xl border`}>
+             <p className="text-[10px] font-black uppercase tracking-widest mb-1 flex items-center gap-2">
+               <AlertTriangle size={12} />
+               The Trap
+             </p>
+             <p className="text-[11px] font-bold leading-tight">{trap}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 
 function ToolCard({ title, value, desc, icon: Icon, color }: any) {
   const colors: any = {

@@ -64,7 +64,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
     const navItems = [
         { label: 'Dashboard', href: '/', icon: LayoutDashboard },
         { label: 'Calendar', href: '/calendar', icon: Calendar },
-        { label: 'Gann Calendar', href: '/gann-calendar', icon: Radio },
+        { label: 'Celestial Desk', href: '/gann-calendar', icon: Moon },
         { label: 'Fundamentals', href: '/fundamentals', icon: BarChart3 },
         { label: 'Trading Gurus', href: '/trading-gurus', icon: GraduationCap },
         { label: 'Market News', href: '/news', icon: Newspaper },
