@@ -24,8 +24,7 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 | Route | Page | Purpose |
 |-------|------|---------|
 | `/` | The Desk | JP Morgan-style AI trading floor — morning meetings, desk feed, process metrics |
-| `/story` | Story Hub | Pair subscriptions, My Story tab, episode list |
-| `/story/[pair]` | Story Detail | Episodes + scenarios + private notes per pair |
+
 | `/trading-gurus` | Trading Gurus | Private library of trading mentors & wisdom |
 | `/trading-gurus/[guru]` | Guru Vault | Interactive workspace for mentor insights |
 | `/ai-usage` | AI Usage | Token usage, costs, and performance per model |
@@ -79,18 +78,7 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 | GET/PUT/DELETE | `/api/risk-rules/[id]` | CRUD single rule |
 | POST | `/api/risk/validate` | Validate trade against rules |
 
-### Story (AI Narrative)
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | `/api/story/generate` | Trigger episode generation (background task) |
-| GET/POST | `/api/story/episodes` | List/create episodes |
-| GET/PUT/DELETE | `/api/story/episodes/[id]` | CRUD single episode |
-| GET/POST | `/api/story/scenarios` | List/create scenarios |
-| GET/PUT/DELETE | `/api/story/scenarios/[id]` | CRUD single scenario |
-| GET/POST | `/api/story/subscriptions` | List/create pair subscriptions |
-| GET/DELETE | `/api/story/subscriptions/[pair]` | Get/remove pair subscription |
-| GET/PUT | `/api/story/bible` | Get/update story bible |
-| GET/POST | `/api/story/my-story` | Private note handler (AI-excluded) |
+
 
 ### Trading Gurus (Private Knowledge)
 | Method | Endpoint | Purpose |
@@ -123,7 +111,7 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 |--------|----------|---------|
 | GET | `/api/ai-connections` | Check AI API key status |
 | GET | `/api/market-indices` | Global stock indices (public, no auth) |
-| GET | `/api/indicator-optimizer` | Optimized indicator params |
+
 | GET | `/api/news/fetch` | Forex news from external sources |
 | GET | `/api/pairs/info` | Pair metadata (pip size, etc.) |
 
@@ -150,10 +138,7 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 ### Cron Jobs (Protected by `CRON_SECRET`, scheduled via Railway cron or Supabase pg_cron + pg_net)
 | Endpoint | Schedule | Purpose |
 |----------|----------|---------|
-| `/api/cron/scenario-analysis` | **Mon 3:30 AM UTC** | Weekly institutional scenario analysis per pair |
-| `/api/cron/story-agents` | **4:00 AM UTC Mon-Fri** | Daily intelligence agents (Optimizer, News, Cross-Market) |
-| `/api/cron/story-generation` | **5:00 AM UTC Mon-Fri** | Daily episode generation for subscribed pairs |
-| `/api/cron/scenario-monitor` | **Every 15 min** | Check active scenarios vs OANDA prices, auto-resolve |
+
 | `/api/cron/pattern-alerts` | **Every 15 min** | Monitor correlation patterns, send Telegram alerts when ≥75% conditions met |
 
 ### Utilities
@@ -215,91 +200,7 @@ All pages live under `app/(dashboard)/` with shared layout in `DashboardShell.ts
 
 ---
 
-## Story System
 
-The narrative-based forex analysis feature — follow pairs like a TV show.
-
-### Core Pipeline
-- **Entry**: `lib/story/pipeline.ts` → `generateStory(userId, pair, taskId, options?)`
-- **Flow**: Gemini (structural) → DeepSeek (quant validation) → Claude (narrator)
-- **Duration**: ~4-5 min per episode (background task)
-
-### Components
-| Module | Path | Purpose |
-|--------|------|---------|
-| Pipeline | `lib/story/pipeline.ts` | Main orchestration |
-| Bible | `lib/story/bible.ts` | Persistent arc memory per pair |
-| Seasons | `lib/story/seasons.ts` | 20 episodes/season, auto-archive |
-| Validators | `lib/story/validators.ts` | Anti-hallucination level checks |
-| Monitor | `lib/story/scenario-monitor.ts` | 15min cron, auto-resolve scenarios |
-| AMD Detector | `lib/story/amd-detector.ts` | Accumulation-Manipulation-Distribution |
-| Liquidity | `lib/story/liquidity-mapper.ts` | Order blocks, equal highs/lows |
-| Data | `lib/story/data-collector.ts` | OANDA data collection |
-| News | `lib/story/news-summarizer.ts` | News context for narrator |
-| Types | `lib/story/types.ts` | TypeScript definitions |
-
-### Prompts
-| Prompt | Path | AI Model |
-|--------|------|----------|
-| Gemini Structural | `lib/story/prompts/gemini-structural.ts` | Gemini |
-| DeepSeek Quant | `lib/story/prompts/deepseek-quant.ts` | DeepSeek |
-| Claude Narrator | `lib/story/prompts/claude-narrator.ts` | Claude |
-
-### Intelligence Agents (run at 4AM UTC before story gen)
-| Agent | Path | Model | Purpose |
-|-------|------|-------|---------|
-| Indicator Optimizer | `lib/story/agents/indicator-optimizer.ts` | DeepSeek | Optimal indicator params per pair/TF |
-| News Intelligence | `lib/story/agents/news-intelligence.ts` | Gemini | Macro/fundamental analysis |
-| Cross-Market Effects | `lib/story/agents/cross-market.ts` | Gemini | Stock index impacts on forex |
-| **CMS Intelligence** | `lib/story/agents/cms-intelligence.ts` | **Programmatic** | **Conditional market patterns (no AI cost)** |
-| Runner | `lib/story/agents/runner.ts` | — | Agent orchestration (runs all 4) |
-| Types | `lib/story/agents/types.ts` | — | Agent type definitions |
-| Data | `lib/story/agents/data.ts` | — | Agent data access |
-
-### Key Features
-- **Story Bible**: Persistent arc summary per pair (`story_bibles` table), updated each episode
-- **Season System V2 (AI-Driven)**: AI decides when to end a season (no hardcoded episode cap), safety cap at 50 episodes. `story_seasons` table stores season metadata.
-- **Season Archive Memory**: Past season summaries fed to narrator for deep cross-season recall and callbacks
-- **Trade-Episode Linkage**: `trades.story_episode_id` + `story_season_number` columns — AI references "opened in S1E5" in narrative
-- **Scenario Monitor**: Cron every 15min checks active scenarios vs OANDA prices, auto-resolves + auto-generates next episode
-- **Anti-Hallucination V2**: DeepSeek `flagged_levels`, Claude forbidden from using them, `validateScenarioLevels()` hard gate with retry on direction/range violations
-- **Prompt Caching**: `callClaudeWithCaching()` — ~90% cache discount on narrator prompt
-- **Button UX**: "Begin the Story" (0 episodes) vs "Write Next Episode" (>0), auto-generate S1E1 on pair subscription
-- **Anti-spam**: Max 1 bot-triggered generation per pair per 6 hours
-- **Market hours**: No-op on weekends (Sat + Sun before 10PM UTC + Fri after 10PM UTC)
-- **Position Tracker**: AI-guided trading positions that persist across episodes (see below)
-
-### Story Position Tracker
-AI tells the trader when to enter, hold, adjust, or close across episodes.
-
-| Module | Path | Purpose |
-|--------|------|---------|
-| Position Data | `lib/data/story-positions.ts` | CRUD for positions + adjustments |
-| Types | `lib/story/types.ts` → `PositionGuidance` | AI output schema |
-| Pipeline | `lib/story/pipeline.ts` → `processPositionGuidance()` | Auto-process after each episode |
-| Narrator Prompt | `lib/story/prompts/claude-narrator.ts` | Injects active position context + guidance rules |
-
-**API Routes:**
-- `GET /api/story/positions?pair=EUR/USD` — list all positions for a pair
-- `GET /api/story/positions/[id]` — position with full adjustment journey
-- `POST /api/story/positions/[id]/activate` — user confirms suggested position
-- `POST /api/story/positions/[id]/link-trade` — link OANDA trade ID
-
-**UI Components** (`app/(dashboard)/story/_components/`):
-- `PositionGuidanceCard` — current episode's AI recommendation (enter/hold/adjust/close/wait)
-- `PositionJourney` — visual timeline of position life across episodes
-- `ScenarioProximity` — gauge showing price distance to scenario triggers/invalidations
-
-**Tables:** `story_positions`, `story_position_adjustments` (RLS: `auth.uid() = user_id`)
-
-**Flow:** Each episode → AI outputs `position_guidance` → pipeline creates/adjusts/closes position → UI shows journey
-
-### Scenario Analysis (Internal — No UI)
-Auto-generated weekly via cron. Story pipeline consumes the latest analysis as institutional context.
-- **Pipeline**: `lib/scenario-analysis/pipeline.ts` → `generateScenarioAnalysis(userId, pair, taskId, options?)`
-- **Flow**: Gemini (scanner) → DeepSeek (validator) → Claude (synthesizer) → stored in `scenario_analyses` table
-- **Cron**: `scenario-analysis-weekly` — Monday 3:30 AM UTC via `/api/cron/scenario-analysis`
-- **Story integration**: `getLatestScenarioAnalysisForPrompt()` injects institutional context into narrator
 
 ---
 
@@ -358,18 +259,7 @@ Programmatic statistical pattern engine — discovers "IF → THEN" market behav
 | DeepSeek Structure Validator | `lib/cms/prompts/deepseek-stats.ts` | Validates market structure logic |
 | Claude Synthesizer | `lib/cms/prompts/claude-synthesis.ts` | Writes implications + personality |
 
-### Story Integration (4th Intelligence Agent)
 
-CMS runs as a Story agent at **4AM UTC** (alongside Optimizer, News, Cross-Market).
-
-| Module | Path | Purpose |
-|--------|------|---------|
-| CMS Agent | `lib/story/agents/cms-intelligence.ts` | Programmatic agent (no AI calls) |
-| Agent Types | `lib/story/agents/types.ts` | `CMSIntelligenceReport` definition |
-| Agent Runner | `lib/story/agents/runner.ts` | Orchestrates all 4 agents |
-| Narrator Prompt | `lib/story/prompts/claude-narrator.ts` | Injects CMS conditions into Intelligence Briefing |
-
-**Flow:** CMS agent → computes conditions → stores as `story_agent_reports` (type=`'cms_intelligence'`) → Claude narrator references validated patterns in scenarios
 
 ### API Routes
 
@@ -398,7 +288,7 @@ CMS runs as a Story agent at **4AM UTC** (alongside Optimizer, News, Cross-Marke
 ### UI
 
 - **Page**: `/cms` — standalone analysis interface
-- **Widget**: Story Intelligence Briefing shows top 8 CMS conditions with probabilities
+
 
 ---
 
@@ -497,19 +387,9 @@ Individual indicator alerts from the optimizer.
 | `wave_analysis` | Elliott Wave + auto-analysis |
 | `big_picture_analysis` | Macro analysis |
 | `structural_analysis_cache` | Gemini output + compression_springs (30min TTL) |
-| `indicator_optimizations` | Optimized params per pair/TF (30-day expiry) |
 
-### Story Tables
-| Table | Purpose |
-|-------|---------|
-| `pair_subscriptions` | Which pairs user follows |
-| `story_episodes` | AI narrative episodes per pair |
-| `story_scenarios` | Binary scenarios with trigger/invalidation |
-| `story_bibles` | Persistent arc memory per pair |
-| `story_seasons` | Season grouping (20 episodes/season) |
-| `story_agent_reports` | Intelligence reports (optimizer, news, cross-market, cms) |
-| `story_positions` | AI-guided positions across episodes (suggested→active→closed) |
-| `story_position_adjustments` | Journey log of SL/TP moves, partial closes per episode |
+
+
 
 ### Desk Tables
 | Table | Purpose |
@@ -524,10 +404,7 @@ Individual indicator alerts from the optimizer.
 |-------|---------|
 | `cms_analyses` | Conditional market shaping results (JSONB, 7-day expiry, RLS) |
 
-### Scenario Analysis Tables
-| Table | Purpose |
-|-------|---------|
-| `scenario_analyses` | Institutional-grade reports (5 JSONB sections, 24h expiry, RLS) |
+
 
 ### AI Usage Tables
 | Table | Purpose |
@@ -697,8 +574,6 @@ Centralized in `lib/ai/chart-style.ts` → `CHART_STYLE_PROMPT_BLOCK`. Injected 
 | Execution Logs | `lib/data/execution-logs.ts` | OANDA execution tracking |
 | Risk Rules | `lib/data/risk-rules.ts` | Risk rule CRUD |
 | Screenshots | `lib/data/screenshots.ts` | Screenshot management |
-| Scenario Analyses | `lib/data/scenario-analyses.ts` | Scenario analysis CRUD |
-| Stories | `lib/data/stories.ts` | Story data access |
 | Trades | `lib/data/trades.ts` | Trade journal CRUD |
 | Trader Profile | `lib/data/trader-profile.ts` | Profile management |
 | Push Subs | `lib/data/push-subscriptions.ts` | Push subscription management |
@@ -735,9 +610,7 @@ OANDA Data → Correlation Discovery → AI Memory → Story/Desk → Position G
 - `correlation_analysis_cache` — 7-day cache (expires_at)
 
 **AI Memory Integration**:
-- Story AI (`lib/story/correlation-integrator.ts`) fetches active patterns (≥50% conditions met)
-- Desk AI (`lib/desk/data-collector.ts`) fetches active patterns + tomorrow's predictions
-- When patterns are deleted, AI memory is automatically cleared (no stale data)
+AI memory integration. When patterns are deleted, AI memory is automatically cleared (no stale data).
 
 #### 3. Real-Time Monitoring (`lib/correlation/pattern-monitor.ts`)
 - **Trigger**: Cron job every 15 minutes (`/api/cron/pattern-alerts`)

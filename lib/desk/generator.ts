@@ -11,7 +11,7 @@ import type { VolatilitySnapshot } from './prompts/trade-review'
 import { buildProcessScoringPrompt } from './prompts/process-scoring'
 import { getCandles } from '@/lib/oanda/client'
 import { calculateATR, getATRStatus } from '@/lib/utils/atr'
-import { getAssetConfig } from '@/lib/story/asset-config'
+import { getAssetConfig } from '@/lib/data/asset-config'
 import type {
     DeskMeeting,
     MorningMeetingOutput,

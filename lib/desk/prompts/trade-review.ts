@@ -1,5 +1,5 @@
 import type { DeskContext, TradeProposal } from '../types'
-import { getAssetConfig, isCrypto } from '@/lib/story/asset-config'
+import { getAssetConfig, isCrypto } from '@/lib/data/asset-config'
 
 export interface VolatilitySnapshot {
     atr14: number
@@ -103,17 +103,12 @@ ${context.ruleViolations.length > 0
             ? context.ruleViolations.map(v => `- ${v.rule}: ${v.current_value}/${v.limit}`).join('\n')
             : '- None'}
 
-### Active Scenarios for ${proposal.pair}
-${context.activeScenarios.filter(s => s.pair === proposal.pair).length > 0
-            ? context.activeScenarios.filter(s => s.pair === proposal.pair).map(s =>
-                `- "${s.title}" — ${s.direction} (${s.probability}%)`
-            ).join('\n')
-            : '- No active scenarios for this pair'}
+
 
 ### Hedge Fund Master Matrix Playbook Status for ${proposal.pair}
 ${context.trueFractalSetups && context.trueFractalSetups.find(s => s.pair === proposal.pair)
-            ? (() => { const tf = context.trueFractalSetups!.find(s => s.pair === proposal.pair)!; return `Matrix Wave ${tf.waveType ?? '?'}/4 | Score: ${tf.overallScore}/100 | Direction: ${tf.direction}\nMacro: ${tf.h1Trend} [${tf.directionalFilter}] | Setup: ${tf.scenarioLabel || 'Developing'} | R:R: ${tf.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1\n${tf.narrative}\n**Ray**: Validate the Playbook setup checklist. Is the 1M CHoCH confirmed? Is the Stochastic reloaded?\n**Sarah**: ENFORCE THE $8.50 RULE. Stop loss must be exactly $8.50 away from entry. SL must also be below/above the Spring wick. TP1 must be >= 2:1.\n**Alex**: Weekly/Daily alignment confirmed? Does the directional filter allow this entry?\n**Marcus**: Only Scenario A, B, C, or D setups are actionable. Is this a high-conviction Playbook entry?` })()
-            : '- No Playbook data for this pair'
+            ? (() => { const tf = context.trueFractalSetups!.find(s => s.pair === proposal.pair)!; return `Matrix Wave ${tf.waveType ?? '?'}/4 | Score: ${tf.overallScore}/100 | Direction: ${tf.direction}\nMacro: ${tf.h1Trend} [${tf.directionalFilter}] | Setup: ${tf.scenarioLabel || 'Developing'} | R:R: ${tf.riskRewardToTP2?.toFixed(1) ?? 'N/A'}:1\n**Ray**: Validate the Playbook setup checklist. Is the 1M CHoCH confirmed? Is the Stochastic reloaded?\n**Sarah**: ENFORCE THE $8.50 RULE. Stop loss must be exactly $8.50 away from entry. SL must also be below/above the Spring wick. TP1 must be >= 2:1.\n**Alex**: Weekly/Daily alignment confirmed? Does the directional filter allow this entry?\n**Marcus**: Only Scenario A, B, C, or D setups are actionable. Is this a high-conviction Playbook entry?` })()
+            : '- No Playbook data available'
         }
 
 ### Portfolio Summary

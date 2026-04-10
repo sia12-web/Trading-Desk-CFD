@@ -27,7 +27,6 @@ import {
     Layers,
     FlaskConical,
     Radio,
-    ScrollText,
     BarChart3,
     Menu,
     X,
@@ -46,23 +45,6 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const pathname = usePathname()
-    const [storyNotifications, setStoryNotifications] = useState(0)
-
-    useEffect(() => {
-        const fetchNotifications = async () => {
-            try {
-                const res = await fetch('/api/story/notifications')
-                const data = await res.json()
-                setStoryNotifications(data.totalNew || 0)
-            } catch (err) {
-                console.error('Failed to fetch story notifications:', err)
-            }
-        }
-        fetchNotifications()
-        // Poll every minute
-        const interval = setInterval(fetchNotifications, 60000)
-        return () => clearInterval(interval)
-    }, [])
 
     // Auto-close mobile menu on navigation
     useEffect(() => {
@@ -83,11 +65,10 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         { label: 'Dashboard', href: '/', icon: LayoutDashboard },
         { label: 'Calendar', href: '/calendar', icon: Calendar },
         { label: 'Gann Calendar', href: '/gann-calendar', icon: Radio },
-        { label: 'Story', href: '/story', icon: ScrollText },
         { label: 'Fundamentals', href: '/fundamentals', icon: BarChart3 },
         { label: 'Trading Gurus', href: '/trading-gurus', icon: GraduationCap },
         { label: 'Market News', href: '/news', icon: Newspaper },
-        { label: 'Indicator Optimization', href: '/indicator-optimization', icon: FlaskConical },
+
         { label: 'Correlation Scenarios', href: '/correlation-scenarios', icon: TrendingUp },
         { label: 'Trade', href: '/trade', icon: Zap },
         { label: 'The Matrix', href: '/matrix', icon: Crosshair },
@@ -176,11 +157,6 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
                                 >
                                     <item.icon size={20} className={`shrink-0 ${isActive ? 'text-blue-400' : 'text-neutral-500'}`} />
                                     <span className={`font-medium whitespace-nowrap ${isCollapsed ? 'md:hidden' : ''}`}>{item.label}</span>
-                                    {item.label === 'Story' && storyNotifications > 0 && (
-                                        <span className={`ml-auto flex items-center justify-center min-w-[1.25rem] h-5 px-1 bg-blue-600 text-white text-[10px] font-black rounded-full shadow-lg shadow-blue-600/30 ring-2 ring-neutral-900 ${isCollapsed ? 'absolute top-1 right-1' : ''}`}>
-                                            {storyNotifications}
-                                        </span>
-                                    )}
                                 </LinkNext>
                                 {isCollapsed && (
                                     <div className="absolute left-full ml-4 px-2 py-1 bg-neutral-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap font-bold uppercase tracking-widest border border-neutral-700 hidden md:block">

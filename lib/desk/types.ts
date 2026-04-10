@@ -207,13 +207,7 @@ export interface CurrentExposure {
     pairs: string[]
 }
 
-export interface ActiveScenario {
-    pair: string
-    title: string
-    direction: string
-    probability: number
-    trigger_conditions: string
-}
+
 
 export interface MarketContext {
     overall_sentiment: string
@@ -279,6 +273,65 @@ export interface FastMatrixSummary {
     riskRewardToTP2: number | null
 }
 
+export interface RSIDivergence {
+    detected: boolean
+    type: 'bullish' | 'bearish' | 'none' | null
+    priceSwing1: number | null
+    priceSwing2: number | null
+    rsiSwing1: number | null
+    rsiSwing2: number | null
+    details: string
+}
+
+export interface MACDDivergence {
+    detected: boolean
+    type: 'bullish' | 'bearish' | 'none' | null
+    histogramShallowing: boolean
+    details: string
+}
+
+export interface StochasticReload {
+    detected: boolean
+    direction: 'bullish' | 'bearish' | 'none' | null
+    kValue: number | null
+    dValue: number | null
+    crossTime: string | null
+}
+
+export interface GoldenPocket {
+    fib50: number
+    fib618: number
+    goldenPocketHigh: number
+    goldenPocketLow: number
+    waveSwingHigh: number
+    waveSwingLow: number
+}
+
+export interface CHoCHSignal {
+    detected: boolean
+    direction: 'bullish' | 'bearish' | 'none' | null
+    breakPrice: number | null
+    breakTime: string | null
+    previousSwingPrice: number | null
+}
+
+export interface VolumeClimax {
+    detected: boolean
+    volumeRatio: number
+    rejectionCandle: boolean
+    time: string | null
+}
+
+export interface DiamondBox {
+    boxHigh: number
+    boxLow: number
+    equilibriumPrice: number
+    candlesInBox: number
+    isReady: boolean
+}
+
+
+
 // Backward compat aliases
 export type HarmonicConvergenceSummary = FastMatrixSummary
 export type TrueFractalSummary = FastMatrixSummary
@@ -304,15 +357,6 @@ export interface DeskContext {
     }>
     currentExposure: CurrentExposure
     ruleViolations: Array<{ rule: string; current_value: number; limit: number }>
-    activeScenarios: ActiveScenario[]
-    latestEpisodes: Record<string, { title: string; narrative_summary: string; current_phase: string }>
-    activeStoryPositions: Array<{
-        pair: string
-        direction: string
-        status: string
-        entry_price: number
-        current_sl: number | null
-    }>
     profile: {
         trading_style: string | null
         risk_personality: string | null

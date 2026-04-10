@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getCandles as getUnifiedCandles } from '@/lib/data/candle-fetcher'
-import { displayToInternalPair } from '@/lib/story/asset-config'
+import { displayToInternalPair } from '@/lib/data/asset-config'
 import { calculateGannMatrix, estimateSunriseSunset } from '@/lib/utils/gann-calculator'
 
 /**

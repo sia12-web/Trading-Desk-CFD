@@ -99,12 +99,7 @@ ${context.activeRiskRules.map(r =>
 3. If the trade was a loser, focus on whether the structural invalidation (Spring level SL) was respected without adjustment.
 4. Sarah and Marcus must reference specific HCM process elements in their commentary — not abstract judgments.
 
-### Active Scenarios for ${trade.pair}
-${context.activeScenarios.filter(s => s.pair === trade.pair).length > 0
-            ? context.activeScenarios.filter(s => s.pair === trade.pair).map(s =>
-                `- "${s.title}" — ${s.direction} (${s.probability}%)`
-            ).join('\n')
-            : '- No active scenarios (entry criteria score should be lower)'}
+
 
 ### Trader's Current Streak
 - Process Score Streak: ${context.deskState?.current_streak ?? 0}

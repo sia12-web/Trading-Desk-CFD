@@ -1,4 +1,4 @@
-import { getSubscribedPairs } from '@/lib/data/stories'
+import { ALLOWED_INSTRUMENTS } from '@/lib/constants/instruments'
 import { getCandles } from '@/lib/data/candle-fetcher'
 import { callDeepSeek } from '@/lib/ai/clients/deepseek'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -24,21 +24,21 @@ export interface IndicatorSettings {
 
 /**
  * Main orchestrator for global indicator optimization.
- * Runs for all subscribed instruments across 5 timeframes.
+ * Runs for all supported instruments across all timeframes.
  */
 export async function runGlobalOptimization(userId: string, onProgress?: (msg: string) => void) {
-    const subscriptions = await getSubscribedPairs(userId)
+    const instruments = ALLOWED_INSTRUMENTS
     const timeframes: Timeframe[] = ['M', 'W', 'D', 'H4', 'H3', 'H1', 'M15', 'M1']
     
-    onProgress?.(`Found ${subscriptions.length} instruments to calibrate...`)
+    onProgress?.(`Found ${instruments.length} instruments to calibrate...`)
 
-    for (const sub of subscriptions) {
+    for (const instrument of instruments) {
         for (const tf of timeframes) {
-            onProgress?.(`Calibrating ${sub.pair} on ${tf} timeframe...`)
+            onProgress?.(`Calibrating ${instrument} on ${tf} timeframe...`)
             try {
-                await calibrateForPairAndTimeframe(userId, sub.pair, tf)
+                await calibrateForPairAndTimeframe(userId, instrument, tf)
             } catch (err) {
-                console.error(`Failed to calibrate ${sub.pair} ${tf}:`, err)
+                console.error(`Failed to calibrate ${instrument} ${tf}:`, err)
             }
         }
     }

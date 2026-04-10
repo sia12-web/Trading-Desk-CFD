@@ -8,7 +8,7 @@ import type {
     SessionAnnotatedH1,
     ProgrammaticCondition,
 } from './types'
-import { getAssetConfig } from '@/lib/story/asset-config'
+import { getAssetConfig } from '@/lib/data/asset-config'
 
 const MIN_SAMPLE = 15
 const MIN_PROBABILITY = 55

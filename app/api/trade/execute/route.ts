@@ -305,30 +305,6 @@ export async function POST(req: Request) {
             await incrementUsage(strategy_template_id)
         }
 
-        // 5. Story Position Sync
-        try {
-            const { getActivePosition, updatePosition, addAdjustment } = await import('@/lib/data/story-positions')
-            const storyPos = await getActivePosition(user.id, displayPair)
-
-            if (storyPos && !storyPos.oanda_trade_id && storyPos.status !== 'closed') {
-                await updatePosition(storyPos.id, {
-                    oanda_trade_id: brokerTradeId,
-                    status: 'active',
-                    entry_price: fillPrice
-                })
-
-                await addAdjustment({
-                    position_id: storyPos.id,
-                    episode_id: storyPos.entry_episode_id || '',
-                    episode_number: storyPos.entry_episode_number || 0,
-                    action: 'open',
-                    details: { manual_execution: true, broker: isCrypto ? 'kraken' : 'oanda', broker_trade_id: brokerTradeId },
-                    ai_reasoning: `ADOPTED: Execution detected via Trade terminal (${isCrypto ? 'Kraken' : 'OANDA'}). Linking to existing narrative position.`
-                })
-            }
-        } catch (syncError) {
-            console.error('Story sync failed during execution:', syncError)
-        }
 
         await logExecution({
             user_id: user.id,

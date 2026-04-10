@@ -8,7 +8,7 @@ const PAIRS = [
     'USD/CAD', 'NZD/USD', 'EUR/JPY', 'USD/CHF', 'GBP/JPY',
 ]
 
-const TIMEFRAMES = ['M', 'W', 'D', 'H4', 'H1'] as const
+const TIMEFRAMES = ['M', 'W', 'D', 'H4', 'H3', 'H1', 'M15', 'M1'] as const
 const INDICATORS = ['RSI', 'MACD', 'BB', 'Stochastic', 'ADX', 'EMA_Cross', 'SMA_Cross', 'SAR', 'ATR'] as const
 
 interface Optimization {

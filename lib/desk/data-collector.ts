@@ -2,19 +2,16 @@ import { createClient } from '@/lib/supabase/server'
 import { getActiveAccountId } from '@/lib/oanda/account'
 import { getPortfolioSummary, getDashboardStats, getRecentClosedTrades } from '@/lib/data/analytics'
 import { getActiveRiskRules } from '@/lib/data/risk-rules'
-import { getSubscribedPairs, getLatestEpisode, getActiveScenarios } from '@/lib/data/stories'
-import { getActivePosition } from '@/lib/data/story-positions'
 import { getProfile } from '@/lib/data/trader-profile'
-import { getCorrelationInsights } from '@/lib/story/correlation-integrator'
-import { isCrypto } from '@/lib/story/asset-config'
+import { isCrypto } from '@/lib/data/asset-config'
 import { getCryptoMarketContext } from '@/lib/crypto/market-context'
+import { ALLOWED_INSTRUMENTS } from '@/lib/constants/instruments'
 import type {
     DeskContext,
     DeskState,
     ProcessScore,
     OpenPosition,
     ClosedTrade,
-    ActiveScenario,
     MarketContext,
     FractalSetupSummary,
     FastMatrixSummary,
@@ -35,24 +32,20 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         recentClosedRaw,
         riskRulesRaw,
         profile,
-        subscribedPairs,
         deskState,
         recentScores,
         openTradesRaw,
         todayClosedRaw,
-        crossMarketReport,
     ] = await Promise.all([
         getPortfolioSummary(userId),
         getDashboardStats(userId),
         getRecentClosedTrades(userId, 10),
         getActiveRiskRules(userId),
         getProfile(userId),
-        getSubscribedPairs(userId),
         getDeskState(supabase, userId),
         getRecentProcessScores(supabase, userId),
         getOpenTrades(supabase, userId, accountId),
         getTodayClosedTrades(supabase, userId, accountId),
-        getLatestCrossMarketReport(supabase, userId),
     ])
 
     // Build open positions
@@ -60,7 +53,7 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         pair: t.pair as string,
         direction: t.direction as string,
         entry_price: Number(t.entry_price) || 0,
-        current_pnl: 0, // would need live price — use OANDA if available
+        current_pnl: 0,
         stop_loss: t.stop_loss ? Number(t.stop_loss) : null,
         take_profit: t.take_profit ? Number(t.take_profit) : null,
         opened_at: t.created_at as string,
@@ -97,7 +90,7 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
     const openPairs = openPositions.map(p => p.pair)
     const currentExposure = {
         openTradesCount: dashStats.openTradesCount,
-        totalRiskPercent: 0, // simplified — would need account balance
+        totalRiskPercent: 0,
         pairs: openPairs,
     }
 
@@ -116,83 +109,27 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         }
     }
 
-    // Gather active scenarios and latest episodes from subscribed pairs
-    const activeScenarios: ActiveScenario[] = []
-    const latestEpisodes: Record<string, { title: string; narrative_summary: string; current_phase: string }> = {}
-    const activeStoryPositions: Array<{
-        pair: string; direction: string; status: string; entry_price: number; current_sl: number | null
-    }> = []
+    const pairNames = ALLOWED_INSTRUMENTS
 
-    const pairNames = subscribedPairs.map((p: Record<string, unknown>) => p.pair as string)
-
-    // Fractal setups populated from latest cached structural analyses if available
+    // Fractal setups populated from latest cached structural analyses
     const fractalSetups: FractalSetupSummary[] = await getFractalSetups(supabase, userId, pairNames)
 
-    // Fast Matrix setups from latest story episodes
-    const trueFractalSetups: FastMatrixSummary[] = await getFastMatrixSetups(supabase, userId, pairNames)
+    // Fast Matrix setups — now empty as story-driven generation is removed
+    const trueFractalSetups: FastMatrixSummary[] = []
 
-    // Fetch per-pair data in parallel
-    const pairResults = await Promise.all(
-        pairNames.map(async (pair: string) => {
-            const [scenarios, episode, position] = await Promise.all([
-                getActiveScenarios(userId, pair).catch(() => []),
-                getLatestEpisode(userId, pair).catch(() => null),
-                getActivePosition(userId, pair).catch(() => null),
-            ])
-            return { pair, scenarios, episode, position }
-        })
-    )
-
-    for (const { pair, scenarios, episode, position } of pairResults) {
-        for (const s of scenarios) {
-            activeScenarios.push({
-                pair,
-                title: s.title,
-                direction: s.direction,
-                probability: s.probability,
-                trigger_conditions: s.trigger_conditions,
-            })
-        }
-        if (episode) {
-            latestEpisodes[pair] = {
-                title: episode.title,
-                narrative_summary: (episode.narrative || '').slice(0, 300),
-                current_phase: episode.current_phase || 'unknown',
-            }
-        }
-        if (position) {
-            activeStoryPositions.push({
-                pair,
-                direction: position.direction,
-                status: position.status,
-                entry_price: position.suggested_entry || position.entry_price || 0,
-                current_sl: position.current_stop_loss,
-            })
-        }
-    }
-
-    // Week P&L (sum of recent trades within this week)
+    // Week P&L
     const weekStart = getWeekStart()
     const weekPnL = recentTrades
         .filter(t => t.closed_at && new Date(t.closed_at) >= weekStart)
         .reduce((sum, t) => sum + t.pnl_amount, 0)
 
-    // Market context from latest episodes + cross-market intelligence
     const hasCryptoPairs = pairNames.some((p: string) => isCrypto(p))
     const cryptoCtx = hasCryptoPairs ? await getCryptoMarketContext() : null
 
     const marketContext: MarketContext = {
-        overall_sentiment: determineSentiment(activeScenarios),
+        overall_sentiment: 'neutral',
         key_events_today: [],
         volatility_status: {},
-        ...(crossMarketReport ? {
-            risk_appetite: crossMarketReport.risk_appetite === 'risk_on' ? 'risk-on' as const
-                : crossMarketReport.risk_appetite === 'risk_off' ? 'risk-off' as const
-                : 'mixed' as const,
-            equity_indices: crossMarketReport.indices,
-            dollar_trend: crossMarketReport.dollar_trend || undefined,
-            cross_market_thesis: crossMarketReport.thesis || undefined,
-        } : {}),
         ...(cryptoCtx ? {
             cryptoContext: {
                 fearGreedIndex: cryptoCtx.fearGreedIndex,
@@ -220,9 +157,6 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         activeRiskRules,
         currentExposure,
         ruleViolations,
-        activeScenarios,
-        latestEpisodes,
-        activeStoryPositions,
         profile: {
             trading_style: profile?.trading_style || null,
             risk_personality: profile?.risk_personality || null,
@@ -234,12 +168,6 @@ export async function collectDeskContext(userId: string): Promise<DeskContext> {
         marketContext,
         fractalSetups,
         trueFractalSetups,
-        correlationInsights: await getCorrelationInsights(supabase, userId, '').then(insights =>
-            insights ? {
-                activePatterns: insights.activePatterns,
-                predictions: insights.tomorrowPredictions
-            } : undefined
-        ),
     }
 }
 
@@ -328,23 +256,13 @@ function getWeekStart(): Date {
     return new Date(now.getFullYear(), now.getMonth(), diff)
 }
 
-function determineSentiment(scenarios: ActiveScenario[]): string {
-    if (scenarios.length === 0) return 'no active scenarios'
-    const bullish = scenarios.filter(s => s.direction === 'bullish' || s.direction === 'long').length
-    const bearish = scenarios.filter(s => s.direction === 'bearish' || s.direction === 'short').length
-    if (bullish > bearish) return 'leaning bullish'
-    if (bearish > bullish) return 'leaning bearish'
-    return 'mixed'
-}
-
 async function getFractalSetups(
     supabase: Awaited<ReturnType<typeof createClient>>,
     userId: string,
-    pairs: string[]
+    pairs: readonly string[]
 ): Promise<FractalSetupSummary[]> {
     if (pairs.length === 0) return []
     try {
-        // Pull latest structural analysis cache which contains BW data via Gemini output
         const { data } = await supabase
             .from('structural_analysis_cache')
             .select('pair, result')
@@ -359,7 +277,6 @@ async function getFractalSetups(
         for (const row of data) {
             const result = row.result as Record<string, unknown> | null
             if (!result) continue
-            // Extract BW data from structural analysis if available
             const bw = result.bill_williams as Record<string, unknown> | undefined
             if (bw) {
                 setups.push({
@@ -375,195 +292,5 @@ async function getFractalSetups(
         return setups
     } catch {
         return []
-    }
-}
-
-async function getFastMatrixSetups(
-    supabase: Awaited<ReturnType<typeof createClient>>,
-    userId: string,
-    pairs: string[]
-): Promise<FastMatrixSummary[]> {
-    if (pairs.length === 0) return []
-    try {
-        // Pull Fast Matrix data from story_episodes raw_data
-        const { data } = await supabase
-            .from('story_episodes')
-            .select('pair:story_subscriptions!inner(pair), raw_data')
-            .eq('story_subscriptions.user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(pairs.length * 2)
-
-        if (!data || data.length === 0) return []
-
-        const seen = new Set<string>()
-        const setups: FastMatrixSummary[] = []
-
-        for (const row of data) {
-            const pairData = row.pair as unknown as { pair: string } | { pair: string }[] | null
-            const pair = Array.isArray(pairData) ? pairData[0]?.pair : pairData?.pair
-            if (!pair || seen.has(pair)) continue
-            seen.add(pair)
-
-            const rawData = row.raw_data as Record<string, unknown> | null
-            if (!rawData) continue
-
-            // Try new field name first, fall back to old for backward compat
-            const fm = (rawData.fastMatrix || rawData.harmonicConvergence || rawData.trueFractal) as Record<string, unknown> | undefined
-            if (!fm) continue
-
-            // New Fast Matrix format: has activeScenario + scenarios object
-            if (fm.scenarios || fm.macro) {
-                const macro = fm.macro as Record<string, unknown> | undefined
-                const activeId = fm.activeScenario as string | null
-                const scenarios = fm.scenarios as Record<string, Record<string, unknown>> | undefined
-                const active = activeId && scenarios ? scenarios[activeId] : null
-                const keyLevels = fm.keyLevels as Record<string, unknown> | undefined
-
-                setups.push({
-                    pair,
-                    activeScenario: activeId,
-                    overallScore: (fm.overallScore as number) || 0,
-                    direction: (fm.direction as string) || 'neutral',
-                    narrative: (fm.narrative as string) || '',
-                    h1Trend: (macro?.h1Trend as string) || 'ranging',
-                    directionalFilter: (macro?.directionalFilter as string) || 'no_trade',
-                    waveType: (active?.waveType as number) ?? null,
-                    scenarioLabel: (active?.label as string) ?? null,
-                    rsiDivergence: (active?.rsiDivergence as Record<string, unknown>)?.detected === true,
-                    macdDivergence: (active?.macdDivergence as Record<string, unknown>)?.detected === true,
-                    volumeClimax: (active?.volumeClimax as Record<string, unknown>)?.detected === true,
-                    chochDetected: (active?.choch as Record<string, unknown>)?.detected === true,
-                    stochasticReload: (active?.stochasticReload as Record<string, unknown>)?.detected === true,
-                    goldenPocketHigh: (active?.goldenPocket as Record<string, unknown>)?.goldenPocketHigh as number ?? null,
-                    goldenPocketLow: (active?.goldenPocket as Record<string, unknown>)?.goldenPocketLow as number ?? null,
-                    diamondBoxHigh: (active?.diamondBox as Record<string, unknown>)?.boxHigh as number ?? null,
-                    diamondBoxLow: (active?.diamondBox as Record<string, unknown>)?.boxLow as number ?? null,
-                    springPrice: (keyLevels?.springPrice as number) ?? null,
-                    entryPrice: (keyLevels?.entryPrice as number) ?? null,
-                    stopLoss: (keyLevels?.stopLoss as number) ?? null,
-                    tp1: (keyLevels?.tp1 as number) ?? null,
-                    tp2: (keyLevels?.tp2 as number) ?? null,
-                    riskRewardToTP2: (keyLevels?.riskRewardToTP2 as number) ?? null,
-                })
-            } else {
-                // Legacy HCM format: map old phase-based fields to summary
-                const p1 = fm.phase1 as Record<string, unknown> | undefined
-                const keyLevels = fm.keyLevels as Record<string, unknown> | undefined
-
-                setups.push({
-                    pair,
-                    activeScenario: null,
-                    overallScore: (fm.overallScore as number) || 0,
-                    direction: (fm.direction as string) || 'neutral',
-                    narrative: (fm.narrative as string) || '',
-                    h1Trend: (p1?.primaryTrend as string) || 'ranging',
-                    directionalFilter: (p1?.directionalFilter as string) || 'no_trade',
-                    waveType: null,
-                    scenarioLabel: null,
-                    rsiDivergence: false,
-                    macdDivergence: false,
-                    volumeClimax: false,
-                    chochDetected: false,
-                    stochasticReload: false,
-                    goldenPocketHigh: null,
-                    goldenPocketLow: null,
-                    diamondBoxHigh: null,
-                    diamondBoxLow: null,
-                    springPrice: (keyLevels?.springPrice as number) ?? null,
-                    entryPrice: (keyLevels?.entryPrice as number) ?? null,
-                    stopLoss: (keyLevels?.stopLoss as number) ?? null,
-                    tp1: (keyLevels?.tp1 as number) ?? null,
-                    tp2: (keyLevels?.tp2 as number) ?? null,
-                    riskRewardToTP2: null,
-                })
-            }
-        }
-
-        return setups
-    } catch {
-        return []
-    }
-}
-
-async function getLatestCrossMarketReport(
-    supabase: Awaited<ReturnType<typeof createClient>>,
-    userId: string
-): Promise<{
-    risk_appetite: 'risk_on' | 'risk_off' | 'mixed'
-    indices: Array<{ name: string; instrument: string; change_1d: number; trend: string }>
-    dollar_trend: string | null
-    thesis: string | null
-} | null> {
-    try {
-        // Get the most recent cross_market agent report (today or yesterday)
-        const yesterday = new Date()
-        yesterday.setDate(yesterday.getDate() - 1)
-
-        const { data } = await supabase
-            .from('story_agent_reports')
-            .select('report')
-            .eq('user_id', userId)
-            .eq('agent_type', 'cross_market')
-            .gte('created_at', yesterday.toISOString())
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle()
-
-        if (!data?.report) return null
-
-        const report = data.report as Record<string, unknown>
-
-        // Extract from CrossMarketReport or IndexCrossMarketReport shape
-        const riskAppetite = (report.risk_appetite as string) || 'mixed'
-        const normalizedRisk = riskAppetite === 'risk_on' ? 'risk_on'
-            : riskAppetite === 'risk_off' ? 'risk_off'
-            : 'mixed' as const
-
-        // Build indices array from indices_analyzed (forex) or peer_indices (index)
-        const indices: Array<{ name: string; instrument: string; change_1d: number; trend: string }> = []
-
-        const indicesAnalyzed = report.indices_analyzed as Array<Record<string, unknown>> | undefined
-        if (indicesAnalyzed) {
-            for (const idx of indicesAnalyzed) {
-                indices.push({
-                    name: (idx.name as string) || '',
-                    instrument: (idx.instrument as string) || '',
-                    change_1d: 0,
-                    trend: (idx.recent_trend as string) || 'unknown',
-                })
-            }
-        }
-
-        const peerIndices = report.peer_indices as Array<Record<string, unknown>> | undefined
-        if (peerIndices) {
-            for (const idx of peerIndices) {
-                indices.push({
-                    name: (idx.name as string) || '',
-                    instrument: (idx.instrument as string) || '',
-                    change_1d: (idx.change1d as number) || 0,
-                    trend: (idx.trend as string) || 'unknown',
-                })
-            }
-        }
-
-        // Dollar trend from currency_implications or dollar_analysis
-        let dollarTrend: string | null = null
-        const dollarAnalysis = report.dollar_analysis as Record<string, unknown> | undefined
-        if (dollarAnalysis) {
-            dollarTrend = (dollarAnalysis.trend as string) || null
-        }
-        const currImplications = report.currency_implications as Record<string, unknown> | undefined
-        if (!dollarTrend && currImplications) {
-            dollarTrend = (currImplications.net_effect as string) || null
-        }
-
-        const thesis = (report.cross_market_thesis as string)
-            || (report.correlation_thesis as string)
-            || (report.summary as string)
-            || null
-
-        return { risk_appetite: normalizedRisk, indices, dollar_trend: dollarTrend, thesis }
-    } catch {
-        return null
     }
 }

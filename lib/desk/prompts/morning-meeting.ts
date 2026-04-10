@@ -1,5 +1,5 @@
 import type { DeskContext } from '../types'
-import { isCrypto } from '@/lib/story/asset-config'
+import { isCrypto } from '@/lib/data/asset-config'
 
 /**
  * Build the morning meeting prompt — a single Gemini call generates all 4 characters.
@@ -8,8 +8,6 @@ export function buildMorningMeetingPrompt(context: DeskContext): string {
     // Detect if any open positions or scenarios involve crypto
     const hasCrypto = [
         ...context.openPositions.map(p => p.pair),
-        ...context.activeScenarios.map(s => s.pair),
-        ...context.activeStoryPositions.map(p => p.pair),
     ].some(pair => isCrypto(pair))
 
     const cryptoNote = hasCrypto ? `
@@ -123,21 +121,7 @@ ${context.ruleViolations.length > 0
             : '- No violations'
         }
 
-### Active Story Scenarios
-${context.activeScenarios.length > 0
-            ? context.activeScenarios.map(s =>
-                `- ${s.pair}: "${s.title}" — ${s.direction} (${s.probability}%) | Trigger: ${s.trigger_conditions}`
-            ).join('\n')
-            : '- No active scenarios'
-        }
 
-### AI-Guided Positions (Story System)
-${context.activeStoryPositions.length > 0
-            ? context.activeStoryPositions.map(p =>
-                `- ${p.pair} ${p.direction} (${p.status}) @ ${p.entry_price} | SL: ${p.current_sl ?? 'none'}`
-            ).join('\n')
-            : '- No active story positions'
-        }
 
 ### Hedge Fund Master Matrix Playbook Status (THE ABSOLUTE LAW)
 ${context.trueFractalSetups && context.trueFractalSetups.length > 0

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { fetchForexFactoryCalendar, getUpcomingEventsForPair } from '@/lib/news/forex-factory-client'
 import { fetchForexNews } from '@/lib/news/forex-news-client'
-import { isCrypto } from '@/lib/story/asset-config'
+import { isCrypto } from '@/lib/data/asset-config'
 import { getCryptoMarketContext, formatCryptoMarketContext } from '@/lib/crypto/market-context'
 
 export const runtime = 'nodejs'

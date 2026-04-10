@@ -28,7 +28,7 @@ import Link from 'next/link'
 import { MarketSentiment } from '@/lib/utils/sentiment'
 import { getMarketSessions } from '@/lib/utils/market-sessions'
 import type { DeskMeeting, TradeReviewOutput } from '@/lib/desk/types'
-import { getAssetConfig } from '@/lib/story/asset-config'
+import { getAssetConfig } from '@/lib/data/asset-config'
 
 interface TradeFormProps {
     instruments: OandaInstrument[]
@@ -340,14 +340,6 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
             const data = await res.json()
             setExecutionResult(data)
             setShowConfirm(false)
-
-            if (storyPositionId) {
-                await fetch(`/api/story/positions/${storyPositionId}/activate`, {
-                    method: 'POST',
-                    body: JSON.stringify({ entry_price: entryPrice }),
-                    headers: { 'Content-Type': 'application/json' },
-                }).catch(console.error)
-            }
 
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('tradeFormState')

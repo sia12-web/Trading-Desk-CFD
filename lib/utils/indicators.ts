@@ -452,7 +452,7 @@ export function calculateGatorOscillator(highs: number[], lows: number[]): Gator
 
 // ── Fast Matrix: Divergence, Stochastic Reload, Golden Pocket ──
 
-import type { RSIDivergence, MACDDivergence, StochasticReload, GoldenPocket } from '@/lib/story/types'
+import type { RSIDivergence, MACDDivergence, StochasticReload, GoldenPocket } from '@/lib/desk/types'
 
 /**
  * Detect RSI divergence — compares last 2 swing extremes in price vs RSI.

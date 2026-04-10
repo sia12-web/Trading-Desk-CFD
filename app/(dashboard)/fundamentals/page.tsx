@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { TrendingUp, Plus, Loader2, MessageSquare, Archive, Sparkles, Trash2 } from 'lucide-react'
-import { PairSelector } from '../story/_components/PairSelector'
+import { PairSelector } from '../_components/PairSelector'
 
 interface FundamentalSession {
     id: string
@@ -203,12 +203,6 @@ export default function FundamentalsPage() {
                                     <div className="text-lg font-bold text-blue-400">
                                         {session.pair}
                                     </div>
-                                    {session.created_episode_id && (
-                                        <div className="flex items-center gap-1 px-2 py-0.5 bg-green-900/30 border border-green-700 rounded text-[10px] font-bold text-green-400 uppercase">
-                                            <Sparkles size={10} />
-                                            Episode Created
-                                        </div>
-                                    )}
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2 text-[11px] text-neutral-500">
