@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { BookMarked, CandlestickChart, LineChart, Search, Waves, Target, Activity, Zap, Landmark, Building2, Calendar, AlertTriangle, TrendingUp, TrendingDown, Brain, ArrowRight, CheckCircle, AlertCircle, Cpu, Eye, Calculator, GitMerge, ChevronRight, Clock, Bell, Play, CheckSquare, BarChart3, CheckCircle2, RefreshCw, Gauge, Shield, Gem, Microscope, Sparkles } from 'lucide-react'
+import { BookMarked, CandlestickChart, LineChart, Search, Waves, Target, Activity, Zap, Landmark, Building2, Calendar, AlertTriangle, TrendingUp, TrendingDown, Brain, ArrowRight, CheckCircle, AlertCircle, Cpu, Eye, Calculator, GitMerge, ChevronRight, Clock, Bell, Play, CheckSquare, BarChart3, CheckCircle2, RefreshCw, Gauge, Shield, Gem, Microscope, Sparkles, Globe } from 'lucide-react'
 import { CANDLESTICK_PATTERNS } from '@/lib/utils/candlestick-patterns'
 import { CHART_PATTERNS } from '@/lib/references/chart-patterns'
 import { CandlestickPatternCard } from './_components/CandlestickPatternCard'
@@ -2061,6 +2061,14 @@ function StrategySection() {
                   <p className="text-base font-bold text-white">Multiplier of Wave 1</p>
                   <p className="text-xs text-neutral-500 leading-relaxed">Wave 3 is the longest wave. It will usually reach its explosive peak practically colliding with the 1.618 or 2.618 target time.</p>
                 </div>
+                <div className="p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-2xl space-y-2 hover:bg-yellow-500/10 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs font-black text-yellow-500 uppercase tracking-widest">Wave 5 Time</p>
+                    <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-bold">1.0x (Equality)</span>
+                  </div>
+                  <p className="text-base font-bold text-white">Multiplier of Wave 1</p>
+                  <p className="text-xs text-neutral-500 leading-relaxed">Exhaustion wave. It frequently mimics Wave 1 in its exact duration, or completes at 0.618x the time from W1 start to W3 end.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -2131,27 +2139,27 @@ function BehaviorsSection() {
             <BehaviorCard 
               name="NASDAQ 100" 
               volatility="0.743%" 
-              dna="The hyper-aggressive tech engine. Fastest and most parabolic."
-              impulse="Wave 3 is a momentum monster. It completely ignores the 1.618 and routinely blasts to the 2.618 or 3.618."
-              corrective="Pullbacks are incredibly shallow. Wave 2 rarely hits 61.8%. Buy the 38.2% or 50% or miss the trend."
-              trap="Retail shorts 'overbought' Wave 5s; Nasdaq prints truncated 5, consolidates, and starts a new Wave 1 higher."
+              dna="The hyper-aggressive tech engine. It is the fastest and most parabolic of the indices."
+              impulse="Wave 3 is a momentum monster. It completely ignores the 1.618 extension and routinely blasts to the 2.618 or 3.618 levels."
+              corrective="Pullbacks are incredibly shallow. Wave 2 will almost never hit 61.8% during a bull run. If you do not buy the 38.2% or 50% retracement, you will miss the entire trend."
+              trap="Retail tries to short its 'overbought' Wave 5s. The Nasdaq will print a truncated Wave 5, consolidate sideways, and just start a brand new Wave 1 higher."
               color="blue"
             />
             <BehaviorCard 
               name="S&P 500" 
               volatility="0.520%" 
-              dna="The global benchmark. Cleaner and more precise due to 500-stock smoothing."
-              impulse="Wave 3 is strong but respectful. Usually targets the 1.618 to 2.0 extension perfectly."
-              corrective="Respects 50% and 61.8% for Wave 2. Wave 4 often forms a 'Running Flat' (drifts upward)."
+              dna="The benchmark of global finance. Cleaner and more precise than the Nasdaq because it holds 500 stocks, smoothing out erratic individual stock moves."
+              impulse="Wave 3 is strong but respectful. It usually targets the 1.618 or 2.0 extension perfectly."
+              corrective="It respects the 50% and 61.8% levels for Wave 2 quite well. Wave 4 often forms a 'Running Flat' where it drifts sideways but slightly upward before the final Wave 5 leg."
               trap={null}
               color="indigo"
             />
             <BehaviorCard 
               name="DOW JONES 30" 
               volatility="0.755%" 
-              dna="The industrial dinosaur. Price-weighted; clunky movers dragged by expensive stocks."
-              impulse="Struggles to go parabolic. Wave 3 often stops at 1.618. Wave 5 is weak and frequently truncates."
-              corrective="Lacks hyper-growth fuel; corrections are deeper/slower. Wave 2 easily grinds to 61.8% or 78.6%."
+              dna="The industrial 'dinosaur.' Because it is price-weighted and contains only 30 stocks, it is clunky. It moves based on expensive stocks rather than true market capitalization."
+              impulse="It struggles to go parabolic. Wave 3 often stops at the 1.618. Wave 5 is often weak and frequently truncates."
+              corrective="Because it lacks hyper-growth fuel, corrections are often deeper and slower. Wave 2 will easily grind down to the 61.8% or 78.6% level."
               trap={null}
               color="slate"
             />
@@ -2174,9 +2182,9 @@ function BehaviorsSection() {
             <BehaviorCard 
               name="DAX 40" 
               volatility="1.194%" 
-              dna="Germany's top 40. High volatility from overlap with Asia close and NY open."
-              impulse="Erratic. Wave 1 and 3 feature massive overnight gaps caused by news during market close."
-              corrective="Messy. Wave 4 frequently overlaps Wave 1 (diagonal rules). Wave C often extends to 1.618 of A to hunt stops."
+              dna="Germany’s top 40 stocks. High volatility profile due to overlap with the Asia close and NY open."
+              impulse="Highly erratic. Wave 1 and Wave 3 frequently feature massive overnight gaps caused by news during market close."
+              corrective="Messy. Wave 4 frequently overlaps the territory of Wave 1 (diagonal rules). Wave C's often extend to 1.618 of Wave A to hunt liquidity."
               trap={null}
               color="amber"
             />
@@ -2199,10 +2207,10 @@ function BehaviorsSection() {
             <BehaviorCard 
               name="GOLD" 
               volatility="1.218%" 
-              dna="Ultimate hybrid stop-hunter. Driven by central banks, inflation, and geopolitical fear."
-              impulse="News-driven teleports. Wave 3 targets 2.618. Wave 5 is usually a 'measured move' equal to Wave 1."
-              corrective="Most dangerous Wave 2. Hits 61.8% but often prints a violent 'Liquidity Wick' to 78.6%/88.6% first."
-              trap="Watch out for the 'Wick of Death' just before the impulse launches."
+              dna="The ultimate hybrid stop-hunter. It is driven by central banks, inflation, and geopolitical fear."
+              impulse="It features 'teleport' moves on news. Wave 3 targets are often 2.618. Wave 5 is usually the same length as Wave 1 (a 'measured move')."
+              corrective="The most dangerous Wave 2 in the world. It will hit the 61.8%, but often creates a violent 'Liquidity Wick' to the 78.6% or 88.6% just to take out stop losses before the real move starts."
+              trap="Watch for the 'Wick of Death' just before the impulse launches."
               color="yellow"
             />
           </div>
@@ -2230,28 +2238,28 @@ function BehaviorsSection() {
             <BehaviorCard 
               name="USD/CHF" 
               volatility="0.722%" 
-              dna="The 'Swissie.' Heavily manipulated by SNB to protect exports. Mirror image of EUR/USD."
-              impulse="Rare clean impulses. Wave 3 struggles past 1.618 before violently snapping back."
-              corrective="King of W-X-Y. 80% time chopping sideways. Wave 2s go unbelievably deep, often hitting 88.6%."
-              trap="Breakout traders are punished daily. Mean reversion is the law."
+              dna="The 'Swissie.' It is heavily manipulated by the Swiss National Bank (SNB) to protect their export economy. It is a mirror image of EUR/USD."
+              impulse="Rare to see clean impulses. Wave 3 will often struggle to pass 1.618 before a violent snapback."
+              corrective="The 'King of W-X-Y.' It spends 80% of its time in sideways chop. Wave 2s go unbelievably deep, often hitting 88.6% or the full 100%."
+              trap="Breakout traders are punished daily. Mean-reversion is the rule here."
               color="emerald"
             />
             <BehaviorCard 
               name="AUD/USD" 
               volatility="0.554%" 
-              dna="The 'Aussie.' Commodity currency tied to gold, copper, and China."
-              impulse="Trends cleaner than Swissie. Textbook 5-wave impulses in commodity bull markets. Wave 3 respects 1.618."
-              corrective="Wave 2 targets 61.8% cleanly without erratic wicks. Most reliable for standard Fibonacci."
+              dna="The 'Aussie.' A commodity currency tied to gold, copper, and Chinese demand."
+              impulse="Trends cleaner than the Swissie. It respects textbook 5-wave impulses during commodity bull markets. Wave 3 respects the 1.618."
+              corrective="Wave 2 targets 61.8% cleanly without the erratic wicks of Gold. Most reliable pair for Fibonacci retracements."
               trap={null}
               color="green"
             />
             <BehaviorCard 
               name="NZD/USD" 
               volatility="0.607%" 
-              dna="The 'Kiwi.' Thinner sibling of Aussie. Algorithms are more violent due to lower volume."
-              impulse="Sharp and sudden. Prone to 'Extended Wave 1'. Wave 3 often only hits 1.0; Wave 5 truncates."
-              corrective="Thinner liquidity = wider spreads. Wave 2s are deep (78.6%) with sharp, erratic wicks like Gold."
-              trap="The Extended Wave 1 trap often burns all the fuel before Wave 3 starts."
+              dna="The 'Kiwi.' The thinner sibling of the Aussie. It moves in the same direction but is more violent because of lower liquidity."
+              impulse="Sharp and sudden. Prone to the 'Extended Wave 1.' Wave 3 often only hits 1.0, and Wave 5 truncates."
+              corrective="Sharp and deep. Because liquidity is thinner, spreads widen and Wave 2s are deep (78.6%) with messy wicks like Gold."
+              trap="The 'Extended Wave 1' trap. If Wave 1 is too long, the algorithm has used all its fuel and Wave 3 will fail."
               color="teal"
             />
           </div>

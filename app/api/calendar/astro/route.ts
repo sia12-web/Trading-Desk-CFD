@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import ical from 'node-ical'
-import SunCalc from 'suncalc'
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 const MOON_PHASES_ICAL = 'https://calendar.google.com/calendar/ical/ht3jplcn7224ndjkdov93c9m9m%40group.calendar.google.com/public/basic.ics'
 const ASTRO_CAL_ICAL = 'https://cantonbecker.com/astronomy-calendar/astrocal.ics'
@@ -34,12 +34,15 @@ export async function GET(request: Request) {
     try {
         console.log(`[AstroAPI] Fetching transits from ${startDate.toISOString()} to ${endDate.toISOString()}`)
 
+        const ical = require('node-ical')
+        const SunCalc = require('suncalc')
+
         const [moonData, astroData] = await Promise.all([
-            ical.async.fromURL(MOON_PHASES_ICAL).catch(err => {
+            ical.async.fromURL(MOON_PHASES_ICAL).catch((err: any) => {
                 console.warn('[AstroAPI] Moon Phases fetch failed:', err.message)
                 return {}
             }),
-            ical.async.fromURL(ASTRO_CAL_ICAL).catch(err => {
+            ical.async.fromURL(ASTRO_CAL_ICAL).catch((err: any) => {
                 console.warn('[AstroAPI] Astro Events fetch failed:', err.message)
                 return {}
             })
@@ -56,7 +59,7 @@ export async function GET(request: Request) {
                             from: startDate,
                             to: endDate
                         })
-                        instances.forEach(instance => {
+                        instances.forEach((instance: any) => {
                             addEvent(instance.event, instance.start, prefix)
                         })
                     } else {

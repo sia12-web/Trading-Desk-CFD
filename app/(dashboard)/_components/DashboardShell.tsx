@@ -31,6 +31,7 @@ import {
     Menu,
     X,
     Crosshair,
+    Moon,
 } from 'lucide-react'
 import LinkNext from 'next/link'
 import { usePathname } from 'next/navigation'
