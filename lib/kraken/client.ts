@@ -27,10 +27,11 @@ function getConfig(): KrakenConfig {
  * Generate Kraken API signature (HMAC-SHA512)
  */
 function generateSignature(path: string, nonce: string, postData: string, apiSecret: string): string {
-    const message = path + crypto.createHash('sha256').update(nonce + postData).digest()
+    const hash = crypto.createHash('sha256').update(nonce + postData).digest()
     const signature = crypto
         .createHmac('sha512', Buffer.from(apiSecret, 'base64'))
-        .update(message)
+        .update(path)
+        .update(hash)
         .digest('base64')
     return signature
 }
