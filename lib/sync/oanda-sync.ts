@@ -56,17 +56,8 @@ export async function syncOandaTrades(userId: string): Promise<SyncResult> {
         throw new Error(`Failed to fetch closed trades: ${JSON.stringify(closedResult.error)}`)
     }
 
-    // Filter out trades that were opened before the reset cutoff (if demo account was reset)
-    const filterByDate = (trades: OandaTrade[]) => {
-        if (!resetCutoff) return trades
-        return trades.filter(t => {
-            const openTime = new Date(t.openTime)
-            return openTime >= resetCutoff
-        })
-    }
-
-    const oandaOpenTrades = filterByDate(openResult.data)
-    const oandaClosedTrades = filterByDate(closedResult.data)
+    const oandaOpenTrades = openResult.data || []
+    const oandaClosedTrades = closedResult.data || []
 
     // 2. Load all local trades with oanda_trade_id
     const { data: localTrades, error: localErr } = await supabase

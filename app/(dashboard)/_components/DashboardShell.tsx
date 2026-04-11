@@ -78,7 +78,6 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         { label: 'Analytics', href: '/pnl', icon: TrendingUp },
         { label: 'Risk Rules', href: '/risk-rules', icon: ShieldAlert },
         { label: 'Execution Log', href: '/execution-log', icon: History },
-        { label: 'AI Usage', href: '/ai-usage', icon: Layers },
         { label: 'References', href: '/references', icon: BookMarked },
         { label: 'Settings', href: '/settings', icon: Settings },
     ]

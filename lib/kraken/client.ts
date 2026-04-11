@@ -42,7 +42,7 @@ function generateSignature(path: string, nonce: string, postData: string, apiSec
 async function privateRequest(endpoint: string, params: Record<string, any> = {}) {
     const config = getConfig()
     const path = `/0/private/${endpoint}`
-    const nonce = Date.now().toString()
+    const nonce = (Date.now() * 1000).toString()
 
     const postData = new URLSearchParams({
         nonce,

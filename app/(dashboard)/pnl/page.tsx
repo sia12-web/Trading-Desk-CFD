@@ -86,7 +86,7 @@ export default async function PnlPage() {
                             <span className="px-2 py-1 bg-neutral-800 rounded-lg text-[10px] font-bold text-neutral-500">ALL TIME</span>
                         </div>
                     </div>
-                    <div className="h-80 w-full">
+                    <div className="h-80 w-full min-h-[320px]">
                         <CumulativePnLChart data={cumulativeData} />
                     </div>
                 </div>
@@ -97,7 +97,7 @@ export default async function PnlPage() {
                         <PieChart className="text-amber-500" size={20} />
                         Edge by Pair
                     </h3>
-                    <div className="h-80 w-full">
+                    <div className="h-80 w-full min-h-[320px]">
                         <PnLByPairChart data={pairData} />
                     </div>
                 </div>
