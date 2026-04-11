@@ -7,8 +7,6 @@ import { KrakenAccountWidget } from '@/components/dashboard/KrakenAccountWidget'
 import { RiskStatusWidget } from '@/components/dashboard/RiskStatusWidget'
 import { VolatilePairsWidget } from '@/components/dashboard/VolatilePairsWidget'
 import { MarketSessionsWidget } from '@/components/dashboard/MarketSessionsWidget'
-import { DeskStats } from './_components/desk/DeskStats'
-import type { DeskState, ProcessScore } from '@/lib/desk/types'
 
 export default async function DashboardPage() {
     const user = await getAuthUser()
@@ -16,24 +14,6 @@ export default async function DashboardPage() {
 
     const supabase = await createClient()
     const stats = await getDashboardStats(user.id)
-
-    // Fetch desk data in parallel
-    const [deskStateResult, scoresResult] = await Promise.all([
-        supabase
-            .from('desk_state')
-            .select('*')
-            .eq('user_id', user.id)
-            .maybeSingle(),
-        supabase
-            .from('process_scores')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('scored_at', { ascending: false })
-            .limit(5),
-    ])
-
-    const deskState = (deskStateResult.data || null) as DeskState | null
-    const recentScores = (scoresResult.data || []) as ProcessScore[]
 
     return (
         <div className="max-w-[1500px] mx-auto space-y-6 pb-20 px-4">
@@ -75,14 +55,6 @@ export default async function DashboardPage() {
                 <MarketSessionsWidget />
             </div>
 
-            {/* Bottom Row: Desk Metrics */}
-            <div className="max-w-md">
-                <DeskStats
-                    deskState={deskState}
-                    todayPnL={stats.todayPnL}
-                    recentScores={recentScores}
-                />
-            </div>
         </div>
     )
 }

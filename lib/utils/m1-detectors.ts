@@ -3,7 +3,28 @@
  * CHoCH (Change of Character), Volume Climax, and Diamond Box (1/Price equilibrium).
  */
 import type { OandaCandle } from '@/lib/types/oanda'
-import type { CHoCHSignal, VolumeClimax, DiamondBox } from '@/lib/desk/types'
+export interface CHoCHSignal {
+    detected: boolean
+    direction: 'bullish' | 'bearish' | 'none'
+    breakPrice: number | null
+    breakTime: string | null
+    previousSwingPrice: number | null
+}
+
+export interface VolumeClimax {
+    detected: boolean
+    volumeRatio: number
+    rejectionCandle: boolean
+    time: string | null
+}
+
+export interface DiamondBox {
+    boxHigh: number
+    boxLow: number
+    equilibriumPrice: number
+    candlesInBox: number
+    isReady: boolean
+}
 
 // ── Helper: find swing highs/lows on candle data ──
 

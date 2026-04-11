@@ -27,7 +27,6 @@ import { TradeRiskGauge } from './TradeRiskGauge'
 import Link from 'next/link'
 import { MarketSentiment } from '@/lib/utils/sentiment'
 import { getMarketSessions } from '@/lib/utils/market-sessions'
-import type { DeskMeeting, TradeReviewOutput } from '@/lib/desk/types'
 import { getAssetConfig } from '@/lib/data/asset-config'
 
 interface TradeFormProps {
@@ -74,8 +73,6 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
     const [isPlanning, setIsPlanning] = useState(false)
     const [planResult, setPlanResult] = useState<{ tradeId: string } | null>(null)
 
-    const [deskReview, setDeskReview] = useState<DeskMeeting | null>(null)
-    const [isReviewing, setIsReviewing] = useState(false)
     const [storyPositionId, setStoryPositionId] = useState<string | null>(null)
     const [conversionRate, setConversionRate] = useState<number>(1)
     const [baseConversionRate, setBaseConversionRate] = useState<number>(1)
@@ -384,36 +381,6 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
         }
     }
 
-    const handleDeskReview = async () => {
-        if (!stopLoss || !takeProfit) return
-        setIsReviewing(true)
-        setDeskReview(null)
-        try {
-            const res = await fetch('/api/desk/review', {
-                method: 'POST',
-                body: JSON.stringify({
-                    pair: selectedInstrument,
-                    direction,
-                    entry_price: orderType === 'LIMIT' ? limitPrice : entryPrice,
-                    stop_loss: stopLoss,
-                    take_profit: takeProfit,
-                    lot_size: units / getUnitsPerLot(selectedInstrument),
-                    reasoning: strategyExplanation || undefined,
-                }),
-                headers: { 'Content-Type': 'application/json' },
-            })
-
-            if (res.ok) {
-                const data = await res.json()
-                setDeskReview(data.meeting)
-            }
-        } catch (err) {
-            console.error(err)
-        } finally {
-            setIsReviewing(false)
-        }
-    }
-
     const assetCfg = getAssetConfig(selectedInstrument)
     const activeEntryPrice = orderType === 'LIMIT' ? limitPrice : entryPrice
     const accountCurrency = accountInfo?.account?.currency || accountInfo?.currency || 'USD'
@@ -661,16 +628,10 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                     <span className="text-neutral-500 font-bold">{accountCurrency} {accountBalance.toLocaleString()}</span>
                                 </div>
                             </div>
-                            <div className="flex gap-3 pt-4">
-                                <button onClick={handlePlanTrade} disabled={!stopLoss || isPlanning} className="flex-1 py-4 bg-amber-600/20 text-amber-400 border border-amber-500/30 rounded-2xl font-bold flex items-center justify-center gap-2">
+                                <button onClick={handlePlanTrade} disabled={!stopLoss || isPlanning} className="w-full py-4 bg-amber-600/20 text-amber-400 border border-amber-500/30 rounded-2xl font-bold flex items-center justify-center gap-2">
                                     {isPlanning ? <Loader2 size={16} className="animate-spin" /> : <Bookmark size={16} />}
-                                    Plan
+                                    Plan Strategy
                                 </button>
-                                <button onClick={handleDeskReview} disabled={!stopLoss || !takeProfit || isReviewing} className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2">
-                                    {isReviewing ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-                                    Review
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -684,48 +645,6 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                         <h3 className="text-xl font-bold text-white">Trade Planned</h3>
                         <p className="text-sm text-neutral-400">Successfully saved to your journal.</p>
                         <button onClick={() => setPlanResult(null)} className="w-full py-4 bg-neutral-800 text-white rounded-xl font-bold">Dismiss</button>
-                    </div>
-                </div>
-            )}
-
-            {deskReview && !showConfirm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60 overflow-y-auto">
-                    <div className="bg-neutral-900 p-8 rounded-[2rem] border border-neutral-800 max-w-2xl w-full my-8 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-bold text-white">Desk Review</h3>
-                            <button onClick={() => setDeskReview(null)} className="text-neutral-500 hover:text-white"><XCircle /></button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Ray */}
-                            <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl space-y-2">
-                                <p className="text-[10px] font-bold text-blue-400 uppercase">Ray Analysis</p>
-                                <p className="text-xs text-neutral-300 italic">"{deskReview.ray_analysis?.message}"</p>
-                            </div>
-                            {/* Sarah */}
-                            <div className="p-4 bg-rose-500/5 border border-rose-500/20 rounded-2xl space-y-2">
-                                <p className="text-[10px] font-bold text-rose-400 uppercase">Sarah Report</p>
-                                <p className="text-xs text-neutral-300 italic">"{deskReview.sarah_report?.message}"</p>
-                            </div>
-                        </div>
-                        {/* Alex */}
-                        <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl space-y-2">
-                            <p className="text-[10px] font-bold text-emerald-400 uppercase">Alex Brief</p>
-                            <p className="text-xs text-neutral-300 italic">"{deskReview.alex_brief?.message}"</p>
-                        </div>
-                        {/* Marcus */}
-                        <div className="p-6 bg-neutral-950 border border-neutral-800 rounded-2xl space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold text-white">M</div>
-                                <p className="text-sm font-bold text-white">Marcus Verdict</p>
-                            </div>
-                            <p className="text-sm text-neutral-300">{deskReview.marcus_directive?.message}</p>
-                        </div>
-                        <div className="flex gap-4">
-                            <button onClick={() => setDeskReview(null)} className="flex-1 py-4 bg-neutral-800 text-white rounded-xl font-bold">Adjust</button>
-                            {deskReview.marcus_directive?.desk_verdict !== 'blocked' && (
-                                <button onClick={() => { setDeskReview(null); setShowConfirm(true) }} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold">Proceed</button>
-                            )}
-                        </div>
                     </div>
                 </div>
             )}
