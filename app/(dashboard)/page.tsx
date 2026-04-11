@@ -3,6 +3,7 @@ import { getDashboardStats } from '@/lib/data/analytics'
 import Link from 'next/link'
 import { Zap, ArrowRight } from 'lucide-react'
 import { OandaAccountWidget } from '@/components/dashboard/OandaAccountWidget'
+import { KrakenAccountWidget } from '@/components/dashboard/KrakenAccountWidget'
 import { RiskStatusWidget } from '@/components/dashboard/RiskStatusWidget'
 import { VolatilePairsWidget } from '@/components/dashboard/VolatilePairsWidget'
 import { MarketSessionsWidget } from '@/components/dashboard/MarketSessionsWidget'
@@ -46,7 +47,7 @@ export default async function DashboardPage() {
                         </span>
                     </h1>
                     <p className="text-neutral-500 text-sm mt-1">
-                        Your portfolio, risk status, and market volatility at a glance.
+                        Your multi-broker portfolio, risk status, and market sessions.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -62,8 +63,9 @@ export default async function DashboardPage() {
             </div>
 
             {/* Top Row: Portfolio + Risk */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <OandaAccountWidget />
+                <KrakenAccountWidget />
                 <RiskStatusWidget />
             </div>
 
