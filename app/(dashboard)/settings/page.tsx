@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Settings, Shield, Globe, RefreshCw, Key, CreditCard, ChevronRight, CheckCircle2, XCircle, Monitor, Wallet, Trash2, AlertTriangle, Send, Clock, Bell, Zap, TrendingUp, Target, CheckSquare, Cpu, Timer } from 'lucide-react'
+import { Shield, Globe, RefreshCw, Key, CreditCard, CheckCircle2, XCircle, Monitor, Wallet, Trash2, AlertTriangle, Send, Clock, Bell, Zap, TrendingUp, Brain, Sparkles, Cpu, Timer } from 'lucide-react'
 
 interface ConnectionResult {
     connected: boolean
@@ -38,9 +38,6 @@ export default function SettingsPage() {
     const [connection, setConnection] = useState<ConnectionResult | null>(null)
     const [loading, setLoading] = useState(true)
     const [activeMode, setActiveMode] = useState<'demo' | 'live'>('demo')
-    const [showResetDialog, setShowResetDialog] = useState(false)
-    const [resetConfirm, setResetConfirm] = useState('')
-    const [resetting, setResetting] = useState(false)
     const [manuallyTested, setManuallyTested] = useState(false)
 
     // Telegram Mentor settings
@@ -240,29 +237,7 @@ export default function SettingsPage() {
 
     const isDemo = activeMode === 'demo'
 
-    const handleResetDemo = async () => {
-        if (resetConfirm !== 'RESET') return
 
-        setResetting(true)
-        try {
-            const res = await fetch('/api/demo/reset', { method: 'POST' })
-            const data = await res.json()
-
-            if (res.ok) {
-                alert(`✅ ${data.message}`)
-                setShowResetDialog(false)
-                setResetConfirm('')
-                // Refresh page to show clean state
-                window.location.reload()
-            } else {
-                alert(`❌ Error: ${data.error}`)
-            }
-        } catch (err) {
-            alert('❌ Failed to reset account')
-        } finally {
-            setResetting(false)
-        }
-    }
 
     return (
         <div className="max-w-4xl mx-auto space-y-12 pb-20">
@@ -876,108 +851,12 @@ export default function SettingsPage() {
 
 
 
-                {/* Danger Zone - Demo Only */}
-                {isDemo && (
-                    <section className="bg-red-950/20 border-2 border-red-900/50 rounded-[2.5rem] overflow-hidden">
-                        <div className="p-10 border-b border-red-900/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                            <div className="flex items-center gap-6">
-                                <div className="w-16 h-16 rounded-[1.5rem] bg-red-500/10 text-red-500 flex items-center justify-center">
-                                    <AlertTriangle size={32} />
-                                </div>
-                                <div>
-                                    <h3 className="text-2xl font-bold text-red-400">Danger Zone</h3>
-                                    <p className="text-neutral-500 text-sm mt-1">Irreversible actions for demo account only.</p>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div className="p-10 space-y-6">
-                            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 bg-red-950/30 rounded-2xl border border-red-900/30">
-                                <div className="flex-1">
-                                    <h4 className="text-lg font-bold text-white mb-2">Reset Demo Account</h4>
-                                    <p className="text-sm text-neutral-400 leading-relaxed">
-                                        Delete all trades, historical data, and account context. This will completely wipe your demo account data. Your preferences and notification settings will be preserved.
-                                    </p>
-                                    <div className="mt-3 text-xs text-red-400/80 font-medium">
-                                        ⚠️ This action cannot be undone
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setShowResetDialog(true)}
-                                    className="flex items-center gap-2 px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-red-500/30 transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-red-900/10"
-                                >
-                                    <Trash2 size={16} />
-                                    Reset Demo Account
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-                )}
             </div>
 
 
 
-            {/* Reset Confirmation Dialog */}
-            {showResetDialog && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-neutral-900 border-2 border-red-900/50 rounded-3xl max-w-lg w-full p-8 shadow-2xl">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
-                                <AlertTriangle size={24} />
-                            </div>
-                            <h3 className="text-2xl font-bold text-white">Confirm Reset</h3>
-                        </div>
 
-                        <div className="space-y-4 mb-6">
-                            <p className="text-neutral-300 leading-relaxed">
-                                This will permanently delete:
-                            </p>
-                            <ul className="text-sm text-neutral-400 space-y-2 list-disc list-inside">
-                                <li>All trades and trade history</li>
-                                <li>Strategy sessions and execution logs</li>
-                                <li>Risk rules and strategy templates</li>
-                            </ul>
-                            <p className="text-xs text-red-400 font-medium pt-2">
-                                ⚠️ This action is irreversible and cannot be undone
-                            </p>
-                        </div>
-
-                        <div className="mb-6">
-                            <label className="block text-sm font-bold text-neutral-400 mb-2">
-                                Type <span className="text-red-400">RESET</span> to confirm:
-                            </label>
-                            <input
-                                type="text"
-                                value={resetConfirm}
-                                onChange={(e) => setResetConfirm(e.target.value)}
-                                className="w-full px-4 py-3 bg-neutral-800 border border-neutral-700 rounded-xl text-white font-mono focus:outline-none focus:border-red-500"
-                                placeholder="Type RESET"
-                                autoFocus
-                            />
-                        </div>
-
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => {
-                                    setShowResetDialog(false)
-                                    setResetConfirm('')
-                                }}
-                                className="flex-1 px-8 py-4 bg-neutral-800 hover:bg-neutral-700 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-neutral-700/50 transition-all active:scale-95"
-                                disabled={resetting}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleResetDemo}
-                                disabled={resetConfirm !== 'RESET' || resetting}
-                                className="flex-1 px-8 py-4 bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl border border-red-500/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-900/10"
-                            >
-                                {resetting ? 'Resetting...' : 'Reset Account'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
 
         </div>
