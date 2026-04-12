@@ -23,6 +23,18 @@ function getConfig(): KrakenConfig {
     return { apiKey, apiSecret }
 }
 
+let lastNonce = 0
+
+function generateNonce(): string {
+    const now = Date.now() * 1000
+    if (now <= lastNonce) {
+        lastNonce++
+    } else {
+        lastNonce = now
+    }
+    return lastNonce.toString()
+}
+
 /**
  * Generate Kraken API signature (HMAC-SHA512)
  */
@@ -42,7 +54,7 @@ function generateSignature(path: string, nonce: string, postData: string, apiSec
 async function privateRequest(endpoint: string, params: Record<string, any> = {}) {
     const config = getConfig()
     const path = `/0/private/${endpoint}`
-    const nonce = (Date.now() * 1000).toString()
+    const nonce = generateNonce()
 
     const postData = new URLSearchParams({
         nonce,

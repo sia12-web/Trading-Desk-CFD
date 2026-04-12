@@ -3,10 +3,8 @@ import { getAccountBalance, getTradeBalance } from '@/lib/kraken/client'
 
 export async function GET() {
     try {
-        const [balances, tradeBalance] = await Promise.all([
-            getAccountBalance(),
-            getTradeBalance()
-        ])
+        const balances = await getAccountBalance()
+        const tradeBalance = await getTradeBalance()
 
         return NextResponse.json({
             balances,
