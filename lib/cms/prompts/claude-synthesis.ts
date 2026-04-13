@@ -42,16 +42,26 @@ Every probability, sample_size, hits, and avg_move_pips value below was computed
 - **Daily candles**: ${s.total_daily_candles}, Weekly: ${s.total_weekly_candles}, H1: ${s.total_h1_candles}, H4: ${s.total_h4_candles}
 - **ATR14**: ${vp.atr14_daily} pips, Avg daily range: ${vp.avg_daily_range_pips} pips
 
-${data.killzone?.detected ? `## ACTIVE KILLZONE DATA (algorithmically detected — DO NOT fabricate)
-- Wave type: ${data.killzone.waveType}
-- Direction: ${data.killzone.direction}
-- Fib zone: ${data.killzone.fibZone?.fibHigh.toFixed(5)} - ${data.killzone.fibZone?.fibLow.toFixed(5)} (${data.killzone.fibZone?.targetZone === 'wave2' ? '61.8-78.6%' : '38.2-50%'} retracement)
-- Volume POC: ${data.killzone.pullbackPOC?.poc.toFixed(5)}
-- Killzone box: ${data.killzone.box?.high.toFixed(5)} - ${data.killzone.box?.low.toFixed(5)} (${data.killzone.box?.widthPips} pips)
-- Confluence confidence: ${data.killzone.confidence}%
-- Price in box: ${data.killzone.priceInBox ? 'YES — M1 sniper window active' : 'No — waiting for price to enter'}
-- Confluence factors: ${data.killzone.confluenceFactors.join(', ')}
-` : ''}## PRE-COMPUTED CONDITIONS (${conditions.length} total — all verified n≥15, prob≥55%)
+${data.killzone?.detected ? `
+## ACTIVE KILLZONE DATA (ALGORITHMICALLY DETECTED — DO NOT FABRICATE)
+**CRITICAL**: These Killzone levels were computed by TypeScript code analyzing real OANDA H1 candles (Elliott Wave) + M15 candles (Volume Profile). Every number below is EXACT. DO NOT round, modify, or "improve" any values. DO NOT invent Killzone box levels if this section is empty.
+
+- **Wave type**: ${data.killzone.waveType} (H1 Elliott Wave correction in progress)
+- **Direction**: ${data.killzone.direction}
+- **Fibonacci zone**: ${data.killzone.fibZone?.fibHigh.toFixed(5)} - ${data.killzone.fibZone?.fibLow.toFixed(5)} (${data.killzone.fibZone?.targetZone === 'wave2' ? '61.8-78.6%' : '38.2-50%'} retracement from impulse)
+- **Volume POC**: ${data.killzone.pullbackPOC?.poc.toFixed(5)} (M15 pullback volume center — highest volume traded price)
+- **Killzone box**: ${data.killzone.box?.high.toFixed(5)} - ${data.killzone.box?.low.toFixed(5)} (${data.killzone.box?.widthPips} ${data.pair.includes('JPY') ? 'pips' : data.pair.startsWith('CRYPTO_') ? 'points' : 'pips'} institutional trap zone)
+- **Confluence confidence**: ${data.killzone.confidence}% (algorithmic score based on POC/Fib alignment, NOT a win-rate prediction)
+- **Price currently in box**: ${data.killzone.priceInBox ? 'YES — M1 sniper window active, watch for volume climax + CHoCH' : 'NO — waiting for price to enter the box'}
+- **Confluence factors**: ${data.killzone.confluenceFactors.join(', ')}
+
+**YOUR JOB**: Write trader-friendly implications for the Killzone conditions (kz1/kz2/kz3) using EXACTLY these numbers. DO NOT create fictional box levels or modify the confluence confidence score.
+` : `
+## KILLZONE STATUS: NOT ACTIVE
+No Killzone was detected for ${pair}. The H1 Elliott Wave detector did not identify an active Wave 2 or Wave 4 correction, OR the M15 Volume POC does not align with Fibonacci correction zones.
+
+**CRITICAL**: DO NOT invent Killzone box levels. DO NOT suggest "potential" Killzone zones. If Killzone conditions (kz1/kz2/kz3) appear in the list below, they represent historical data only — there is NO active Killzone right now.
+`}## PRE-COMPUTED CONDITIONS (${conditions.length} total — all verified n≥15, prob≥55%)
 ${conditionBlock}
 
 ## DEEPSEEK'S STRUCTURAL VALIDATION

@@ -36,6 +36,28 @@ Your job IS to validate the MARKET STRUCTURE LOGIC behind each pattern:
 - **Trend days**: ${vp.trend_day_pct}%, Quiet days: ${vp.quiet_day_pct}%
 - **First hour avg**: ${vp.first_hour_avg_pips} pips
 
+${data.killzone?.detected ? `
+## ACTIVE KILLZONE DATA (ALGORITHMICALLY DETECTED — DO NOT FABRICATE)
+**CRITICAL**: This Killzone was detected by TypeScript code analyzing H1 Elliott Wave + M15 Volume Profile. These are EXACT values computed from OANDA candle data. DO NOT modify these numbers, DO NOT invent a Killzone if none is shown here.
+
+- **Wave type**: ${data.killzone.waveType} (correction in progress)
+- **Direction**: ${data.killzone.direction}
+- **Fibonacci zone**: ${data.killzone.fibZone?.fibHigh.toFixed(5)} - ${data.killzone.fibZone?.fibLow.toFixed(5)} (${data.killzone.fibZone?.targetZone === 'wave2' ? '61.8-78.6%' : '38.2-50%'} retracement)
+- **Volume POC**: ${data.killzone.pullbackPOC?.poc.toFixed(5)} (M15 pullback volume center)
+- **Killzone box**: ${data.killzone.box?.high.toFixed(5)} - ${data.killzone.box?.low.toFixed(5)} (${data.killzone.box?.widthPips} ${data.pair.includes('JPY') ? 'pips' : data.pair.startsWith('CRYPTO_') ? 'points' : 'pips'})
+- **Confluence confidence**: ${data.killzone.confidence}% (algorithmic score, not a prediction)
+- **Price currently in box**: ${data.killzone.priceInBox ? 'YES — M1 sniper window active' : 'NO — waiting for price to enter'}
+- **Confluence factors**: ${data.killzone.confluenceFactors.join(', ')}
+
+The Killzone conditions (kz1, kz2, kz3) in the list below are derived from this data. Your job is to validate the MARKET STRUCTURE LOGIC — explain WHY Fibonacci/Volume confluence creates institutional traps, not whether the math is correct (the math is already verified).
+` : `
+## KILLZONE STATUS: NOT ACTIVE
+No Killzone was detected for this pair. The H1 Elliott Wave is either:
+- Not in Wave 2 or Wave 4 correction, OR
+- M15 Volume POC does not align with Fibonacci correction zone
+
+DO NOT invent a Killzone. DO NOT suggest Killzone levels. If you see Killzone conditions (kz1/kz2/kz3) in the list, they represent historical or edge-case data only.
+`}
 ## PRE-COMPUTED CONDITIONS (${conditions.length} total)
 ${conditionBlock}
 

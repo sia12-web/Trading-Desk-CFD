@@ -31,6 +31,28 @@ All statistics below were computed programmatically from real OANDA candle data.
 - **ATR14**: ${vp.atr14_daily} pips
 - **Avg daily range**: ${vp.avg_daily_range_pips} pips
 
+${data.killzone?.detected ? `
+## ACTIVE KILLZONE DATA (ALGORITHMICALLY DETECTED — DO NOT FABRICATE)
+**CRITICAL**: This Killzone was detected by TypeScript code analyzing H1 Elliott Wave + M15 Volume Profile. These are EXACT values computed from OANDA candle data. DO NOT modify these numbers, DO NOT invent a Killzone if none is shown here.
+
+- **Wave type**: ${data.killzone.waveType} (correction in progress)
+- **Direction**: ${data.killzone.direction}
+- **Fibonacci zone**: ${data.killzone.fibZone?.fibHigh.toFixed(5)} - ${data.killzone.fibZone?.fibLow.toFixed(5)} (${data.killzone.fibZone?.targetZone === 'wave2' ? '61.8-78.6%' : '38.2-50%'} retracement)
+- **Volume POC**: ${data.killzone.pullbackPOC?.poc.toFixed(5)} (M15 pullback volume center)
+- **Killzone box**: ${data.killzone.box?.high.toFixed(5)} - ${data.killzone.box?.low.toFixed(5)} (${data.killzone.box?.widthPips} ${data.pair.includes('JPY') ? 'pips' : data.pair.startsWith('CRYPTO_') ? 'points' : 'pips'})
+- **Confluence confidence**: ${data.killzone.confidence}% (algorithmic score, not a prediction)
+- **Price currently in box**: ${data.killzone.priceInBox ? 'YES — M1 sniper window active' : 'NO — waiting for price to enter'}
+- **Confluence factors**: ${data.killzone.confluenceFactors.join(', ')}
+
+The Killzone conditions (kz1, kz2, kz3) in the list below are derived from this data. DO NOT rank or modify them differently than other programmatic conditions.
+` : `
+## KILLZONE STATUS: NOT ACTIVE
+No Killzone was detected for this pair. The H1 Elliott Wave is either:
+- Not in Wave 2 or Wave 4 correction, OR
+- M15 Volume POC does not align with Fibonacci correction zone
+
+DO NOT invent a Killzone. DO NOT suggest Killzone levels. If you see Killzone conditions (kz1/kz2/kz3) in the list, they represent historical or edge-case data only.
+`}
 ## PRE-COMPUTED CONDITIONS (${conditions.length} total, all with n≥15 and prob≥55%)
 ${conditionBlock}
 
