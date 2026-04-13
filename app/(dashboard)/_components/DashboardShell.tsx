@@ -31,7 +31,6 @@ import {
     Menu,
     X,
     Crosshair,
-    Moon,
 } from 'lucide-react'
 import LinkNext from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -65,7 +64,6 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
     const navItems = [
         { label: 'Dashboard', href: '/', icon: LayoutDashboard },
         { label: 'Calendar', href: '/calendar', icon: Calendar },
-        { label: 'Celestial Desk', href: '/gann-calendar', icon: Moon },
         { label: 'Fundamentals', href: '/fundamentals', icon: BarChart3 },
         { label: 'Trading Gurus', href: '/trading-gurus', icon: GraduationCap },
         { label: 'Market News', href: '/news', icon: Newspaper },

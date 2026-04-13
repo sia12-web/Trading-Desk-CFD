@@ -22,14 +22,15 @@ export const ALLOWED_INSTRUMENTS = [
     // Cryptocurrencies (via Kraken API)
     'CRYPTO_BTC_USD',   // Bitcoin
     'CRYPTO_ETH_USD',   // Ethereum
-    'CRYPTO_BNB_USD',   // Binance Coin
     'CRYPTO_SOL_USD',   // Solana
     'CRYPTO_XRP_USD',   // Ripple
     'CRYPTO_ADA_USD',   // Cardano
     'CRYPTO_DOGE_USD',  // Dogecoin
     'CRYPTO_AVAX_USD',  // Avalanche
     'CRYPTO_DOT_USD',   // Polkadot
-    'CRYPTO_MATIC_USD', // Polygon
+    'CRYPTO_LINK_USD',  // Chainlink
+    'CRYPTO_LTC_USD',   // Litecoin
+    'CRYPTO_SHIB_USD',  // Shiba Inu
 ] as const
 
 export type AllowedInstrument = typeof ALLOWED_INSTRUMENTS[number]

@@ -8,12 +8,36 @@ export default async function TradePage() {
     const user = await getAuthUser()
     if (!user) redirect('/login')
 
-    const { data: instruments = [] } = await getAccountInstruments()
-    const { data: account } = await getAccountSummary()
+    const [instrumentsRes, accountRes] = await Promise.all([
+        getAccountInstruments(),
+        getAccountSummary()
+    ])
 
-    const filteredInstruments = [
+    const instruments = instrumentsRes.data || []
+    const account = accountRes.data
+
+    const filteredInstruments: any[] = [
         ...instruments.filter(i => ALLOWED_INSTRUMENTS.includes(i.name as any)),
-        // TODO: Add Kraken instruments once full trading integration is complete
+        // Add famous cryptos from constants with appropriate precision
+        ...ALLOWED_INSTRUMENTS.filter(i => i.startsWith('CRYPTO_')).map(i => {
+            const base = i.replace('CRYPTO_', '').split('_')[0]
+            const precision = base === 'SHIB' ? 8 : (base === 'DOGE' || base === 'XRP' || base === 'ADA') ? 5 : 2
+            
+            return {
+                name: i,
+                displayName: i.replace('CRYPTO_', '').replace('_', '/'),
+                type: 'CRYPTO',
+                displayPrecision: precision,
+                pipLocation: 0,
+                tradeUnitsPrecision: 8,
+                minimumTradeSize: '0.00000001',
+                maximumTrailingStopDistance: '10000',
+                minimumTrailingStopDistance: '0.1',
+                maximumPositionSize: '1000000',
+                maximumOrderUnits: '1000000',
+                marginRate: '1.0'
+            }
+        })
     ]
 
     return (

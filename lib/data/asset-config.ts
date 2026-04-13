@@ -101,6 +101,42 @@ const CRYPTO_MAP: Record<string, CryptoMeta> = {
         category: 'meme',
         keyDrivers: ['social media sentiment', 'community momentum', 'meme culture', 'retail trading waves'],
     },
+    'LINK/USD': {
+        displayName: 'Chainlink',
+        symbol: 'LINK',
+        category: 'smart-contract',
+        keyDrivers: ['oracle networks', 'CCIP adoption', 'institutional data feeds', 'staking'],
+    },
+    'LTC/USD': {
+        displayName: 'Litecoin',
+        symbol: 'LTC',
+        category: 'payment',
+        keyDrivers: ['silver to gold', 'scrypt hashrate', 'historical stability', 'fast payments'],
+    },
+    'SHIB/USD': {
+        displayName: 'Shiba Inu',
+        symbol: 'SHIB',
+        category: 'meme',
+        keyDrivers: ['burn mechanisms', 'shibarium L2', 'community ecosystem', 'retail hype'],
+    },
+    'AVAX/USD': {
+        displayName: 'Avalanche',
+        symbol: 'AVAX',
+        category: 'layer-1',
+        keyDrivers: ['subnets technology', 'gaming ecosystem', 'fast finality', 'corporate partnerships'],
+    },
+    'DOT/USD': {
+        displayName: 'Polkadot',
+        symbol: 'DOT',
+        category: 'layer-1',
+        keyDrivers: ['parachain auctions', 'interoperability focus', 'sdk adoption', 'decentralized governance'],
+    },
+    'ADA/USD': {
+        displayName: 'Cardano',
+        symbol: 'ADA',
+        category: 'layer-1',
+        keyDrivers: ['peer-reviewed research', 'staking stability', 'african adoption', 'smart contract growth'],
+    },
 }
 
 // Default forex config
@@ -127,9 +163,11 @@ export function getAssetConfig(pair: string): AssetConfig {
             : pair
         const meta = CRYPTO_MAP[displayPair]
         if (meta) {
-            const decimals = meta.symbol === 'DOGE' ? 5
+            const decimals = meta.symbol === 'SHIB' ? 8
+                : meta.symbol === 'DOGE' ? 5
                 : meta.symbol === 'XRP' ? 4
-                : 2 // BTC, ETH, SOL
+                : meta.symbol === 'ADA' || meta.symbol === 'DOT' ? 3
+                : 2 // BTC, ETH, SOL, LINK, LTC, AVAX
             return {
                 type: 'crypto',
                 pointLabel: 'points',

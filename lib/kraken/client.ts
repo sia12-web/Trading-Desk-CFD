@@ -178,12 +178,66 @@ export async function testConnection() {
 }
 
 /**
- * Get current prices for Kraken pairs (stub - not implemented yet)
+ * Map our internal instrument name (e.g., "CRYPTO_BTC_USD") to Kraken pair name.
  */
-export async function getKrakenPrices(pairs: string[]): Promise<any[]> {
-    // Return empty array - Kraken price fetching not implemented yet
-    // Use OANDA for forex or Coinbase for crypto
-    return []
+function toKrakenPair(instrument: string): string {
+    const pair = instrument.replace('CRYPTO_', '')
+    const [base, quote] = pair.split('_')
+
+    // Kraken specific mappings for base assets
+    const baseMap: Record<string, string> = {
+        'BTC': 'XBT',
+        'DOGE': 'XDG',
+    }
+
+    const krakenBase = baseMap[base] || base
+    return `${krakenBase}${quote}`
+}
+
+/**
+ * Get current prices for Kraken pairs
+ */
+export async function getKrakenPrices(instruments: string[]): Promise<any[]> {
+    try {
+        const krakenPairs = instruments.map(toKrakenPair)
+        const result = await getTicker(krakenPairs)
+
+        return instruments.map(instrument => {
+            const krakenPair = toKrakenPair(instrument)
+            
+            // Kraken often returns results with internal names like "XXBTZUSD" even if "XBTUSD" was requested.
+            // We search for a key that contains BOTH our base and quote mapping.
+            const baseMap: Record<string, string> = { 'BTC': 'XBT', 'DOGE': 'XDG' }
+            const pair = instrument.replace('CRYPTO_', '')
+            const [base, quote] = pair.split('_')
+            const kBase = baseMap[base] || base
+            
+            // Try exact match first, then try to find a key that looks like it matches
+            let tickerData = result[krakenPair]
+            if (!tickerData) {
+                const searchKey = kBase === 'XBT' ? 'XXBT' : kBase === 'ETH' ? 'XETH' : kBase === 'XRP' ? 'XXRP' : kBase === 'XDG' ? 'XXDG' : kBase
+                const foundKey = Object.keys(result).find(k => k.includes(searchKey) && k.includes(quote))
+                if (foundKey) tickerData = result[foundKey]
+            }
+
+            // Fallback: If only one instrument was requested, just take the first result
+            if (!tickerData && instruments.length === 1) {
+                tickerData = Object.values(result)[0]
+            }
+
+            if (!tickerData) return null
+
+            return {
+                instrument,
+                asks: [{ price: tickerData.a[0], liquidity: tickerData.a[2] }],
+                bids: [{ price: tickerData.b[0], liquidity: tickerData.b[2] }],
+                time: new Date().toISOString()
+            }
+        }).filter(Boolean)
+    } catch (error) {
+        console.error('Failed to fetch Kraken prices:', error)
+        return []
+    }
 }
 
 /**
@@ -201,7 +255,7 @@ export async function createKrakenMarketOrder(params: {
 }): Promise<{ data: { order_id: string; txid: string[] } | null; error: string | null }> {
     try {
         const result = await privateRequest('AddOrder', {
-            pair: params.pair,
+            pair: toKrakenPair(params.pair),
             type: params.side,
             ordertype: 'market',
             volume: params.volume.toString(),
@@ -248,7 +302,7 @@ export async function createKrakenLimitOrder(params: {
 }): Promise<{ data: { order_id: string; txid: string[] } | null; error: string | null }> {
     try {
         const result = await privateRequest('AddOrder', {
-            pair: params.pair,
+            pair: toKrakenPair(params.pair),
             type: params.side,
             ordertype: 'limit',
             price: params.price.toString(),
