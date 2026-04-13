@@ -42,7 +42,16 @@ Every probability, sample_size, hits, and avg_move_pips value below was computed
 - **Daily candles**: ${s.total_daily_candles}, Weekly: ${s.total_weekly_candles}, H1: ${s.total_h1_candles}, H4: ${s.total_h4_candles}
 - **ATR14**: ${vp.atr14_daily} pips, Avg daily range: ${vp.avg_daily_range_pips} pips
 
-## PRE-COMPUTED CONDITIONS (${conditions.length} total — all verified n≥15, prob≥55%)
+${data.killzone?.detected ? `## ACTIVE KILLZONE DATA (algorithmically detected — DO NOT fabricate)
+- Wave type: ${data.killzone.waveType}
+- Direction: ${data.killzone.direction}
+- Fib zone: ${data.killzone.fibZone?.fibHigh.toFixed(5)} - ${data.killzone.fibZone?.fibLow.toFixed(5)} (${data.killzone.fibZone?.targetZone === 'wave2' ? '61.8-78.6%' : '38.2-50%'} retracement)
+- Volume POC: ${data.killzone.pullbackPOC?.poc.toFixed(5)}
+- Killzone box: ${data.killzone.box?.high.toFixed(5)} - ${data.killzone.box?.low.toFixed(5)} (${data.killzone.box?.widthPips} pips)
+- Confluence confidence: ${data.killzone.confidence}%
+- Price in box: ${data.killzone.priceInBox ? 'YES — M1 sniper window active' : 'No — waiting for price to enter'}
+- Confluence factors: ${data.killzone.confluenceFactors.join(', ')}
+` : ''}## PRE-COMPUTED CONDITIONS (${conditions.length} total — all verified n≥15, prob≥55%)
 ${conditionBlock}
 
 ## DEEPSEEK'S STRUCTURAL VALIDATION
@@ -75,7 +84,9 @@ Return JSON with EXACTLY this structure:
     "session": [],
     "volatility": [],
     "cross_market": [],
-    "fractal": []
+    "fractal": [],
+    "elliott_wave": [],
+    "killzone": []
   },
   "summary": "Market personality paragraph",
   "data_stats": {

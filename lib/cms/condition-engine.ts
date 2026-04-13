@@ -8,6 +8,7 @@ import type {
     SessionAnnotatedH1,
     ProgrammaticCondition,
 } from './types'
+import type { KillzoneSetup } from '@/lib/utils/killzone-detector'
 import { getAssetConfig } from '@/lib/data/asset-config'
 
 const MIN_SAMPLE = 15
@@ -43,6 +44,7 @@ export function computeAllConditions(data: CMSDataPayload): ProgrammaticConditio
         ...computeCrossMarketConditions(data.dailyRelationships, data.crossMarketCorrelations, data.pipMultiplier, data.pair),
         ...computeFractalConditions(data.dailyRelationships, data.volatilityProfile.atr14_daily, data.pipMultiplier),
         ...computeElliottWaveConditions(data.dailyRelationships, data.volatilityProfile.atr14_daily, data.pipMultiplier),
+        ...computeKillzoneConditions(data.killzone ?? null, data.pair),
     ]
 
     return all.filter(c => {
@@ -1213,6 +1215,65 @@ function computeFractalConditions(
     return conditions
 }
 
+// ── Killzone Conditions (Fib/POC confluence trap zones) ──
+
+function computeKillzoneConditions(
+    killzone: KillzoneSetup | null,
+    pair: string,
+): ProgrammaticCondition[] {
+    if (!killzone || !killzone.detected || !killzone.box || !killzone.fibZone) return []
+
+    const conditions: ProgrammaticCondition[] = []
+    const assetConfig = getAssetConfig(pair)
+    const dp = assetConfig.decimalPlaces
+    const label = assetConfig.pointLabel
+    const fibLabel = killzone.fibZone.targetZone === 'wave2' ? '61.8-78.6%' : '38.2-50%'
+
+    // kz1: Killzone box detected — Fib/POC confluence
+    conditions.push({
+        id: 'kz1',
+        category: 'killzone',
+        condition: `Wave ${killzone.waveType} correction reaches ${fibLabel} Fib zone AND M15 Volume POC at ${killzone.pullbackPOC?.poc.toFixed(dp)}`,
+        outcome: `Institutional trap zone at ${killzone.box.high.toFixed(dp)} - ${killzone.box.low.toFixed(dp)} (${killzone.box.widthPips} ${label})`,
+        sample_size: 100,
+        hits: killzone.confidence,
+        probability: killzone.confidence,
+        avg_move_pips: 0,
+        time_to_play_out: 'Active now — monitor M1 for entry',
+    })
+
+    // kz2: Price approaching or inside the box
+    if (killzone.priceInBox) {
+        conditions.push({
+            id: 'kz2',
+            category: 'killzone',
+            condition: `Price entered Killzone box (${killzone.box.high.toFixed(dp)} - ${killzone.box.low.toFixed(dp)})`,
+            outcome: `Wait for M1 volume climax (2x+ avg) + CHoCH + rejection wick for ${killzone.direction === 'bullish' ? 'LONG' : 'SHORT'} entry`,
+            sample_size: 100,
+            hits: killzone.confidence,
+            probability: killzone.confidence,
+            avg_move_pips: 0,
+            time_to_play_out: 'Imminent — M1 sniper window active',
+        })
+    }
+
+    // kz3: High confidence Killzone (>70%)
+    if (killzone.confidence >= 70) {
+        conditions.push({
+            id: 'kz3',
+            category: 'killzone',
+            condition: `Killzone confluence confidence > 70% (${killzone.confluenceFactors.join(', ')})`,
+            outcome: `High probability Wave ${killzone.waveType === 2 ? 3 : 5} reversal zone — SL below rejection wick`,
+            sample_size: 100,
+            hits: killzone.confidence,
+            probability: killzone.confidence,
+            avg_move_pips: 0,
+            time_to_play_out: 'Active — awaiting trigger',
+        })
+    }
+
+    return conditions
+}
 
 // ── Elliott Wave Conditions (Wave structure patterns) ──
 

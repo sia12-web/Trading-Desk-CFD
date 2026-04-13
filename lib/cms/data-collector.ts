@@ -1,6 +1,9 @@
 import { getCandles } from '@/lib/oanda/client'
 import { isTimeInSession } from '@/lib/utils/market-sessions'
 import { displayToOandaPair } from '@/lib/utils/forex'
+import { detectH1ElliottWave } from '@/lib/utils/elliott-wave-h1'
+import { calculateRSI, calculateMACD } from '@/lib/utils/indicators'
+import { detectKillzone } from '@/lib/utils/killzone-detector'
 import type { OandaCandle } from '@/lib/types/oanda'
 import type {
     CMSDataPayload,
@@ -40,12 +43,13 @@ export async function collectCMSData(pair: string): Promise<CMSDataPayload> {
     const instrument = displayToOandaPair(pair)
     const pipMult = getPipMultiplier(pair)
 
-    // Parallel fetch: Daily, Weekly, H1, H4 + cross-market indices
-    const [dailyRes, weeklyRes, h1Res, h4Res, ...indexResults] = await Promise.all([
+    // Parallel fetch: Daily, Weekly, H1, H4, M15 + cross-market indices
+    const [dailyRes, weeklyRes, h1Res, h4Res, m15Res, ...indexResults] = await Promise.all([
         getCandles({ instrument, granularity: 'D', count: 500 }),
         getCandles({ instrument, granularity: 'W', count: 200 }),
         getCandles({ instrument, granularity: 'H1', count: 500 }),
         getCandles({ instrument, granularity: 'H4', count: 300 }),
+        getCandles({ instrument, granularity: 'M15', count: 200 }),
         // Cross-market indices (best-effort) — US + European + Asian
         getCandles({ instrument: 'SPX500_USD', granularity: 'D', count: 250 }).catch(() => ({ data: undefined })),
         getCandles({ instrument: 'NAS100_USD', granularity: 'D', count: 250 }).catch(() => ({ data: undefined })),
@@ -59,6 +63,7 @@ export async function collectCMSData(pair: string): Promise<CMSDataPayload> {
     const weeklyCandles = weeklyRes.data || []
     const h1Candles = h1Res.data || []
     const h4Candles = h4Res.data || []
+    const m15Candles = m15Res.data || []
 
     // Pre-compute relationships
     const dailyRelationships = computeDailyRelationships(dailyCandles, pipMult)
@@ -77,6 +82,17 @@ export async function collectCMSData(pair: string): Promise<CMSDataPayload> {
             { name: 'JP225_USD', candles: indexResults[5]?.data || [] },
         ],
     )
+
+    // H1 Elliott Wave detection + Killzone
+    let killzone = null
+    let h1WaveState = null
+    if (h1Candles.length >= 50) {
+        const h1Closes = h1Candles.map(c => parseFloat(c.mid.c))
+        const h1Rsi = calculateRSI(h1Closes, 14)
+        const h1Macd = calculateMACD(h1Closes, 12, 26, 9)
+        h1WaveState = detectH1ElliottWave(h1Candles, h1Rsi, h1Macd.macdLine, h1Macd.signalLine)
+        killzone = detectKillzone(h1WaveState, m15Candles, pair)
+    }
 
     // Summary stats
     const brokePrevHighCount = dailyRelationships.filter(d => d.broke_prev_high).length
@@ -120,6 +136,8 @@ export async function collectCMSData(pair: string): Promise<CMSDataPayload> {
             monday_sets_weekly_low_pct: Math.round((mondayLowWeeks / totalWR) * 100),
             friday_bullish_close_pct: Math.round((fridayBullish / totalWR) * 100),
         },
+        killzone,
+        h1WaveState,
     }
 }
 

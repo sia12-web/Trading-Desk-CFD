@@ -103,7 +103,8 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
             if (paramTP) setTakeProfit(parseFloat(paramTP))
             if (paramLots) {
                 const multi = getUnitsPerLot(paramInstrument)
-                setUnits(Math.round(parseFloat(paramLots) * multi))
+                const val = parseFloat(paramLots) * multi
+                setUnits(isCryptoInstrument(paramInstrument) ? val : Math.round(val))
             }
             if (paramDescription) setStrategyExplanation(paramDescription)
             if (paramStoryPosId) setStoryPositionId(paramStoryPosId)

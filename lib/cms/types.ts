@@ -1,6 +1,8 @@
 // ── CMS Engine Types (Conditional Market Shaping) ──
 
 import type { OandaCandle } from '@/lib/types/oanda'
+import type { KillzoneSetup } from '@/lib/utils/killzone-detector'
+import type { H1WaveState } from '@/lib/utils/elliott-wave-h1'
 
 // ── Output Schema ──
 
@@ -14,7 +16,7 @@ export interface CMSCondition {
     time_to_play_out: string      // "Same day"
     implication: string           // "Bias short Monday until Friday's low tested"
     confidence: 'high' | 'medium' | 'low'
-    category: 'daily' | 'weekly' | 'session' | 'volatility' | 'cross_market' | 'fractal' | 'elliott_wave'
+    category: 'daily' | 'weekly' | 'session' | 'volatility' | 'cross_market' | 'fractal' | 'elliott_wave' | 'killzone'
     source: 'programmatic' | 'ai'
 }
 
@@ -22,7 +24,7 @@ export interface CMSCondition {
 
 export interface ProgrammaticCondition {
     id: string
-    category: 'daily' | 'weekly' | 'session' | 'volatility' | 'cross_market' | 'fractal' | 'elliott_wave'
+    category: 'daily' | 'weekly' | 'session' | 'volatility' | 'cross_market' | 'fractal' | 'elliott_wave' | 'killzone'
     condition: string
     outcome: string
     sample_size: number           // exact count of times condition occurred
@@ -44,6 +46,7 @@ export interface CMSResult {
         cross_market: CMSCondition[]
         fractal: CMSCondition[]
         elliott_wave: CMSCondition[]
+        killzone: CMSCondition[]
     }
     summary: string               // Market personality paragraph
     data_stats: {
@@ -151,4 +154,7 @@ export interface CMSDataPayload {
         monday_sets_weekly_low_pct: number
         friday_bullish_close_pct: number
     }
+    // Killzone detection (optional — null when no Wave 2/4 active)
+    killzone?: KillzoneSetup | null
+    h1WaveState?: H1WaveState | null
 }

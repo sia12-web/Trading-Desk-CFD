@@ -5,7 +5,7 @@ import type { CMSResult, CMSCondition } from '@/lib/cms/types'
 import { CMSConditionCard } from './CMSConditionCard'
 import { CMSSummaryCard } from './CMSSummaryCard'
 
-type Category = 'daily' | 'weekly' | 'session' | 'volatility' | 'cross_market' | 'fractal'
+type Category = 'daily' | 'weekly' | 'session' | 'volatility' | 'cross_market' | 'fractal' | 'elliott_wave' | 'killzone'
 
 const TABS: { key: Category; label: string }[] = [
     { key: 'daily', label: 'Daily' },
@@ -14,6 +14,8 @@ const TABS: { key: Category; label: string }[] = [
     { key: 'volatility', label: 'Volatility' },
     { key: 'cross_market', label: 'Cross-Market' },
     { key: 'fractal', label: 'Fractal' },
+    { key: 'elliott_wave', label: 'Elliott Wave' },
+    { key: 'killzone', label: 'Killzone' },
 ]
 
 export function CMSResultsView({ result }: { result: CMSResult }) {
