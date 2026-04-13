@@ -1182,3 +1182,45 @@ export interface ParsedStrategy {
     suggested_sl?: { price: number | null; reasoning: string } | null
     suggested_tp?: { price: number | null; reasoning: string } | null
 }
+
+// Killzone Monitor Types
+export interface KillzoneMonitorResult {
+    id: string
+    pair: string
+    scanned_at: string
+
+    // H1 Elliott Wave State
+    current_wave: number | null
+    wave_direction: 'bullish' | 'bearish' | null
+    wave2_complete: boolean
+    wave4_complete: boolean
+    wave_confidence: number | null
+
+    // Killzone Detection
+    killzone_detected: boolean
+    killzone_box_high: number | null
+    killzone_box_low: number | null
+    killzone_box_width_pips: number | null
+    killzone_confidence: number | null
+    killzone_fib_zone_high: number | null
+    killzone_fib_zone_low: number | null
+    killzone_volume_poc: number | null
+    price_in_box: boolean
+
+    // Alert Tracking
+    alert_sent: boolean
+    alert_sent_at: string | null
+}
+
+export interface KillzoneAlert {
+    id: string
+    pair: string
+    wave_type: 2 | 4
+    direction: 'bullish' | 'bearish'
+    killzone_box_high: number
+    killzone_box_low: number
+    confidence: number
+    telegram_sent: boolean
+    telegram_chat_id: string | null
+    created_at: string
+}

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Shield, Globe, RefreshCw, Key, CreditCard, CheckCircle2, XCircle, Monitor, Wallet, Trash2, AlertTriangle, Send, Clock, Bell, Zap, TrendingUp, Brain, Sparkles, Cpu, Timer } from 'lucide-react'
+import { Shield, Globe, RefreshCw, Key, CreditCard, CheckCircle2, XCircle, Monitor, Wallet, Trash2, AlertTriangle, Send, Clock, Bell, Zap, TrendingUp, Brain, Sparkles, Cpu, Timer, Target } from 'lucide-react'
 
 interface ConnectionResult {
     connected: boolean
@@ -44,6 +44,7 @@ export default function SettingsPage() {
     const [telegramChatId, setTelegramChatId] = useState('')
     const [telegramEnabled, setTelegramEnabled] = useState(false)
     const [correlationAlertsEnabled, setCorrelationAlertsEnabled] = useState(false)
+    const [killzoneAlertsEnabled, setKillzoneAlertsEnabled] = useState(true)
     const [wakeUpTime, setWakeUpTime] = useState('06:00')
     const [tradingStartTime, setTradingStartTime] = useState('07:00')
     const [tradingEndTime, setTradingEndTime] = useState('21:00')
@@ -159,6 +160,7 @@ export default function SettingsPage() {
                 setTelegramChatId(prefs.telegram_chat_id || '')
                 setTelegramEnabled(prefs.telegram_enabled || false)
                 setCorrelationAlertsEnabled(prefs.correlation_alerts_enabled || false)
+                setKillzoneAlertsEnabled(prefs.killzone_alerts_enabled ?? true)
                 setWakeUpTime(prefs.wake_up_time || '06:00')
                 setTradingStartTime(prefs.trading_start_time || '07:00')
                 setTradingEndTime(prefs.trading_end_time || '21:00')
@@ -180,6 +182,7 @@ export default function SettingsPage() {
                     telegram_chat_id: telegramChatId || null,
                     telegram_enabled: telegramEnabled,
                     correlation_alerts_enabled: correlationAlertsEnabled,
+                    killzone_alerts_enabled: killzoneAlertsEnabled,
                     wake_up_time: wakeUpTime,
                     trading_start_time: tradingStartTime,
                     trading_end_time: tradingEndTime,
@@ -741,6 +744,25 @@ export default function SettingsPage() {
                                     className={`relative w-12 h-6 rounded-full transition-all duration-300 ${correlationAlertsEnabled ? 'bg-purple-600 shadow-[0_0_15px_-5px_rgba(168,85,247,0.5)]' : 'bg-neutral-700'}`}
                                 >
                                     <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${correlationAlertsEnabled ? 'translate-x-6 scale-110' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+
+                            {/* Killzone Wave Completion Alerts */}
+                            <div className="flex items-center justify-between p-6 bg-neutral-800/30 rounded-2xl border border-neutral-700/50 hover:bg-neutral-800/50 transition-all cursor-pointer group" onClick={() => setKillzoneAlertsEnabled(!killzoneAlertsEnabled)}>
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-3 rounded-xl border ${killzoneAlertsEnabled ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-neutral-800 border-neutral-700 text-neutral-500'}`}>
+                                        <Target size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-white group-hover:text-green-400 transition-colors">Killzone Wave Completion Alerts</p>
+                                        <p className="text-xs text-neutral-500 mt-1">Get notified when Wave 2/4 corrections finish (Wave 3/5 setup ready)</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className={`relative w-12 h-6 rounded-full transition-all duration-300 ${killzoneAlertsEnabled ? 'bg-green-600 shadow-[0_0_15px_-5px_rgba(34,197,94,0.5)]' : 'bg-neutral-700'}`}
+                                >
+                                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${killzoneAlertsEnabled ? 'translate-x-6 scale-110' : 'translate-x-0'}`} />
                                 </button>
                             </div>
                         </div>
