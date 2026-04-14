@@ -77,9 +77,34 @@ export async function backtestRegimeForPair(
     let lastTradeIndex = -1
     const cooldownCandles = 4 // 1 hour cooldown (4 M15 candles)
 
+    // Global Governors State
+    let lastProcessedDay = ''
+    let dailyTradesByBot: Record<string, number> = {}
+    let dailyStartingEquity = accountBalance
+    let circuitBreakerHit = false
+
     // Simulate step by step on M15 
     for (let i = 200; i < m15Candles.length - 20; i++) {
-        // Skip if in cooldown
+        const currentCandle = m15Candles[i]
+        const currentDate = currentCandle.time.split('T')[0]
+
+        // 1. Reset daily counters and check circuit breaker at start of new day
+        if (currentDate !== lastProcessedDay) {
+            lastProcessedDay = currentDate
+            dailyTradesByBot = { trap: 0, momentum: 0, killzone: 0, ghost: 0 }
+            dailyStartingEquity = accountBalance
+            circuitBreakerHit = false
+        }
+
+        // 2. Daily Loss Circuit Breaker: 1.5% max loss per day
+        const currentDailyDrawdown = (dailyStartingEquity - accountBalance) / dailyStartingEquity
+        if (currentDailyDrawdown >= 0.015) {
+            circuitBreakerHit = true
+        }
+
+        if (circuitBreakerHit) continue
+
+        // 3. Skip if in cooldown
         if (lastTradeIndex !== -1 && i - lastTradeIndex < cooldownCandles) {
             continue
         }
@@ -152,8 +177,15 @@ export async function backtestRegimeForPair(
             }
         }
 
-        // Execute if setup found
+        // ═══════════════════════════════════════════════════════════════════
+        // Step 4: Execute if setup found + Governor Check
+        // ═══════════════════════════════════════════════════════════════════
         if (direction !== 'none' && entryPrice && stopLoss && takeProfit) {
+            // Max 3 trades per division per day
+            const currentBotCount = dailyTradesByBot[activeBot] || 0
+            if (currentBotCount >= 3) continue
+
+            dailyTradesByBot[activeBot] = (dailyTradesByBot[activeBot] || 0) + 1
             lastTradeIndex = i
             
             // Fast forward to find outcome (SL or TP hit)

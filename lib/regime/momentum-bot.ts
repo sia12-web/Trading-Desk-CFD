@@ -82,8 +82,9 @@ export function detectMomentum(
     const currentPrice = closes[closes.length - 1]
 
     // ── Calculate indicators (FROZEN params) ──
-    const ema20 = calculateEMA(closes, 20)
-    const ema50 = calculateEMA(closes, 50)
+    const ema9 = calculateEMA(closes, 9)
+    const ema21 = calculateEMA(closes, 21)
+    const ema55 = calculateEMA(closes, 55)
     const atrValues = calculateATR(highs, lows, closes, 14)
     const adxResult = calculateADX(highs, lows, closes, 14)
     const macdResult = calculateMACD(closes, 12, 26, 9)
@@ -92,8 +93,9 @@ export function detectMomentum(
 
     // Get current values
     const lastIdx = closes.length - 1
-    const currentEma20 = ema20[lastIdx]
-    const currentEma50 = ema50[lastIdx]
+    const currentEma9 = ema9[lastIdx]
+    const currentEma21 = ema21[lastIdx]
+    const currentEma55 = ema55[lastIdx]
     const currentATR = atrValues.filter(v => !isNaN(v)).pop() ?? 0
     const currentADX = adxResult.adx.filter(v => !isNaN(v)).pop() ?? 0
     const currentHistogram = macdResult.histogram[macdResult.histogram.length - 1] ?? 0
@@ -105,27 +107,32 @@ export function detectMomentum(
         return { ...EMPTY_SETUP, narrative: 'Indicators not yet warmed up.' }
     }
 
-    // ── EMA(20) slope over last 5 bars ──
-    const validEma20 = ema20.filter(v => !isNaN(v))
-    const ema20Slope = validEma20.length >= 5
-        ? validEma20[validEma20.length - 1] - validEma20[validEma20.length - 5]
+    // ── EMA confirm slope ──
+    const validEma9 = ema9.filter(v => !isNaN(v))
+    const emaSlope = validEma9.length >= 5
+        ? validEma9[validEma9.length - 1] - validEma9[validEma9.length - 5]
         : 0
 
-    // ── Check 5 conditions ──
+    // ── Check conditions (Triple EMA alignment) ──
     const priceAboveVWAP = currentPrice > currentVWAP
     const priceBelowVWAP = currentPrice < currentVWAP
-    const emaLongAligned = currentEma20 > currentEma50
-    const emaShortAligned = currentEma20 < currentEma50
+    const ema9Above21 = currentEma9 > currentEma21
+    const ema21Above55 = currentEma21 > currentEma55
+    const ema9Below21 = currentEma9 < currentEma21
+    const ema21Below55 = currentEma21 < currentEma55
+    
     const adxAboveThreshold = currentADX > 30
     const histogramBullish = currentHistogram > 0
     const histogramBearish = currentHistogram < 0
-    const slopeBullish = ema20Slope > 0
-    const slopeBearish = ema20Slope < 0
+    
+    // SPX Energy threshold: ATR must be > 12 pips (approx)
+    const isSPX = pair.includes('SPX')
+    const hasEnergy = isSPX ? (currentATR * pipMultiplier >= 12) : true
 
-    // LONG: all 5 conditions
-    const isLong = priceAboveVWAP && emaLongAligned && adxAboveThreshold && histogramBullish && slopeBullish
-    // SHORT: all 5 conditions (inverse)
-    const isShort = priceBelowVWAP && emaShortAligned && adxAboveThreshold && histogramBearish && slopeBearish
+    // LONG: Triple alignment + energy
+    const isLong = priceAboveVWAP && ema9Above21 && ema21Above55 && adxAboveThreshold && histogramBullish && emaSlope > 0 && hasEnergy
+    // SHORT: Triple alignment + energy
+    const isShort = priceBelowVWAP && ema9Below21 && ema21Below55 && adxAboveThreshold && histogramBearish && emaSlope < 0 && hasEnergy
 
     if (!isLong && !isShort) {
         return {
@@ -239,9 +246,9 @@ export function detectMomentum(
         `Confidence: ${confidence}%\n` +
         `Confluence: ${confluenceFactors.join('; ')}`
 
-    // Trailing stop distance (Operator's Note: format to pair-specific dp before OANDA call)
-    const trailingStopDistance = currentATR * 1.5
-    const trailingActivation = currentATR  // Trailing activates after 1x ATR in profit
+    // Trailing stop distance (Operator's Note: Widened for SPX noise)
+    const trailingStopDistance = currentATR * 2.5
+    const trailingActivation = currentATR * 1.5 // Trailing activates after 1.5x ATR in profit
 
     return {
         detected: true,

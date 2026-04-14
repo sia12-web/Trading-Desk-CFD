@@ -354,9 +354,16 @@ export async function executeRegimeProtocol(
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // Step 4: Position Sizing (adjusted by sizeMultiplier)
+    // Step 4: Position Sizing (adjusted by sizeMultiplier and Bot Type)
     // ═══════════════════════════════════════════════════════════════════
-    const adjustedRisk = config.riskAmount * regime.sizeMultiplier
+    let scalingFactor = regime.sizeMultiplier
+    
+    // Killzone Speculative Reduction (50% size per AI Trio)
+    if (regime.activeBot === 'killzone') {
+        scalingFactor *= 0.5
+    }
+
+    const adjustedRisk = config.riskAmount * scalingFactor
     const positionSize = calculateLotSize(entryPrice, stopLoss, adjustedRisk, pair)
 
     // ═══════════════════════════════════════════════════════════════════
@@ -384,18 +391,34 @@ export async function executeRegimeProtocol(
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // Step 6: Daily Trade Limit (check BOTH tables)
+    // Step 6: Institutional Governors (Circuit Breaker & Limits)
     // ═══════════════════════════════════════════════════════════════════
     const client = await createClient()
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
 
-    const [{ count: regimeTradeCount }, { count: killzoneTradeCount }] = await Promise.all([
-        client.from('regime_auto_executions').select('*', { count: 'exact', head: true }).eq('executed', true).gte('created_at', todayStart.toISOString()),
-        client.from('killzone_auto_executions').select('*', { count: 'exact', head: true }).eq('executed', true).gte('created_at', todayStart.toISOString()),
-    ])
+    // A. Fetch today's executions to check daily loss and division frequency
+    const { data: todayExecs } = await client
+        .from('regime_auto_executions')
+        .select('profit_loss, active_bot, executed')
+        .eq('executed', true)
+        .gte('created_at', todayStart.toISOString())
 
-    const totalTodayTrades = (regimeTradeCount ?? 0) + (killzoneTradeCount ?? 0)
+    // B. Daily Loss Circuit Breaker (1.5% of $10,000 baseline = $150 loss)
+    const totalDailyPL = (todayExecs ?? []).reduce((sum, e) => sum + (e.profit_loss || 0), 0)
+    if (totalDailyPL <= -150) {
+        console.log(`[RegimeEngine] ${pair} SHUTDOWN: Daily Loss Circuit Breaker triggered ($${totalDailyPL})`)
+        return emptyDecision(regime, `Daily loss circuit breaker triggered ($${totalDailyPL})`)
+    }
+
+    // C. Divisional Trade Limit (Max 3 per bot per day)
+    const botTradeCount = (todayExecs ?? []).filter(e => e.active_bot === regime.activeBot).length
+    if (botTradeCount >= 3) {
+        console.log(`[RegimeEngine] ${pair} BLOCKED: Division ${regime.activeBot} reached daily limit (${botTradeCount}/3)`)
+        return emptyDecision(regime, `Division ${regime.activeBot} daily trade limit reached`)
+    }
+
+    const totalTodayTrades = (todayExecs ?? []).length
     if (totalTodayTrades >= config.maxTradesPerDay) {
         console.log(`[RegimeEngine] ${pair} BLOCKED: Daily limit (${totalTodayTrades}/${config.maxTradesPerDay})`)
         return {

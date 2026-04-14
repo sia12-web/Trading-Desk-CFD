@@ -173,9 +173,10 @@ export function detectKillzone(
     let targetZone: 'wave2' | 'wave4'
 
     if (waveType === 2) {
-        // Wave 2: deep correction → 61.8% to 78.6%
-        fibHigh = fibLevels.fib618
-        fibLow = fibLevels.fib786
+        // Wave 2: deep correction → 78.6% to 112% (Deep Harvester logic)
+        const isSPX = pair.includes('SPX')
+        fibHigh = isSPX ? (isBullish ? swingHigh - range * 0.786 : swingLow + range * 0.786) : fibLevels.fib618
+        fibLow = isSPX ? (isBullish ? swingHigh - range * 1.12 : swingLow + range * 1.12) : fibLevels.fib786
         targetZone = 'wave2'
     } else {
         // Wave 4: shallow correction → 38.2% to 50%
@@ -304,7 +305,20 @@ export function detectKillzone(
         confluenceFactors.push(`${hvnNearBox} HVN node(s) inside box`)
     }
 
-    // Step 7: Check if current price is in the box
+    // Step 7: Price Persistence Confirmation (Hold Fib level for 4+ bars)
+    const recent4 = m15Candles.slice(-4)
+    const holdCount = recent4.filter(c => parseFloat(c.mid.c) >= box.low && parseFloat(c.mid.c) <= box.high).length
+    const persistenceConfirmed = holdCount >= 3 // Hold for significant portion of recent window
+
+    if (!persistenceConfirmed) {
+        confidence -= 15
+        confluenceFactors.push('Price not holding in box (slicing detected)')
+    } else {
+        confidence += 15
+        confluenceFactors.push('Price holding in box (persistence confirmed)')
+    }
+
+    // Step 8: Check if current price is in the box
     const currentPrice = parseFloat(m15Candles[m15Candles.length - 1].mid.c)
     const priceInBox = currentPrice >= box.low && currentPrice <= box.high
 

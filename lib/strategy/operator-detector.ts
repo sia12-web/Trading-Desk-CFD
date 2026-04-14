@@ -151,7 +151,8 @@ export function detectOperator(
     const lows = candles.map(c => parseFloat(c.mid.l))
     const closes = candles.map(c => parseFloat(c.mid.c))
 
-    const donchian = calculateDonchianChannel(highs, lows, 20, pipMultiplier)
+    const donchianPeriod = pair.includes('SPX') || pair.includes('US30') ? 34 : 20
+    const donchian = calculateDonchianChannel(highs, lows, donchianPeriod, pipMultiplier)
 
     // Get current Donchian levels (most recent bar)
     const currentIdx = donchian.high.length - 1
@@ -277,8 +278,8 @@ export function detectOperator(
     // ── Step 8: Calculate Entry, SL, TP ──
     const entryPrice = currentPrice
 
-    // Stop Loss: Beyond opposite Donchian boundary (15-20 pips buffer)
-    const slBuffer = 15 / pipMultiplier
+    // Stop Loss: Tighten to 0.75x ATR equivalent (approx 10 pips for SPX noise)
+    const slBuffer = (pair.includes('SPX') ? 10 : 15) / pipMultiplier
     const stopLoss = direction === 'long'
         ? donchianLow - slBuffer
         : donchianHigh + slBuffer
