@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { VALID_PAIRS } from '@/lib/utils/valid-pairs'
 import { isGhostWindow, isNewsBlackout } from '@/lib/regime/news-guard'
-import { getCurrentPrices, closePosition } from '@/lib/oanda/client'
+import { getCurrentPrices, closeTrade } from '@/lib/oanda/client'
 import { isCrypto } from '@/lib/data/asset-config'
 import { executeRegimeProtocol } from '@/lib/regime/engine'
 import { sendTelegramMessage } from '@/lib/notifications/telegram'
@@ -51,8 +51,7 @@ export async function GET(req: NextRequest) {
                     if (spread > 1.5 && price.instrument === 'XAU_USD') {
                         console.log(`[TacticalHeartbeat] CONDITION BLACK on ${price.instrument}: Spread is ${spread.toFixed(2)}`)
                         // In a real system, you'd close the active trades here:
-                        // await closePosition('LONG', price.instrument)
-                        // await closePosition('SHORT', price.instrument)
+                        // await closeTrade('SOME_ID', 'ALL')
                     }
                 }
             }
