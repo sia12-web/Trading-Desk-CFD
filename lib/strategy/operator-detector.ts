@@ -144,7 +144,8 @@ export function detectOperator(
 
     const assetConfig = getAssetConfig(pair)
     const pipMultiplier = assetConfig.pointMultiplier === 1 ? 1 : (assetConfig.pointMultiplier === 100 ? 100 : 10000)
-    const pipBuffer = 2 // Donchian breakout buffer in pips
+    const pipBuffer = 1 // Tighten breakout buffer
+    const adrThreshold = 250 // ADR filter from Trio AI briefing
 
     // ── Step 1: Calculate Donchian Channel (20-period) ──
     const highs = candles.map(c => parseFloat(c.mid.h))
@@ -152,7 +153,8 @@ export function detectOperator(
     const closes = candles.map(c => parseFloat(c.mid.c))
 
     const isNAS = pair.includes('NAS')
-    const donchianPeriod = isNAS ? 35 : (pair.includes('SPX') || pair.includes('US30') ? 34 : 20)
+    const isDE30 = pair.includes('DE30')
+    const donchianPeriod = (isNAS || isDE30) ? 30 : 20 // Widen to 30 as per Trio briefing
     const donchian = calculateDonchianChannel(highs, lows, donchianPeriod, pipMultiplier)
 
     // Get current Donchian levels (most recent bar)
@@ -165,8 +167,8 @@ export function detectOperator(
         return { ...EMPTY_SETUP, narrative: 'Donchian Channel not yet established (need 20+ candles).' }
     }
 
-    // ── Step 2: Calculate CVD ──
-    const cvdResult = calculateCVD(candles, 50)
+    // ── Step 2: Calculate CVD (Matrix Rule: Rolling Anchor matches Donchian Window) ──
+    const cvdResult = calculateCVD(candles, donchianPeriod)
 
     // ── Step 3: Build Volume Profile (Left Page vs Right Page) ──
     const leftPageSplit = Math.floor(candles.length * 0.6)
@@ -180,17 +182,20 @@ export function detectOperator(
     const currentPOC = rightPageVP.vpoc
     const volumeVoids = leftPageVP.lvn // LVN from historical data (volume voids)
 
-    // ── Step 4: Detect Donchian Breakout ──
-    const currentPrice = closes[closes.length - 1]
+    // Step 4: Detect Donchian Breakout with Candle Close Confirmation
+    const lastCandle = candles[candles.length - 1]
+    const currentPrice = parseFloat(lastCandle.mid.c)
+    const prevCandle = candles[candles.length - 2]
     const breakoutThresholdPips = pipBuffer / pipMultiplier
 
     let breakoutDirection: 'above' | 'below' | 'none' = 'none'
     let breakoutLevel: number | null = null
 
-    if (currentPrice < donchianLow - breakoutThresholdPips) {
+    // TRIO REQUIREMENT: Full candle close beyond band
+    if (parseFloat(lastCandle.mid.c) < donchianLow - breakoutThresholdPips) {
         breakoutDirection = 'below'
         breakoutLevel = donchianLow
-    } else if (currentPrice > donchianHigh + breakoutThresholdPips) {
+    } else if (parseFloat(lastCandle.mid.c) > donchianHigh + breakoutThresholdPips) {
         breakoutDirection = 'above'
         breakoutLevel = donchianHigh
     }
@@ -248,9 +253,19 @@ export function detectOperator(
         }
     }
 
-    // ── Step 6: Verify POC Alignment ──
+    // ── Step 6: Verify POC Alignment & ADR Filter ──
     const currentATR = candles[candles.length - 1].mid ? parseFloat(candles[candles.length - 1].mid.h) - parseFloat(candles[candles.length - 1].mid.l) : 0 // rough ATR
+    const dailyCandles = candles.slice(-80) // rough proxy for 5-day ADR on M15
+    const adrPips = (Math.max(...dailyCandles.map(c => parseFloat(c.mid.h))) - Math.min(...dailyCandles.map(c => parseFloat(c.mid.l)))) * pipMultiplier
     
+    // TRIO REQUIREMENT: ADR Filter (Volatitity Kill Switch)
+    if (adrPips > adrThreshold) {
+        return {
+            ...EMPTY_SETUP,
+            narrative: `Sniper disabled: 5-day ADR too high (${Math.round(adrPips)} > ${adrThreshold} pts). Division standing down.`,
+        }
+    }
+
     // NAS100 Volatility Kill Switch
     if (isNAS && currentATR * pipMultiplier > 100) {
         return {

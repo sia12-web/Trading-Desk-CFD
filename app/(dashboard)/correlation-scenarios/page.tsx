@@ -120,7 +120,7 @@ export default function CorrelationScenariosPage() {
           <div>
             <h1 className="text-2xl font-bold text-white">Correlation Scenario Analysis</h1>
             <p className="text-neutral-400 text-sm mt-1">
-              Multi-currency pattern mining across all 18 forex pairs
+              Multi-instrument pattern mining across all tradable assets
             </p>
           </div>
         </div>

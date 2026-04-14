@@ -223,3 +223,62 @@ export async function getUpcomingHighImpactEvents(
         return []
     }
 }
+// ═══════════════════════════════════════════════════════════════════════════
+// Market Hours & Holiday Gate
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Check if current time is within 8 AM - 4 PM ET (New York) trading hours.
+ * Also checks for weekends and basic holidays.
+ */
+export function isMarketHours(): {
+    open: boolean
+    reason: string | null
+    minutesUntilClose: number | null
+} {
+    // Current time in New York
+    const now = new Date()
+    const nyTime = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false,
+        weekday: 'long',
+    }).formatToParts(now)
+
+    const getPart = (p: string) => nyTime.find(x => x.type === p)?.value
+    const day = getPart('weekday')
+    const hour = parseInt(getPart('hour') ?? '0')
+    const minute = parseInt(getPart('minute') ?? '0')
+
+    // 1. Weekend check
+    if (day === 'Saturday' || day === 'Sunday') {
+        return { open: false, reason: 'Market closed (Weekend)', minutesUntilClose: 0 }
+    }
+
+    // 2. Holiday check (Simplified for major trading holidays)
+    const month = now.getMonth() + 1
+    const date = now.getDate()
+    const isHoliday = (month === 1 && date === 1) || // New Year
+                      (month === 12 && date === 25) || // Christmas
+                      (month === 7 && date === 4)   // July 4th
+    
+    if (isHoliday) {
+        return { open: false, reason: 'Market closed (Holiday)', minutesUntilClose: 0 }
+    }
+
+    // 3. 8 AM - 4 PM ET check
+    if (hour < 8 || hour >= 16) {
+        return { open: false, reason: `Market closed (NY Time: ${hour}:${minute.toString().padStart(2, '0')})`, minutesUntilClose: 0 }
+    }
+
+    // Minutes until NY close (16:00)
+    const minutesUntilClose = (16 - hour) * 60 - minute
+
+    return {
+        open: true,
+        reason: null,
+        minutesUntilClose
+    }
+}

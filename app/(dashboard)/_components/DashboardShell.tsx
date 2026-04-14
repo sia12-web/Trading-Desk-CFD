@@ -32,6 +32,7 @@ import {
     X,
     Crosshair,
     Swords,
+    Ghost,
 } from 'lucide-react'
 import LinkNext from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -79,6 +80,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         { label: 'Risk Rules', href: '/risk-rules', icon: ShieldAlert },
         { label: 'Execution Log', href: '/execution-log', icon: History },
         { label: 'References', href: '/references', icon: BookMarked },
+        { label: 'Trap Protocol', href: '/trap', icon: Ghost },
         { label: 'Settings', href: '/settings', icon: Settings },
     ]
 

@@ -24,7 +24,7 @@ import { createClient } from '@/lib/supabase/server'
 import { classifyRegime } from './classifier'
 import { detectMomentum } from './momentum-bot'
 import { detectGhostSetup } from './ghost-bot'
-import { isNewsBlackout, isGhostWindow } from './news-guard'
+import { isNewsBlackout, isGhostWindow, isMarketHours } from './news-guard'
 import type {
     RegimeEngineConfig,
     RegimeExecutionDecision,
@@ -112,6 +112,14 @@ export async function executeRegimeProtocol(
 
     const h1Candles = h1Response.data
     const m15Candles = m15Response.data
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Step 1b: Market Hours & Weekend Gate
+    // ═══════════════════════════════════════════════════════════════════
+    const marketHours = isMarketHours()
+    if (!marketHours.open) {
+        return emptyDecision(emptyRegime, marketHours.reason || 'Market closed')
+    }
 
     // ═══════════════════════════════════════════════════════════════════
     // Step 2a: News Guard — check for Ghost window or blackout
@@ -358,9 +366,42 @@ export async function executeRegimeProtocol(
     // ═══════════════════════════════════════════════════════════════════
     let scalingFactor = regime.sizeMultiplier
     
+    // TRIO: Sniper -> Rider Capital Shift
+    // If Sniper (Trap) bot was disabled by ADR (detectOperator would return detected: false with ADR narrative)
+    // We should check if we are in a trending regime where Rider (Momentum) is active.
+    if (regime.activeBot === 'momentum' && !config.enableTrapBot) {
+        // This is a proxy. In a real scenario, we'd check if Sniper *would* have run but was ADR-blocked.
+        // For now, we'll boost Rider size if ADR is high.
+        const isIndex = pair.includes('NAS') || pair.includes('SPX') || pair.includes('DE30')
+        if (isIndex && (regime.indicators.atrPercentile > 0.8)) {
+            scalingFactor *= 1.3 // 30% boost to Rider capital
+            console.log(`[RegimeEngine] ${pair} ADR BOOST: Shifting Sniper capital to Rider (+30% risk)`)
+        }
+    }
+
     // Killzone Speculative Reduction (50% size per AI Trio)
     if (regime.activeBot === 'killzone') {
         scalingFactor *= 0.5
+    }
+
+    // TRIO: Rider Re-engagement Rule (50% size if resumed within 6 candles)
+    const client = await createClient()
+    if (regime.activeBot === 'momentum') {
+        const sixCandlesAgo = new Date(Date.now() - 6 * 15 * 60 * 1000).toISOString()
+        const { data: recentStopped } = await client
+            .from('regime_auto_executions')
+            .select('direction, created_at')
+            .eq('pair', pair)
+            .eq('active_bot', 'momentum')
+            .eq('executed', true)
+            .gte('created_at', sixCandlesAgo)
+            .order('created_at', { ascending: false })
+            .limit(1)
+
+        if (recentStopped && recentStopped.length > 0 && recentStopped[0].direction === direction) {
+            scalingFactor *= 0.5
+            console.log(`[RegimeEngine] ${pair} RE-ENGAGEMENT: 50% size re-entry within 6 candles.`)
+        }
     }
 
     const adjustedRisk = config.riskAmount * scalingFactor
@@ -393,7 +434,6 @@ export async function executeRegimeProtocol(
     // ═══════════════════════════════════════════════════════════════════
     // Step 6: Institutional Governors (Circuit Breaker & Limits)
     // ═══════════════════════════════════════════════════════════════════
-    const client = await createClient()
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
 

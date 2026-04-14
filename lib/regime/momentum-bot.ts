@@ -108,10 +108,11 @@ export function detectMomentum(
         return { ...EMPTY_SETUP, narrative: 'Indicators not yet warmed up.' }
     }
 
-    // ── EMA confirm slope ──
+    // ── EMA confirm slope (Trio: extend lookback for DE30/Index stability) ──
     const validEma5 = ema5.filter(v => !isNaN(v))
-    const emaSlope = validEma5.length >= 5
-        ? validEma5[validEma5.length - 1] - validEma5[validEma5.length - 5]
+    const slopeLookback = (pair.includes('DE30') || pair.includes('NAS') || pair.includes('SPX')) ? 14 : 5
+    const emaSlope = validEma5.length >= slopeLookback
+        ? validEma5[validEma5.length - 1] - validEma5[validEma5.length - slopeLookback]
         : 0
 
     // ── Check conditions (Triple EMA alignment) ──
@@ -248,9 +249,9 @@ export function detectMomentum(
         `Confidence: ${confidence}%\n` +
         `Confluence: ${confluenceFactors.join('; ')}`
 
-    // Trailing stop distance (Operator's Note: Widened for Index noise)
-    const isVolatile = pair.includes('NAS') || pair.includes('SPX') || pair.includes('US30') || pair.includes('Crypto') || pair.includes('BTC')
-    const trailingStopDistance = currentATR * (isVolatile ? 2.5 : 1.5)
+    // Trailing stop distance (TRIO: 2.2x ATR for DE30 to survive whipsaws)
+    const isIndex = pair.includes('NAS') || pair.includes('SPX') || pair.includes('US30') || pair.includes('DE30')
+    const trailingStopDistance = currentATR * (isIndex ? 2.2 : 1.5)
     const trailingActivation = currentATR * 1.5 // Trailing activates after 1.5x ATR in profit
 
     return {

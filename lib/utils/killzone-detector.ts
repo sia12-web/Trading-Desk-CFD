@@ -157,6 +157,16 @@ export function detectKillzone(
         return { ...EMPTY_SETUP, narrative: 'Invalid impulse range — swingHigh equals swingLow.' }
     }
 
+    const assetConfig = getAssetConfig(pair)
+    const pipMult = assetConfig.pointMultiplier
+    const isDE30 = pair.includes('DE30')
+    const minSwingPips = isDE30 ? 180 : 100 // TRIO: Increased for DE30
+    const currentSwingPips = (swingHigh - swingLow) * pipMult
+
+    if (currentSwingPips < minSwingPips) {
+        return { ...EMPTY_SETUP, narrative: `Impulse too small (${Math.round(currentSwingPips)} < ${minSwingPips} pts). Division standing down.` }
+    }
+
     // Step 2: Compute Fibonacci grid
     const range = swingHigh - swingLow
     const fibLevels = {
@@ -167,42 +177,21 @@ export function detectKillzone(
         fib786: swingHigh - range * 0.786,
     }
 
-    // Target zone depends on wave type
+    // Target zone depends on wave type (TRIO: 61.8-78.6% narrow cluster)
     let fibHigh: number
     let fibLow: number
     let targetZone: 'wave2' | 'wave4'
 
     if (waveType === 2) {
-        // Wave 2: deep correction → 78.6% to 112% (Deep Harvester logic)
-        const isSPX = pair.includes('SPX')
-        fibHigh = isSPX ? (isBullish ? swingHigh - range * 0.786 : swingLow + range * 0.786) : fibLevels.fib618
-        fibLow = isSPX ? (isBullish ? swingHigh - range * 1.12 : swingLow + range * 1.12) : fibLevels.fib786
+        // Wave 2: TRIO narrow cluster 61.8%–78.6%
+        fibHigh = isBullish ? fibLevels.fib618 : fibLevels.fib786
+        fibLow = isBullish ? fibLevels.fib786 : fibLevels.fib618
         targetZone = 'wave2'
     } else {
-        // Wave 4: shallow correction → 38.2% to 50%
-        fibHigh = fibLevels.fib382
-        fibLow = fibLevels.fib50
+        // Wave 4: 38.2 to 50%
+        fibHigh = isBullish ? fibLevels.fib382 : fibLevels.fib50
+        fibLow = isBullish ? fibLevels.fib50 : fibLevels.fib382
         targetZone = 'wave4'
-    }
-
-    // For bearish impulses, Fib retracement goes UP (correction rallies)
-    if (!isBullish) {
-        // Invert: correction retraces UP from impulse low
-        const fibLevelsInv = {
-            fib236: swingLow + range * 0.236,
-            fib382: swingLow + range * 0.382,
-            fib50: swingLow + range * 0.5,
-            fib618: swingLow + range * 0.618,
-            fib786: swingLow + range * 0.786,
-        }
-        if (waveType === 2) {
-            fibHigh = fibLevelsInv.fib786
-            fibLow = fibLevelsInv.fib618
-        } else {
-            fibHigh = fibLevelsInv.fib50
-            fibLow = fibLevelsInv.fib382
-        }
-        Object.assign(fibLevels, fibLevelsInv)
     }
 
     // Ensure fibHigh > fibLow
@@ -223,8 +212,6 @@ export function detectKillzone(
 
     const volumeProfile = buildVolumeProfile(pullbackCandles, 30)
     const poc = volumeProfile.vpoc
-    const assetConfig = getAssetConfig(pair)
-    const pipMult = assetConfig.pointMultiplier
 
     // Step 4: Check POC/Fib confluence
     const fibCenter = (fibHigh + fibLow) / 2
@@ -318,9 +305,17 @@ export function detectKillzone(
         confluenceFactors.push('Price holding in box (persistence confirmed)')
     }
 
-    // Step 8: Check if current price is in the box
+    // Step 8: Price Persistence & Reclaim CONFIRMATION (TRIO Requirement)
+    const recentCandles = m15Candles.slice(-8)
+    const dippedBelow = recentCandles.some(c => isBullish ? parseFloat(c.mid.l) < box.low : parseFloat(c.mid.h) > box.high)
     const currentPrice = parseFloat(m15Candles[m15Candles.length - 1].mid.c)
+    const reclaimed = isBullish ? (currentPrice > box.low) : (currentPrice < box.high)
     const priceInBox = currentPrice >= box.low && currentPrice <= box.high
+
+    if (dippedBelow && reclaimed) {
+        confidence += 25
+        confluenceFactors.push('Deviation + Reclaim confirmed (institutional trap)')
+    }
 
     const dp = assetConfig.decimalPlaces
     const narrative = `Wave ${waveType} Killzone detected: ${box.high.toFixed(dp)} - ${box.low.toFixed(dp)} (${box.widthPips} ${assetConfig.pointLabel}). ` +
