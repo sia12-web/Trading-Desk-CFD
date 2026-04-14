@@ -525,6 +525,92 @@ function VolumeSection() {
           })}
         </div>
       </div>
+
+      {/* CVD Anchoring Matrix */}
+      <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[2.5rem] space-y-6">
+        <div>
+          <h4 className="text-xl font-bold text-neutral-100 flex items-center gap-2 mb-2">
+            <Activity className="text-blue-500" size={24} />
+            Institutional Matrix: Cumulative Volume Delta (CVD) Anchoring
+          </h4>
+          <p className="text-sm text-neutral-400 leading-relaxed">
+            To master CVD, you must understand that the anchor is your lens. Your anchor must mathematically scale with your timeframe. A macro lens looking at a microscopic battlefield shows nothing but blur.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-xl p-5">
+            <h5 className="font-bold text-blue-400 mb-3 flex items-center gap-2">
+              <span className="bg-blue-500/20 text-blue-300 text-xs px-2 py-1 rounded">Micro</span>
+              1m, 3m, 5m
+            </h5>
+            <p className="text-xs text-neutral-400 mb-4 h-8">Day trading, HFT noise, and scalping Division bots.</p>
+            <div className="space-y-3 text-xs">
+              <div className="bg-neutral-950/50 p-3 rounded-lg border border-neutral-800">
+                <p className="font-semibold text-neutral-300 mb-1">Anchor: Session / Event Open</p>
+                <p className="text-neutral-500">Yesterday's volume is irrelevant. Measure who is dominating today.</p>
+              </div>
+              <ul className="text-neutral-400 space-y-2">
+                <li><span className="text-neutral-300">Indices:</span> 09:30 AM EST (NY Open)</li>
+                <li><span className="text-neutral-300">Forex:</span> 03:00 AM EST (London)</li>
+                <li><span className="text-neutral-300">Event Exception:</span> Anchor exactly to CPI/NFP release to isolate news flow.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-xl p-5">
+            <h5 className="font-bold text-green-400 mb-3 flex items-center gap-2">
+              <span className="bg-green-500/20 text-green-300 text-xs px-2 py-1 rounded">Intraday</span>
+              15m, 1H
+            </h5>
+            <p className="text-xs text-neutral-400 mb-4 h-8">Swing trading, structural shifts, Sniper & Rider Divisions.</p>
+            <div className="space-y-3 text-xs">
+              <div className="bg-neutral-950/50 p-3 rounded-lg border border-neutral-800">
+                <p className="font-semibold text-neutral-300 mb-1">Anchor: Weekly Open or Structure</p>
+                <p className="text-neutral-500">A daily anchor resets too frequently, destroying the narrative.</p>
+              </div>
+              <ul className="text-neutral-400 space-y-2">
+                <li><span className="text-neutral-300">Weekly:</span> Reset Sunday night to see net capital flow for the week.</li>
+                <li><span className="text-neutral-300">Structural:</span> If trapped in a 3-day box, anchor to the first candle of the box to detect internal accumulation.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-xl p-5">
+            <h5 className="font-bold text-purple-400 mb-3 flex items-center gap-2">
+              <span className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded">Macro</span>
+              4H, Daily
+            </h5>
+            <p className="text-xs text-neutral-400 mb-4 h-8">Macro trends and global liquidity cycles.</p>
+            <div className="space-y-3 text-xs">
+              <div className="bg-neutral-950/50 p-3 rounded-lg border border-neutral-800">
+                <p className="font-semibold text-neutral-300 mb-1">Anchor: Monthly / Cycle Bottom</p>
+                <p className="text-neutral-500">Track macro footprints to detect structural manipulation.</p>
+              </div>
+              <ul className="text-neutral-400 space-y-2">
+                <li><span className="text-neutral-300">Major Pivot:</span> Anchor to the absolute lowest candle of the last crash.</li>
+                <li><span className="text-neutral-300">Divergence:</span> If price makes ATHs but Macro CVD goes down, the whales have been secretly distributing.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Algorithm Implementation */}
+        <div className="p-5 border border-amber-500/20 bg-amber-500/10 rounded-xl">
+          <h5 className="font-bold text-amber-500 mb-2 flex items-center gap-2">
+            <Cpu size={16} /> Rule of Dissociation (Fixed vs Rolling)
+          </h5>
+          <p className="text-xs text-amber-200/80 leading-relaxed mb-3">
+            Using a <strong className="text-amber-300">Fixed Anchor</strong> (Time/Date) is required for manual narrative analysis. However, mechanical trading bots hunting divergence at boundaries require a <strong className="text-amber-300">Rolling Anchor</strong>.
+          </p>
+          <div className="bg-black/30 p-3 rounded border border-amber-500/10 text-xs text-amber-100 font-mono">
+            "If you use a 35-period Donchian Channel, you MUST evaluate a 35-period Rolling CVD."
+          </div>
+          <p className="text-xs text-amber-200/80 mt-3">
+            If CVD length mismatches Donchian length, you calculate mathematical dissociation by evaluating orderflow from OUTSIDE the structural box being broken.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
