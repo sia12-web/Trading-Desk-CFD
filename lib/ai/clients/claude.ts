@@ -55,6 +55,7 @@ export async function callClaude(
             const message = await getClient().messages.create(
                 {
                     model,
+                    temperature: 0,
                     max_tokens: maxTokens,
                     ...(system ? { system } : {}),
                     messages: [{ role: 'user', content: prompt }],
@@ -167,6 +168,7 @@ export async function callClaudeWithCaching(
             const message = await getClient().messages.create(
                 {
                     model,
+                    temperature: 0,
                     max_tokens: maxTokens,
                     messages: [
                         {

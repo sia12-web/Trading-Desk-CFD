@@ -51,6 +51,7 @@ export async function callDeepSeek(
             const response = await getClient().chat.completions.create(
                 {
                     model,
+                    temperature: 0,
                     max_tokens: maxTokens,
                     messages: [{ role: 'user', content: prompt }],
                 },
