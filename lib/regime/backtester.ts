@@ -231,7 +231,9 @@ export async function backtestRegimeForPair(
                 outcome,
                 regime,
                 bot_used: activeBot,
-                confidence: botConfidence
+                confidence: botConfidence,
+                stop_loss: Number(stopLoss.toFixed(dp)),
+                take_profit: Number(takeProfit.toFixed(dp))
             })
 
             equityCurve.push({

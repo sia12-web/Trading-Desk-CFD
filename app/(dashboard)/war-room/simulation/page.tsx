@@ -18,6 +18,8 @@ interface BacktestTrade {
     regime: string
     bot_used: string
     confidence: number
+    stop_loss: number
+    take_profit: number
 }
 
 interface BacktestMetrics {
@@ -50,6 +52,7 @@ export default function SimulationPage() {
     const [error, setError] = useState<string | null>(null)
     const [analysis, setAnalysis] = useState<string | null>(null)
     const [analyzing, setAnalyzing] = useState(false)
+    const [selectedTrade, setSelectedTrade] = useState<BacktestTrade | null>(null)
 
     const runSimulation = async () => {
         try {
@@ -277,24 +280,53 @@ export default function SimulationPage() {
                                             <div>Outcome</div>
                                         </div>
                                         {result.trades.map((trade, i) => (
-                                            <div key={i} className={`grid grid-cols-9 gap-3 px-4 py-3 rounded-xl border ${trade.outcome === 'win' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-red-500/20 bg-red-500/5'} items-center text-xs`}>
-                                                <div className="text-neutral-300">{trade.entry_date}</div>
-                                                <div className="text-neutral-300">{trade.exit_date}</div>
-                                                <div className="text-neutral-400">{trade.regime.split('_')[0]}</div>
-                                                <div className="text-white font-medium capitalize">{trade.bot_used}</div>
-                                                <div className={trade.direction === 'long' ? 'text-emerald-400' : 'text-red-400'}>{trade.direction.toUpperCase()}</div>
-                                                <div className={`font-bold ${trade.pips > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                    {trade.pips > 0 ? '+' : ''}{trade.pips}
+                                            <div key={i} className="space-y-2">
+                                                <div 
+                                                    onClick={() => setSelectedTrade(selectedTrade === trade ? null : trade)}
+                                                    className={`grid grid-cols-9 gap-3 px-4 py-3 rounded-xl border ${trade.outcome === 'win' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-red-500/20 bg-red-500/5'} items-center text-xs cursor-pointer hover:bg-neutral-800 transition-colors`}
+                                                >
+                                                    <div className="text-neutral-300">{trade.entry_date}</div>
+                                                    <div className="text-neutral-300">{trade.exit_date}</div>
+                                                    <div className="text-neutral-400">{trade.regime.split('_')[0]}</div>
+                                                    <div className="text-white font-medium capitalize">{trade.bot_used}</div>
+                                                    <div className={trade.direction === 'long' ? 'text-emerald-400' : 'text-red-400'}>{trade.direction.toUpperCase()}</div>
+                                                    <div className={`font-bold ${trade.pips > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                        {trade.pips > 0 ? '+' : ''}{trade.pips}
+                                                    </div>
+                                                    <div className={`font-bold ${trade.profit_loss > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                        ${trade.profit_loss > 0 ? '+' : ''}{trade.profit_loss.toFixed(2)}
+                                                    </div>
+                                                    <div className="text-neutral-400">{trade.duration_hours}h</div>
+                                                    <div>
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${trade.outcome === 'win' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                            {trade.outcome.toUpperCase()}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className={`font-bold ${trade.profit_loss > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                    ${trade.profit_loss > 0 ? '+' : ''}{trade.profit_loss.toFixed(2)}
-                                                </div>
-                                                <div className="text-neutral-400">{trade.duration_hours}h</div>
-                                                <div>
-                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${trade.outcome === 'win' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                        {trade.outcome.toUpperCase()}
-                                                    </span>
-                                                </div>
+                                                
+                                                {selectedTrade === trade && (
+                                                    <div className="mx-4 p-4 rounded-xl bg-neutral-950 border border-neutral-800 grid grid-cols-3 gap-6 animate-in slide-in-from-top-2">
+                                                        <div className="space-y-1">
+                                                            <div className="text-[10px] text-neutral-500 uppercase">Entry Protocol</div>
+                                                            <div className="text-sm font-medium text-white">{trade.bot_used.toUpperCase()} Triggered</div>
+                                                            <div className="text-xs text-neutral-400">Confidence: {trade.confidence}%</div>
+                                                            <div className="text-xs text-neutral-400 italic">Regime: {trade.regime.toUpperCase()}</div>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <div className="text-[10px] text-neutral-500 uppercase">Physics</div>
+                                                            <div className="text-sm text-neutral-200">Price: {trade.entry_price}</div>
+                                                            <div className="text-sm text-red-400">SL: {trade.stop_loss}</div>
+                                                            <div className="text-sm text-emerald-400">TP: {trade.take_profit}</div>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <div className="text-[10px] text-neutral-500 uppercase">Performance</div>
+                                                            <div className="text-sm text-white">{trade.pips.toFixed(1)} Pips Captured</div>
+                                                            <div className={`text-lg font-black ${trade.profit_loss > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                {trade.profit_loss > 0 ? '+' : ''}${trade.profit_loss.toFixed(2)}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </>
