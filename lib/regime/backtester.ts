@@ -110,8 +110,6 @@ export async function backtestRegimeForPair(
         }
 
         const m15Window = m15Candles.slice(i - 200, i + 1)
-        const currentCandle = m15Candles[i]
-        const currentDate = currentCandle.time.split('T')[0]
         
         // Match H1 window (find H1 candle that closes before or exactly at current M15 time)
         const currentM15Time = new Date(currentCandle.time).getTime()
