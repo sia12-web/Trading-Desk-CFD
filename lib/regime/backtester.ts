@@ -27,6 +27,8 @@ export interface RegimeBacktestResult {
         regime: string
         bot_used: string
         confidence: number
+        stop_loss: number
+        take_profit: number
     })[]
     metrics: BacktestMetrics
     equity_curve: Array<{ date: string; equity: number }>
@@ -65,7 +67,7 @@ export async function backtestRegimeForPair(
     const h1Candles = h1Response.data
     const m15Candles = m15Response.data
 
-    const trades: (BacktestTrade & { regime: string, bot_used: string, confidence: number })[] = []
+    const trades: (BacktestTrade & { regime: string, bot_used: string, confidence: number, stop_loss: number, take_profit: number })[] = []
     let accountBalance = 10000
     const equityCurve: Array<{ date: string; equity: number }> = [
         { date: m15Candles[200].time.split('T')[0], equity: accountBalance }

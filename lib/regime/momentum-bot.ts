@@ -36,8 +36,9 @@ const EMPTY_SETUP: MomentumSetup = {
     atrValue: 0,
     vwapValue: 0,
     adxValue: 0,
-    ema20: 0,
-    ema50: 0,
+    ema9: 0,
+    ema21: 0,
+    ema55: 0,
     confidence: 0,
     confluenceFactors: [],
     narrative: 'No momentum setup detected.',
@@ -103,7 +104,7 @@ export function detectMomentum(
     const donchianHigh = donchian.high[lastIdx]
     const donchianLow = donchian.low[lastIdx]
 
-    if (isNaN(currentEma20) || isNaN(currentEma50) || currentATR === 0) {
+    if (isNaN(currentEma9) || isNaN(currentEma21) || isNaN(currentEma55) || currentATR === 0) {
         return { ...EMPTY_SETUP, narrative: 'Indicators not yet warmed up.' }
     }
 
@@ -140,13 +141,14 @@ export function detectMomentum(
             atrValue: currentATR,
             vwapValue: currentVWAP,
             adxValue: currentADX,
-            ema20: currentEma20,
-            ema50: currentEma50,
+            ema9: currentEma9,
+            ema21: currentEma21,
+            ema55: currentEma55,
             priceAboveVWAP: priceAboveVWAP,
-            emaAlignment: emaLongAligned || emaShortAligned,
+            emaAlignment: (ema9Above21 && ema21Above55) || (ema9Below21 && ema21Below55),
             adxAboveThreshold,
             momentumPositive: histogramBullish || histogramBearish,
-            narrative: `Momentum conditions not met. VWAP: ${priceAboveVWAP ? 'above' : 'below'}, EMA: ${emaLongAligned ? 'bullish' : emaShortAligned ? 'bearish' : 'mixed'}, ADX: ${currentADX.toFixed(1)} (${adxAboveThreshold ? 'strong' : 'weak'}), MACD: ${histogramBullish ? '+' : histogramBearish ? '-' : '0'}, Slope: ${slopeBullish ? '+' : slopeBearish ? '-' : 'flat'}.`,
+            narrative: `Momentum conditions not met. VWAP: ${priceAboveVWAP ? 'above' : 'below'}, EMA(9/21/55): ${(ema9Above21 && ema21Above55) ? 'bullish' : (ema9Below21 && ema21Below55) ? 'bearish' : 'mixed'}, ADX: ${currentADX.toFixed(1)} (${adxAboveThreshold ? 'strong' : 'weak'}).`,
         }
     }
 
@@ -235,7 +237,7 @@ export function detectMomentum(
 
     const narrative = `Momentum ${dirLabel} detected!\n\n` +
         `VWAP: ${currentVWAP.toFixed(dp)} (price ${direction === 'long' ? 'above' : 'below'})\n` +
-        `EMA(20): ${currentEma20.toFixed(dp)} ${direction === 'long' ? '>' : '<'} EMA(50): ${currentEma50.toFixed(dp)}\n` +
+        `EMA(9/21/55): Bullish ? ${ema9Above21 && ema21Above55} | Bearish ? ${ema9Below21 && ema21Below55}\n` +
         `ADX: ${currentADX.toFixed(1)} (strong trend)\n` +
         `MACD: ${currentHistogram > 0 ? '+' : ''}${currentHistogram.toFixed(5)}\n\n` +
         `Entry: ${currentPrice.toFixed(dp)}\n` +
@@ -266,8 +268,9 @@ export function detectMomentum(
         atrValue: currentATR,
         vwapValue: currentVWAP,
         adxValue: currentADX,
-        ema20: currentEma20,
-        ema50: currentEma50,
+        ema9: currentEma9,
+        ema21: currentEma21,
+        ema55: currentEma55,
         confidence,
         confluenceFactors,
         narrative,
