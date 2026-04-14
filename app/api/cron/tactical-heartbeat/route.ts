@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
                 const result = await executeRegimeProtocol(pair, config, prefs.user_id)
                 
                 if (result.executed && result.entryPrice && prefs.regime_alerts_enabled) {
-                    const msg = `👻 GHOST BOT EXECUTED!\nPair: ${pair}\nDirection: ${result.direction}\nEntry: ${result.entryPrice}\nEvent: ${result.ghostSetup?.eventName}`
+                    const msg = `👻 GHOST BOT EXECUTED!\nPair: ${pair}\nDirection: ${result.direction}\nEntry: ${result.entryPrice}\nEvent: ${result.ghostSetup?.newsEvent}`
                     if (prefs.telegram_chat_id) {
                         await sendTelegramMessage(prefs.telegram_chat_id, 'Ghost Bot Alert', msg)
                     }
