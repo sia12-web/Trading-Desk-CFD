@@ -9,6 +9,18 @@ const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3'
 
 // Map crypto symbols to CoinGecko IDs
 const CRYPTO_ID_MAP: Record<string, string> = {
+    'BTC_USD': 'bitcoin',
+    'ETH_USD': 'ethereum',
+    'BNB_USD': 'binancecoin',
+    'SOL_USD': 'solana',
+    'XRP_USD': 'ripple',
+    'ADA_USD': 'cardano',
+    'DOGE_USD': 'dogecoin',
+    'AVAX_USD': 'avalanche-2',
+    'DOT_USD': 'polkadot',
+    'MATIC_USD': 'matic-network',
+    
+    // Legacy support
     'CRYPTO_BTC_USD': 'bitcoin',
     'CRYPTO_ETH_USD': 'ethereum',
     'CRYPTO_BNB_USD': 'binancecoin',
@@ -185,7 +197,7 @@ function mergeCandles(candles: OandaCandle[]): OandaCandle {
  * Check if an instrument is a crypto pair
  */
 export function isCryptoPair(instrument: string): boolean {
-    return instrument.startsWith('CRYPTO_')
+    return instrument in CRYPTO_ID_MAP
 }
 
 /**

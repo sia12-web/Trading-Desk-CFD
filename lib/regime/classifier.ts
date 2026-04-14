@@ -220,7 +220,7 @@ function computeRegimeIndicators(
             }
         }
     }
-    const cvdErratic = cvdDirectionChanges > 5
+    const cvdErratic = cvdDirectionChanges > 12
 
     // ── Spread width ratio ──
     // Since OANDA doesn't provide spread in candle data, estimate from ATR behavior
