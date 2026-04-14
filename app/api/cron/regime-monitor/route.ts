@@ -6,7 +6,7 @@ import { sendTelegramMessage } from '@/lib/notifications/telegram'
 import type { RegimeEngineConfig } from '@/lib/regime/types'
 
 /**
- * CRON: Regime Monitor
+ * CRON: Regime Monitor - THE MACRO OVERSEER (Loop 1)
  *
  * Runs every 15 minutes to:
  * 1. Classify regime for all 25 pairs
