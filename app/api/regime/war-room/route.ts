@@ -49,7 +49,8 @@ export async function GET() {
         }
 
         // ── 4. Determine global system status ──
-        const hasConditionBlack = regimeStates.some(s => s.regime.conditionBlack)
+        const conditionBlackPairs = regimeStates.filter(s => s.regime.conditionBlack)
+        const hasConditionBlack = conditionBlackPairs.length >= 3 // Global Blackout requires 3+ pairs acting erratic
         const hasNewsGuard = Object.values(newsStatus).some(s => s.blackout || s.ghostActive)
         const systemStatus = hasConditionBlack ? 'CONDITION_BLACK'
             : hasNewsGuard ? 'NEWS_GUARD'
@@ -118,9 +119,9 @@ export async function GET() {
 
             conditionBlack: {
                 active: hasConditionBlack,
-                affectedPairs: regimeStates.filter(s => s.regime.conditionBlack).map(s => s.pair),
+                affectedPairs: conditionBlackPairs.map(s => s.pair),
                 reason: hasConditionBlack
-                    ? regimeStates.find(s => s.regime.conditionBlack)?.regime.narrative ?? null
+                    ? `Systemic instability (${conditionBlackPairs.length} pairs erratic)`
                     : null,
             },
 
