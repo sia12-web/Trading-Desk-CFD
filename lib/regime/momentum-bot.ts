@@ -36,9 +36,9 @@ const EMPTY_SETUP: MomentumSetup = {
     atrValue: 0,
     vwapValue: 0,
     adxValue: 0,
-    ema9: 0,
-    ema21: 0,
-    ema55: 0,
+    ema5: 0,
+    ema13: 0,
+    ema50: 0,
     confidence: 0,
     confluenceFactors: [],
     narrative: 'No momentum setup detected.',
@@ -83,9 +83,9 @@ export function detectMomentum(
     const currentPrice = closes[closes.length - 1]
 
     // ── Calculate indicators (FROZEN params) ──
-    const ema9 = calculateEMA(closes, 9)
-    const ema21 = calculateEMA(closes, 21)
-    const ema55 = calculateEMA(closes, 55)
+    const ema5 = calculateEMA(closes, 5)
+    const ema13 = calculateEMA(closes, 13)
+    const ema50 = calculateEMA(closes, 50)
     const atrValues = calculateATR(highs, lows, closes, 14)
     const adxResult = calculateADX(highs, lows, closes, 14)
     const macdResult = calculateMACD(closes, 12, 26, 9)
@@ -94,9 +94,9 @@ export function detectMomentum(
 
     // Get current values
     const lastIdx = closes.length - 1
-    const currentEma9 = ema9[lastIdx]
-    const currentEma21 = ema21[lastIdx]
-    const currentEma55 = ema55[lastIdx]
+    const currentEma5 = ema5[lastIdx]
+    const currentEma13 = ema13[lastIdx]
+    const currentEma50 = ema50[lastIdx]
     const currentATR = atrValues.filter(v => !isNaN(v)).pop() ?? 0
     const currentADX = adxResult.adx.filter(v => !isNaN(v)).pop() ?? 0
     const currentHistogram = macdResult.histogram[macdResult.histogram.length - 1] ?? 0
@@ -104,23 +104,23 @@ export function detectMomentum(
     const donchianHigh = donchian.high[lastIdx]
     const donchianLow = donchian.low[lastIdx]
 
-    if (isNaN(currentEma9) || isNaN(currentEma21) || isNaN(currentEma55) || currentATR === 0) {
+    if (isNaN(currentEma5) || isNaN(currentEma13) || isNaN(currentEma50) || currentATR === 0) {
         return { ...EMPTY_SETUP, narrative: 'Indicators not yet warmed up.' }
     }
 
     // ── EMA confirm slope ──
-    const validEma9 = ema9.filter(v => !isNaN(v))
-    const emaSlope = validEma9.length >= 5
-        ? validEma9[validEma9.length - 1] - validEma9[validEma9.length - 5]
+    const validEma5 = ema5.filter(v => !isNaN(v))
+    const emaSlope = validEma5.length >= 5
+        ? validEma5[validEma5.length - 1] - validEma5[validEma5.length - 5]
         : 0
 
     // ── Check conditions (Triple EMA alignment) ──
     const priceAboveVWAP = currentPrice > currentVWAP
     const priceBelowVWAP = currentPrice < currentVWAP
-    const ema9Above21 = currentEma9 > currentEma21
-    const ema21Above55 = currentEma21 > currentEma55
-    const ema9Below21 = currentEma9 < currentEma21
-    const ema21Below55 = currentEma21 < currentEma55
+    const ema5Above13 = currentEma5 > currentEma13
+    const ema13Above50 = currentEma13 > currentEma50
+    const ema5Below13 = currentEma5 < currentEma13
+    const ema13Below50 = currentEma13 < currentEma50
     
     const adxAboveThreshold = currentADX > 30
     const histogramBullish = currentHistogram > 0
@@ -131,9 +131,9 @@ export function detectMomentum(
     const hasEnergy = isSPX ? (currentATR * pipMultiplier >= 12) : true
 
     // LONG: Triple alignment + energy
-    const isLong = priceAboveVWAP && ema9Above21 && ema21Above55 && adxAboveThreshold && histogramBullish && emaSlope > 0 && hasEnergy
+    const isLong = priceAboveVWAP && ema5Above13 && ema13Above50 && adxAboveThreshold && histogramBullish && emaSlope > 0 && hasEnergy
     // SHORT: Triple alignment + energy
-    const isShort = priceBelowVWAP && ema9Below21 && ema21Below55 && adxAboveThreshold && histogramBearish && emaSlope < 0 && hasEnergy
+    const isShort = priceBelowVWAP && ema5Below13 && ema13Below50 && adxAboveThreshold && histogramBearish && emaSlope < 0 && hasEnergy
 
     if (!isLong && !isShort) {
         return {
@@ -141,14 +141,14 @@ export function detectMomentum(
             atrValue: currentATR,
             vwapValue: currentVWAP,
             adxValue: currentADX,
-            ema9: currentEma9,
-            ema21: currentEma21,
-            ema55: currentEma55,
+            ema5: currentEma5,
+            ema13: currentEma13,
+            ema50: currentEma50,
             priceAboveVWAP: priceAboveVWAP,
-            emaAlignment: (ema9Above21 && ema21Above55) || (ema9Below21 && ema21Below55),
+            emaAlignment: (ema5Above13 && ema13Above50) || (ema5Below13 && ema13Below50),
             adxAboveThreshold,
             momentumPositive: histogramBullish || histogramBearish,
-            narrative: `Momentum conditions not met. VWAP: ${priceAboveVWAP ? 'above' : 'below'}, EMA(9/21/55): ${(ema9Above21 && ema21Above55) ? 'bullish' : (ema9Below21 && ema21Below55) ? 'bearish' : 'mixed'}, ADX: ${currentADX.toFixed(1)} (${adxAboveThreshold ? 'strong' : 'weak'}).`,
+            narrative: `Momentum conditions not met. VWAP: ${priceAboveVWAP ? 'above' : 'below'}, EMA(5/13/50): ${(ema5Above13 && ema13Above50) ? 'bullish' : (ema5Below13 && ema13Below50) ? 'bearish' : 'mixed'}, ADX: ${currentADX.toFixed(1)} (${adxAboveThreshold ? 'strong' : 'weak'}).`,
         }
     }
 
@@ -237,7 +237,7 @@ export function detectMomentum(
 
     const narrative = `Momentum ${dirLabel} detected!\n\n` +
         `VWAP: ${currentVWAP.toFixed(dp)} (price ${direction === 'long' ? 'above' : 'below'})\n` +
-        `EMA(9/21/55): Bullish ? ${ema9Above21 && ema21Above55} | Bearish ? ${ema9Below21 && ema21Below55}\n` +
+        `EMA(5/13/50): Bullish ? ${ema5Above13 && ema13Above50} | Bearish ? ${ema5Below13 && ema13Below50}\n` +
         `ADX: ${currentADX.toFixed(1)} (strong trend)\n` +
         `MACD: ${currentHistogram > 0 ? '+' : ''}${currentHistogram.toFixed(5)}\n\n` +
         `Entry: ${currentPrice.toFixed(dp)}\n` +
@@ -248,8 +248,9 @@ export function detectMomentum(
         `Confidence: ${confidence}%\n` +
         `Confluence: ${confluenceFactors.join('; ')}`
 
-    // Trailing stop distance (Operator's Note: Widened for SPX noise)
-    const trailingStopDistance = currentATR * 2.5
+    // Trailing stop distance (Operator's Note: Widened for Index noise)
+    const isVolatile = pair.includes('NAS') || pair.includes('SPX') || pair.includes('US30') || pair.includes('Crypto') || pair.includes('BTC')
+    const trailingStopDistance = currentATR * (isVolatile ? 2.5 : 1.5)
     const trailingActivation = currentATR * 1.5 // Trailing activates after 1.5x ATR in profit
 
     return {
@@ -268,9 +269,9 @@ export function detectMomentum(
         atrValue: currentATR,
         vwapValue: currentVWAP,
         adxValue: currentADX,
-        ema9: currentEma9,
-        ema21: currentEma21,
-        ema55: currentEma55,
+        ema5: currentEma5,
+        ema13: currentEma13,
+        ema50: currentEma50,
         confidence,
         confluenceFactors,
         narrative,

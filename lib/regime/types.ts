@@ -58,7 +58,7 @@ export interface MomentumSetup {
 
     // Entry conditions
     priceAboveVWAP: boolean
-    emaAlignment: boolean          // Triple EMA(9/21/55) alignment
+    emaAlignment: boolean          // Triple EMA(5/13/50) alignment
     adxAboveThreshold: boolean     // ADX > 30
     momentumPositive: boolean      // MACD histogram confirms direction
 
@@ -76,9 +76,9 @@ export interface MomentumSetup {
     atrValue: number
     vwapValue: number
     adxValue: number
-    ema9: number
-    ema21: number
-    ema55: number
+    ema5: number
+    ema13: number
+    ema50: number
 
     confidence: number             // 0-100
     confluenceFactors: string[]

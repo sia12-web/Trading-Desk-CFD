@@ -151,7 +151,8 @@ export function detectOperator(
     const lows = candles.map(c => parseFloat(c.mid.l))
     const closes = candles.map(c => parseFloat(c.mid.c))
 
-    const donchianPeriod = pair.includes('SPX') || pair.includes('US30') ? 34 : 20
+    const isNAS = pair.includes('NAS')
+    const donchianPeriod = isNAS ? 35 : (pair.includes('SPX') || pair.includes('US30') ? 34 : 20)
     const donchian = calculateDonchianChannel(highs, lows, donchianPeriod, pipMultiplier)
 
     // Get current Donchian levels (most recent bar)
@@ -248,6 +249,15 @@ export function detectOperator(
     }
 
     // ── Step 6: Verify POC Alignment ──
+    const currentATR = candles[candles.length - 1].mid ? parseFloat(candles[candles.length - 1].mid.h) - parseFloat(candles[candles.length - 1].mid.l) : 0 // rough ATR
+    
+    // NAS100 Volatility Kill Switch
+    if (isNAS && currentATR * pipMultiplier > 100) {
+        return {
+            ...EMPTY_SETUP,
+            narrative: `Sniper disabled: NAS100 volatility too high (ATR: ${Math.round(currentATR * pipMultiplier)} > 100 pts).`,
+        }
+    }
     const pocAlignmentThresholdPips = 10 / pipMultiplier
     const pocAlignment = Math.abs(currentPrice - leftPagePOC) < pocAlignmentThresholdPips
 

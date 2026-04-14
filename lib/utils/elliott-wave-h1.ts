@@ -61,14 +61,17 @@ export function detectH1ElliottWave(
     candles: OandaCandle[],
     rsi: number[],
     macdLine: number[],
-    macdSignal: number[]
+    macdSignal: number[],
+    pair: string = 'EUR/USD'
 ): H1WaveState {
     if (candles.length < 50) {
         return createUnknownWaveState(candles)
     }
 
-    // Step 1: Find swing points (zigzag)
-    const swings = findSwingPoints(candles, 5) // 5-candle swing detection
+    // Step 1: Find swing points (fractals)
+    const isVolatile = pair.includes('NAS') || pair.includes('SPX') || pair.includes('US30')
+    const lookback = isVolatile ? 10 : 5 // Wider structural filter for indices
+    const swings = findSwingPoints(candles, lookback)
 
     if (swings.length < 5) {
         return createUnknownWaveState(candles)

@@ -44,7 +44,7 @@ export async function backtestRegimeForPair(
     const instrument = pair.replace('/', '_')
     const assetConfig = getAssetConfig(pair)
     const dp = assetConfig.decimalPlaces
-    const mult = assetConfig.pointMultiplier === 100 ? 100 : 10000
+    const mult = assetConfig.pointMultiplier
 
     // Fetch historical candles (We need H1 for Killzone, M15 for Regime + Div 1/2)
     // 3 weeks = 21 days. M15: 21 * 24 * 4 = 2016 candles. Add buffer for indicators (200).
@@ -154,7 +154,7 @@ export async function backtestRegimeForPair(
                 const h1Closes = h1Window.map(c => parseFloat(c.mid.c))
                 const h1Rsi = calculateRSI(h1Closes, 14)
                 const h1Macd = calculateMACD(h1Closes, 12, 26, 9)
-                const waveState = detectH1ElliottWave(h1Window, h1Rsi, h1Macd.macdLine, h1Macd.signalLine)
+                const waveState = detectH1ElliottWave(h1Window, h1Rsi, h1Macd.macdLine, h1Macd.signalLine, pair)
                 const marketState = detectMarketState(m15Window)
                 
                 const killzone = marketState.proceedToTier2
@@ -162,16 +162,24 @@ export async function backtestRegimeForPair(
                     : detectKillzone(waveState, m15Window, pair)
 
                 if (killzone.detected && killzone.confidence >= 50) {
-                    direction = killzone.direction === 'bullish' ? 'long' : 'short'
-                    entryPrice = killzone.box?.center ?? null
+                    const anticipatedDirection = killzone.direction === 'bullish' ? 'long' : 'short'
                     
-                    if (entryPrice && killzone.box) {
-                        const slDist = killzone.box.widthPips / mult
-                        stopLoss = direction === 'long' ? entryPrice - slDist : entryPrice + slDist
-                        takeProfit = direction === 'long' ? entryPrice + slDist * 1.5 : entryPrice - slDist * 1.5
-                        botConfidence = killzone.confidence
+                    // Counter-Trend Gate: Do not fight active momentum
+                    const momentumCheck = detectMomentum(m15Window, pair)
+                    if (momentumCheck.detected && momentumCheck.direction !== anticipatedDirection) {
+                        direction = 'none' // Blocked!
                     } else {
-                        direction = 'none'
+                        direction = anticipatedDirection
+                        entryPrice = killzone.box?.center ?? null
+                        
+                        if (entryPrice && killzone.box) {
+                            const slDist = killzone.box.widthPips / mult
+                            stopLoss = direction === 'long' ? entryPrice - slDist : entryPrice + slDist
+                            takeProfit = direction === 'long' ? entryPrice + slDist * 1.5 : entryPrice - slDist * 1.5
+                            botConfidence = killzone.confidence
+                        } else {
+                            direction = 'none'
+                        }
                     }
                 }
             }
