@@ -27,6 +27,18 @@ export interface NotificationPreferences {
     wake_up_time: string
     trading_start_time: string
     trading_end_time: string
+
+    // Regime Engine
+    regime_engine_enabled: boolean
+    regime_engine_dry_run: boolean
+    regime_engine_max_trades_per_day: number
+    regime_engine_risk_amount: number
+    regime_engine_min_confidence: number
+    regime_engine_cooldown_minutes: number
+    regime_engine_trap_enabled: boolean
+    regime_engine_killzone_enabled: boolean
+    regime_engine_momentum_enabled: boolean
+    regime_engine_ghost_enabled: boolean
 }
 
 export async function saveSubscription(

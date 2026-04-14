@@ -48,6 +48,25 @@ export interface CalculatedIndicators {
     volumeSma: number[]
     // Volume Flow Analysis
     volumeFlow: VolumeFlowData
+    // Operator's HUD indicators
+    donchianChannel: {
+        high: number[]
+        low: number[]
+        middle: number[]
+        width: number[]
+    }
+    cvd: {
+        cvd: number[]
+        delta: number[]
+        trend: 'bullish' | 'bearish' | 'neutral'
+        strength: number
+        divergences: Array<{
+            type: 'bullish' | 'bearish'
+            priceSwing: { start: number; end: number; startIdx: number; endIdx: number }
+            cvdSwing: { start: number; end: number }
+            narrative: string
+        }>
+    }
     // Bill Williams indicators
     alligator: {
         jaw: number[]

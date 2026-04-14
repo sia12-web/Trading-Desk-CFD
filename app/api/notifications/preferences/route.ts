@@ -23,7 +23,17 @@ export async function GET() {
             telegram_enabled: false,
             wake_up_time: '06:00',
             trading_start_time: '07:00',
-            trading_end_time: '21:00'
+            trading_end_time: '21:00',
+            regime_engine_enabled: false,
+            regime_engine_dry_run: true,
+            regime_engine_max_trades_per_day: 5,
+            regime_engine_risk_amount: 10,
+            regime_engine_min_confidence: 0.7,
+            regime_engine_cooldown_minutes: 60,
+            regime_engine_trap_enabled: true,
+            regime_engine_killzone_enabled: true,
+            regime_engine_momentum_enabled: true,
+            regime_engine_ghost_enabled: true
         }
     })
 }
@@ -50,7 +60,17 @@ export async function PUT(req: Request) {
             telegram_enabled: body.telegram_enabled,
             wake_up_time: body.wake_up_time,
             trading_start_time: body.trading_start_time,
-            trading_end_time: body.trading_end_time
+            trading_end_time: body.trading_end_time,
+            regime_engine_enabled: body.regime_engine_enabled,
+            regime_engine_dry_run: body.regime_engine_dry_run,
+            regime_engine_max_trades_per_day: body.regime_engine_max_trades_per_day,
+            regime_engine_risk_amount: body.regime_engine_risk_amount,
+            regime_engine_min_confidence: body.regime_engine_min_confidence,
+            regime_engine_cooldown_minutes: body.regime_engine_cooldown_minutes,
+            regime_engine_trap_enabled: body.regime_engine_trap_enabled,
+            regime_engine_killzone_enabled: body.regime_engine_killzone_enabled,
+            regime_engine_momentum_enabled: body.regime_engine_momentum_enabled,
+            regime_engine_ghost_enabled: body.regime_engine_ghost_enabled
         })
 
         if (!saved) {

@@ -18,6 +18,7 @@ import {
     calculateGatorOscillator,
 } from "@/lib/utils/indicators"
 import { buildVolumeProfile, calculateVWAP, detectVolumeExhaustion } from "@/lib/utils/volume-profile"
+import { calculateDonchianChannel, calculateCVD } from "@/lib/utils/donchian-cvd"
 
 export function calculateAllIndicators(
     candles: OandaCandle[],
@@ -54,6 +55,9 @@ export function calculateAllIndicators(
     const alligatorLipsPeriod = optimizedParams?.Alligator?.lipsPeriod ?? 5
     const aoFastPeriod = optimizedParams?.['Awesome Oscillator']?.fastPeriod ?? 5
     const aoSlowPeriod = optimizedParams?.['Awesome Oscillator']?.slowPeriod ?? 34
+
+    // Operator's HUD params
+    const donchianPeriod = optimizedParams?.['Donchian Channel']?.period ?? 20
 
     // Pivot points from daily candles if provided
     let pivotPoints: PivotPointLevels
@@ -124,6 +128,10 @@ export function calculateAllIndicators(
     const vwap = calculateVWAP(candles)
     const exhaustion = detectVolumeExhaustion(candles)
 
+    // Operator's HUD indicators
+    const donchianResult = calculateDonchianChannel(highs, lows, donchianPeriod, pipLocation === 2 ? 100 : 10000)
+    const cvdResult = calculateCVD(candles, 50)
+
     return {
         ema: emaObj,
         sma: smaObj,
@@ -154,6 +162,20 @@ export function calculateAllIndicators(
             },
             vwap,
             exhaustion,
+        },
+        // Operator's HUD indicators
+        donchianChannel: {
+            high: donchianResult.high,
+            low: donchianResult.low,
+            middle: donchianResult.middle,
+            width: donchianResult.width,
+        },
+        cvd: {
+            cvd: cvdResult.cvd,
+            delta: cvdResult.delta,
+            trend: cvdResult.trend,
+            strength: cvdResult.strength,
+            divergences: cvdResult.divergences,
         },
         // Bill Williams
         alligator: {

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Shield, Globe, RefreshCw, Key, CreditCard, CheckCircle2, XCircle, Monitor, Wallet, Trash2, AlertTriangle, Send, Clock, Bell, Zap, TrendingUp, Brain, Sparkles, Cpu, Timer, Target } from 'lucide-react'
+import { Shield, Globe, RefreshCw, Key, CreditCard, CheckCircle2, XCircle, Monitor, Wallet, Trash2, AlertTriangle, Send, Clock, Bell, Zap, TrendingUp, Brain, Sparkles, Cpu, Timer, Target, Ghost } from 'lucide-react'
 
 interface ConnectionResult {
     connected: boolean
@@ -58,6 +58,18 @@ export default function SettingsPage() {
     const [autoExecMaxTrades, setAutoExecMaxTrades] = useState(3)
     const [autoExecRiskAmount, setAutoExecRiskAmount] = useState(17)
     const [autoExecMinConfidence, setAutoExecMinConfidence] = useState(60)
+
+    // Regime Engine Settings
+    const [regimeEngineEnabled, setRegimeEngineEnabled] = useState(false)
+    const [regimeEngineDryRun, setRegimeEngineDryRun] = useState(true)
+    const [regimeEngineMaxTrades, setRegimeEngineMaxTrades] = useState(5)
+    const [regimeEngineRiskAmount, setRegimeEngineRiskAmount] = useState(10)
+    const [regimeEngineMinConfidence, setRegimeEngineMinConfidence] = useState(0.7)
+    const [regimeEngineCooldown, setRegimeEngineCooldown] = useState(60)
+    const [regimeEngineTrapEnabled, setRegimeEngineTrapEnabled] = useState(true)
+    const [regimeEngineKillzoneEnabled, setRegimeEngineKillzoneEnabled] = useState(true)
+    const [regimeEngineMomentumEnabled, setRegimeEngineMomentumEnabled] = useState(true)
+    const [regimeEngineGhostEnabled, setRegimeEngineGhostEnabled] = useState(true)
 
     // Telegram testing state
     const [testingTelegram, setTestingTelegram] = useState(false)
@@ -178,6 +190,16 @@ export default function SettingsPage() {
                 setAutoExecMaxTrades(prefs.auto_execution_max_trades_per_day ?? 3)
                 setAutoExecRiskAmount(prefs.auto_execution_risk_amount ?? 17)
                 setAutoExecMinConfidence(prefs.auto_execution_min_confidence ?? 60)
+                setRegimeEngineEnabled(prefs.regime_engine_enabled ?? false)
+                setRegimeEngineDryRun(prefs.regime_engine_dry_run ?? true)
+                setRegimeEngineMaxTrades(prefs.regime_engine_max_trades_per_day ?? 5)
+                setRegimeEngineRiskAmount(prefs.regime_engine_risk_amount ?? 10)
+                setRegimeEngineMinConfidence(prefs.regime_engine_min_confidence ?? 0.7)
+                setRegimeEngineCooldown(prefs.regime_engine_cooldown_minutes ?? 60)
+                setRegimeEngineTrapEnabled(prefs.regime_engine_trap_enabled ?? true)
+                setRegimeEngineKillzoneEnabled(prefs.regime_engine_killzone_enabled ?? true)
+                setRegimeEngineMomentumEnabled(prefs.regime_engine_momentum_enabled ?? true)
+                setRegimeEngineGhostEnabled(prefs.regime_engine_ghost_enabled ?? true)
             }
         } catch (err) {
             console.error('Failed to load preferences:', err)
@@ -205,6 +227,16 @@ export default function SettingsPage() {
                     auto_execution_max_trades_per_day: autoExecMaxTrades,
                     auto_execution_risk_amount: autoExecRiskAmount,
                     auto_execution_min_confidence: autoExecMinConfidence,
+                    regime_engine_enabled: regimeEngineEnabled,
+                    regime_engine_dry_run: regimeEngineDryRun,
+                    regime_engine_max_trades_per_day: regimeEngineMaxTrades,
+                    regime_engine_risk_amount: regimeEngineRiskAmount,
+                    regime_engine_min_confidence: regimeEngineMinConfidence,
+                    regime_engine_cooldown_minutes: regimeEngineCooldown,
+                    regime_engine_trap_enabled: regimeEngineTrapEnabled,
+                    regime_engine_killzone_enabled: regimeEngineKillzoneEnabled,
+                    regime_engine_momentum_enabled: regimeEngineMomentumEnabled,
+                    regime_engine_ghost_enabled: regimeEngineGhostEnabled,
                 })
             })
 
@@ -894,6 +926,142 @@ export default function SettingsPage() {
                                     </>
                                 )}
                             </button>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Regime-Switching Engine */}
+                <section className="bg-neutral-900 border border-neutral-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                    <div className="p-10 border-b border-neutral-800 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-blue-900/10 to-transparent">
+                        <div className="flex items-center gap-6">
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-amber-600/10 text-amber-500 flex items-center justify-center">
+                                <Cpu size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-2xl font-bold">Regime-Switching Engine</h3>
+                                <p className="text-neutral-500 text-sm mt-1">Multi-bot "Weapon Swapping" autonomous system.</p>
+                            </div>
+                        </div>
+                        <div className={`px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-xs uppercase tracking-widest ${regimeEngineEnabled ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-neutral-800 text-neutral-500 border border-neutral-700'}`}>
+                            {regimeEngineEnabled ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                            {regimeEngineEnabled ? 'System Active' : 'Offline'}
+                        </div>
+                    </div>
+
+                    <div className="p-10 space-y-8">
+                        {/* Main Controls */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="flex items-center justify-between p-6 bg-neutral-800/30 rounded-2xl border border-neutral-700/50 hover:bg-neutral-800/50 transition-all cursor-pointer group" onClick={() => setRegimeEngineEnabled(!regimeEngineEnabled)}>
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-3 rounded-xl border ${regimeEngineEnabled ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-neutral-800 border-neutral-700 text-neutral-500'}`}>
+                                        <Zap size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">Enable Engine</p>
+                                        <p className="text-xs text-neutral-500 mt-1">Autonomous scanning & execution</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className={`relative w-12 h-6 rounded-full transition-all duration-300 ${regimeEngineEnabled ? 'bg-blue-600 shadow-[0_0_15px_-5px_rgba(37,99,235,0.5)]' : 'bg-neutral-700'}`}
+                                >
+                                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${regimeEngineEnabled ? 'translate-x-6 scale-110' : 'translate-x-0'}`} />
+                                 </button>
+                             </div>
+ 
+                            <div className="flex items-center justify-between p-6 bg-neutral-800/30 rounded-2xl border border-neutral-700/50 hover:bg-neutral-800/50 transition-all cursor-pointer group" onClick={() => setRegimeEngineDryRun(!regimeEngineDryRun)}>
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-3 rounded-xl border ${regimeEngineDryRun ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                                        <AlertTriangle size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">Dry Run Mode</p>
+                                        <p className="text-xs text-neutral-500 mt-1">Don't place real orders</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className={`relative w-12 h-6 rounded-full transition-all duration-300 ${regimeEngineDryRun ? 'bg-amber-600 shadow-[0_0_15px_-5px_rgba(245,158,11,0.5)]' : 'bg-neutral-700'}`}
+                                >
+                                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${regimeEngineDryRun ? 'translate-x-6 scale-110' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Bot Configuration */}
+                        <div className="p-6 bg-neutral-800/20 rounded-2xl border border-neutral-800">
+                            <h4 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-4">Weapon Selection (Bot Toggles)</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${regimeEngineTrapEnabled ? 'bg-blue-500/5 border-blue-500/20 text-blue-400' : 'bg-neutral-900 border-neutral-800 text-neutral-500'}`} onClick={() => setRegimeEngineTrapEnabled(!regimeEngineTrapEnabled)}>
+                                    <div className="flex items-center gap-3">
+                                        <Target size={18} />
+                                        <span className="text-sm font-bold">Trap Bot</span>
+                                    </div>
+                                    <div className={`w-2 h-2 rounded-full ${regimeEngineTrapEnabled ? 'bg-blue-500' : 'bg-neutral-600'}`} />
+                                </div>
+                                <div className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${regimeEngineKillzoneEnabled ? 'bg-purple-500/5 border-purple-500/20 text-purple-400' : 'bg-neutral-900 border-neutral-800 text-neutral-500'}`} onClick={() => setRegimeEngineKillzoneEnabled(!regimeEngineKillzoneEnabled)}>
+                                    <div className="flex items-center gap-3">
+                                        <Sparkles size={18} />
+                                        <span className="text-sm font-bold">Killzone Bot</span>
+                                    </div>
+                                    <div className={`w-2 h-2 rounded-full ${regimeEngineKillzoneEnabled ? 'bg-purple-500' : 'bg-neutral-600'}`} />
+                                </div>
+                                <div className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${regimeEngineMomentumEnabled ? 'bg-orange-500/5 border-orange-500/20 text-orange-400' : 'bg-neutral-900 border-neutral-800 text-neutral-500'}`} onClick={() => setRegimeEngineMomentumEnabled(!regimeEngineMomentumEnabled)}>
+                                    <div className="flex items-center gap-3">
+                                        <TrendingUp size={18} />
+                                        <span className="text-sm font-bold">Momentum Bot</span>
+                                    </div>
+                                    <div className={`w-2 h-2 rounded-full ${regimeEngineMomentumEnabled ? 'bg-orange-500' : 'bg-neutral-600'}`} />
+                                </div>
+                                <div className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${regimeEngineGhostEnabled ? 'bg-red-500/5 border-red-500/20 text-red-400' : 'bg-neutral-900 border-neutral-800 text-neutral-500'}`} onClick={() => setRegimeEngineGhostEnabled(!regimeEngineGhostEnabled)}>
+                                    <div className="flex items-center gap-3">
+                                        <Ghost size={18} />
+                                        <span className="text-sm font-bold">Ghost Bot</span>
+                                    </div>
+                                    <div className={`w-2 h-2 rounded-full ${regimeEngineGhostEnabled ? 'bg-red-500' : 'bg-neutral-600'}`} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Strategy Parameters */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="p-4 bg-neutral-800/30 rounded-2xl border border-neutral-700/50">
+                                <label className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest block mb-2">Risk per Trade ($)</label>
+                                <input
+                                    type="number"
+                                    value={regimeEngineRiskAmount}
+                                    onChange={e => setRegimeEngineRiskAmount(Number(e.target.value))}
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white font-mono text-sm"
+                                />
+                            </div>
+                            <div className="p-4 bg-neutral-800/30 rounded-2xl border border-neutral-700/50">
+                                <label className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest block mb-2">Confidence Gate</label>
+                                <input
+                                    type="number"
+                                    value={regimeEngineMinConfidence}
+                                    onChange={e => setRegimeEngineMinConfidence(Number(e.target.value))}
+                                    step="0.1"
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white font-mono text-sm"
+                                />
+                            </div>
+                            <div className="p-4 bg-neutral-800/30 rounded-2xl border border-neutral-700/50">
+                                <label className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest block mb-2">Max Daily Trades</label>
+                                <input
+                                    type="number"
+                                    value={regimeEngineMaxTrades}
+                                    onChange={e => setRegimeEngineMaxTrades(Number(e.target.value))}
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white font-mono text-sm"
+                                />
+                            </div>
+                            <div className="p-4 bg-neutral-800/30 rounded-2xl border border-neutral-700/50">
+                                <label className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest block mb-2">Cooldown (Mins)</label>
+                                <input
+                                    type="number"
+                                    value={regimeEngineCooldown}
+                                    onChange={e => setRegimeEngineCooldown(Number(e.target.value))}
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white font-mono text-sm"
+                                />
+                            </div>
                         </div>
                     </div>
                 </section>

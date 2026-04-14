@@ -1142,6 +1142,109 @@ export interface Database {
                     created_at?: string
                 }
             }
+            regime_monitor_results: {
+                Row: {
+                    id: string
+                    pair: string
+                    scanned_at: string
+                    regime_type: string
+                    active_bot: string
+                    confidence: number
+                    size_multiplier: number
+                    narrative: string | null
+                    indicators: Json
+                    bot_setups: Json
+                    best_setup: Json | null
+                    success: boolean
+                    error: string | null
+                }
+                Insert: {
+                    id?: string
+                    pair: string
+                    scanned_at?: string
+                    regime_type: string
+                    active_bot: string
+                    confidence: number
+                    size_multiplier?: number
+                    narrative?: string | null
+                    indicators: Json
+                    bot_setups: Json
+                    best_setup?: Json | null
+                    success?: boolean
+                    error?: string | null
+                }
+                Update: {
+                    id?: string
+                    pair?: string
+                    scanned_at?: string
+                    regime_type?: string
+                    active_bot?: string
+                    confidence?: number
+                    size_multiplier?: number
+                    narrative?: string | null
+                    indicators?: Json
+                    bot_setups?: Json
+                    best_setup?: Json | null
+                    success?: boolean
+                    error?: string | null
+                }
+            }
+            regime_auto_executions: {
+                Row: {
+                    id: string
+                    pair: string
+                    regime_type: string
+                    active_bot: string
+                    bot_used: string
+                    direction: string
+                    entry_price: number | null
+                    stop_loss: number | null
+                    take_profit_1: number | null
+                    take_profit_2: number | null
+                    position_size: Json | null
+                    executed: boolean
+                    dry_run: boolean
+                    order_id: string | null
+                    blocked_reason: string | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    pair: string
+                    regime_type: string
+                    active_bot: string
+                    bot_used: string
+                    direction: string
+                    entry_price?: number | null
+                    stop_loss?: number | null
+                    take_profit_1?: number | null
+                    take_profit_2?: number | null
+                    position_size?: Json | null
+                    executed?: boolean
+                    dry_run?: boolean
+                    order_id?: string | null
+                    blocked_reason?: string | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    pair?: string
+                    regime_type?: string
+                    active_bot?: string
+                    bot_used?: string
+                    direction?: string
+                    entry_price?: number | null
+                    stop_loss?: number | null
+                    take_profit_1?: number | null
+                    take_profit_2?: number | null
+                    position_size?: Json | null
+                    executed?: boolean
+                    dry_run?: boolean
+                    order_id?: string | null
+                    blocked_reason?: string | null
+                    created_at?: string
+                }
+            }
         }
     }
 }
@@ -1265,5 +1368,40 @@ export interface KillzoneAutoExecution {
     order_id: string | null
     blocked_reason: string | null
 
+    created_at: string
+}
+
+export interface RegimeMonitorResult {
+    id: string
+    pair: string
+    scanned_at: string
+    regime_type: string
+    active_bot: string
+    confidence: number
+    size_multiplier: number
+    narrative: string | null
+    indicators: any
+    bot_setups: any
+    best_setup: any | null
+    success: boolean
+    error: string | null
+}
+
+export interface RegimeAutoExecution {
+    id: string
+    pair: string
+    regime_type: string
+    active_bot: string
+    bot_used: string
+    direction: string
+    entry_price: number | null
+    stop_loss: number | null
+    take_profit_1: number | null
+    take_profit_2: number | null
+    position_size: any | null
+    executed: boolean
+    dry_run: boolean
+    order_id: string | null
+    blocked_reason: string | null
     created_at: string
 }
