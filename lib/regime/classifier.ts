@@ -282,6 +282,20 @@ function scoreRegimes(ind: RegimeIndicators): Record<RegimeType, number> {
     if (!ind.donchianCompression && !ind.donchianExpansion) trendingMildScore += 15
     if (ind.maCrossCount <= 3) trendingMildScore += 10
 
+    // ── Volatility Choppiness Penalty ──
+    // Prevent false momentum classification in volatile sideways markets (e.g. Gold)
+    if (!ind.slopesAligned) {
+        trendingStrongScore -= 25
+        trendingMildScore -= 25
+        rangingScore += 20
+    }
+    if (ind.maCrossCount >= 4) {
+        trendingStrongScore -= 20
+        trendingMildScore -= 20
+        rangingScore += 20
+    }
+
+
     return {
         ranging_quiet: rangingScore,
         trending_strong: trendingStrongScore,

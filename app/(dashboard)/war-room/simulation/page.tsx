@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Activity, Play, RefreshCw, BarChart2, ShieldAlert, Cpu } from 'lucide-react'
+import { Activity, Play, RefreshCw, BarChart2, ShieldAlert, Cpu, Download } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -96,6 +96,25 @@ export default function SimulationPage() {
         }
     }
 
+    const downloadCSV = () => {
+        if (!result || result.trades.length === 0) return
+        
+        const headers = ['Entry Date,Entry Price,Exit Date,Exit Price,Direction,Pips,Profit/Loss,Duration (Hrs),Outcome,Regime,Bot,Confidence,SL,TP']
+        const rows = result.trades.map(t => 
+            `${t.entry_date},${t.entry_price},${t.exit_date},${t.exit_price},${t.direction},${t.pips},${t.profit_loss},${t.duration_hours},${t.outcome},${t.regime},${t.bot_used},${t.confidence},${t.stop_loss},${t.take_profit}`
+        )
+        
+        const csvContent = "data:text/csv;charset=utf-8," + headers.concat(rows).join("\n")
+        const encodedUri = encodeURI(csvContent)
+        
+        const link = document.createElement("a")
+        link.setAttribute("href", encodedUri)
+        link.setAttribute("download", `backtest_${result.pair.replace('/','_')}_${result.lookback_days}d.csv`)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-20">
             {/* Header */}
@@ -125,9 +144,19 @@ export default function SimulationPage() {
                             <option value="GBP/JPY">GBP/JPY (High Volatility Cross)</option>
                             <option value="SPX500/USD">SPX500/USD (S&P 500)</option>
                             <option value="US30/USD">US30/USD (Dow Jones)</option>
-                            <option value="NAS100/USD">NAS100/USD (Index)</option>
-                            <option value="BTC/USD">BTC/USD (Crypto)</option>
-                            <option value="ETH/USD">ETH/USD (Crypto)</option>
+                            <option value="NAS100/USD">NAS100/USD (Nasdaq)</option>
+                            <option value="DE30/EUR">DE30/EUR (DAX 40)</option>
+                            <option value="BTC/USD">BTC/USD (Bitcoin)</option>
+                            <option value="ETH/USD">ETH/USD (Ethereum)</option>
+                            <option value="SOL/USD">SOL/USD (Solana)</option>
+                            <option value="XRP/USD">XRP/USD (Ripple)</option>
+                            <option value="DOGE/USD">DOGE/USD (Dogecoin)</option>
+                            <option value="LINK/USD">LINK/USD (Chainlink)</option>
+                            <option value="LTC/USD">LTC/USD (Litecoin)</option>
+                            <option value="SHIB/USD">SHIB/USD (Shiba Inu)</option>
+                            <option value="AVAX/USD">AVAX/USD (Avalanche)</option>
+                            <option value="DOT/USD">DOT/USD (Polkadot)</option>
+                            <option value="ADA/USD">ADA/USD (Cardano)</option>
                         </select>
                     </div>
                     
@@ -184,6 +213,12 @@ export default function SimulationPage() {
                             ) : (
                                 <><Cpu size={16} className="mr-2" /> Ask AI Trio to Analyze</>
                             )}
+                        </Button>
+                        <Button 
+                            onClick={downloadCSV}
+                            className="bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700 ml-3"
+                        >
+                            <Download size={16} className="mr-2" /> Export CSV
                         </Button>
                     </div>
 
