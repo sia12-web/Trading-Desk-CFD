@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Activity, Play, RefreshCw, BarChart2, ShieldAlert } from 'lucide-react'
+import { Activity, Play, RefreshCw, BarChart2, ShieldAlert, Cpu } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -48,11 +48,14 @@ export default function SimulationPage() {
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState<SimulationResult | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [analysis, setAnalysis] = useState<string | null>(null)
+    const [analyzing, setAnalyzing] = useState(false)
 
     const runSimulation = async () => {
         try {
             setLoading(true)
             setError(null)
+            setAnalysis(null)
             
             const res = await fetch('/api/regime/backtest', {
                 method: 'POST',
@@ -68,6 +71,25 @@ export default function SimulationPage() {
             setError(err instanceof Error ? err.message : 'Unknown error')
         } finally {
             setLoading(false)
+        }
+    }
+
+    const runTrioAnalysis = async () => {
+        if (!result) return
+        try {
+            setAnalyzing(true)
+            const res = await fetch('/api/regime/backtest/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ result })
+            })
+            const json = await res.json()
+            if (!res.ok) throw new Error(json.error || 'Failed to analyze')
+            setAnalysis(json.analysis)
+        } catch (err) {
+            console.error('Analysis failed:', err)
+        } finally {
+            setAnalyzing(false)
         }
     }
 
@@ -98,8 +120,11 @@ export default function SimulationPage() {
                             <option value="XAU/USD">XAU/USD (Gold - High Volatility)</option>
                             <option value="EUR/USD">EUR/USD (Major)</option>
                             <option value="GBP/JPY">GBP/JPY (High Volatility Cross)</option>
+                            <option value="SPX500/USD">SPX500/USD (S&P 500)</option>
+                            <option value="US30/USD">US30/USD (Dow Jones)</option>
                             <option value="NAS100/USD">NAS100/USD (Index)</option>
                             <option value="BTC/USD">BTC/USD (Crypto)</option>
+                            <option value="ETH/USD">ETH/USD (Crypto)</option>
                         </select>
                     </div>
                     
@@ -142,6 +167,40 @@ export default function SimulationPage() {
 
             {result && (
                 <div className="space-y-6">
+                    {/* Action Bar */}
+                    <div className="flex justify-end mb-4">
+                        <Button 
+                            onClick={runTrioAnalysis} 
+                            disabled={analyzing || !!analysis}
+                            className="bg-indigo-900/40 hover:bg-indigo-800 text-indigo-300 border border-indigo-500/30"
+                        >
+                            {analyzing ? (
+                                <><RefreshCw size={16} className="mr-2 animate-spin" /> Trio is analyzing...</>
+                            ) : analysis ? (
+                                <><Cpu size={16} className="mr-2" /> Analysis Complete</>
+                            ) : (
+                                <><Cpu size={16} className="mr-2" /> Ask AI Trio to Analyze</>
+                            )}
+                        </Button>
+                    </div>
+
+                    {/* Analysis Report */}
+                    {analysis && (
+                        <Card className="bg-indigo-950/20 border-indigo-500/30 shadow-lg shadow-indigo-500/10">
+                            <CardHeader>
+                                <CardTitle className="text-lg font-bold text-indigo-300 flex items-center gap-2">
+                                    <Cpu size={20} />
+                                    AI Trio Architectural Debrief
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-sm text-indigo-200/90 whitespace-pre-wrap font-mono leading-relaxed p-4 bg-neutral-900/50 rounded-xl border border-indigo-500/10">
+                                    {analysis}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {/* Metrics Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <Card className="bg-neutral-900 border-neutral-800">
@@ -164,6 +223,9 @@ export default function SimulationPage() {
                             <CardContent>
                                 <div className={`text-3xl font-black ${result.metrics.total_pips > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                     {result.metrics.total_pips > 0 ? '+' : ''}{result.metrics.total_pips.toFixed(1)}
+                                </div>
+                                <div className="text-xs text-neutral-500 mt-1">
+                                    Net Profit: ${((result.equity_curve[result.equity_curve.length - 1].equity - 10000)).toFixed(2)}
                                 </div>
                             </CardContent>
                         </Card>
@@ -203,18 +265,19 @@ export default function SimulationPage() {
                                     <div className="text-center text-neutral-500 py-8">No trades executed during this period.</div>
                                 ) : (
                                     <>
-                                        <div className="grid grid-cols-8 gap-3 px-4 text-[10px] text-neutral-500 uppercase tracking-wider">
+                                        <div className="grid grid-cols-9 gap-3 px-4 text-[10px] text-neutral-500 uppercase tracking-wider">
                                             <div>Entry Date</div>
                                             <div>Exit Date</div>
                                             <div>Regime</div>
                                             <div>Bot</div>
                                             <div>Direction</div>
                                             <div>Pips</div>
+                                            <div>Net ($)</div>
                                             <div>Duration</div>
                                             <div>Outcome</div>
                                         </div>
                                         {result.trades.map((trade, i) => (
-                                            <div key={i} className={`grid grid-cols-8 gap-3 px-4 py-3 rounded-xl border ${trade.outcome === 'win' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-red-500/20 bg-red-500/5'} items-center text-xs`}>
+                                            <div key={i} className={`grid grid-cols-9 gap-3 px-4 py-3 rounded-xl border ${trade.outcome === 'win' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-red-500/20 bg-red-500/5'} items-center text-xs`}>
                                                 <div className="text-neutral-300">{trade.entry_date}</div>
                                                 <div className="text-neutral-300">{trade.exit_date}</div>
                                                 <div className="text-neutral-400">{trade.regime.split('_')[0]}</div>
@@ -222,6 +285,9 @@ export default function SimulationPage() {
                                                 <div className={trade.direction === 'long' ? 'text-emerald-400' : 'text-red-400'}>{trade.direction.toUpperCase()}</div>
                                                 <div className={`font-bold ${trade.pips > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                                     {trade.pips > 0 ? '+' : ''}{trade.pips}
+                                                </div>
+                                                <div className={`font-bold ${trade.profit_loss > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                    ${trade.profit_loss > 0 ? '+' : ''}{trade.profit_loss.toFixed(2)}
                                                 </div>
                                                 <div className="text-neutral-400">{trade.duration_hours}h</div>
                                                 <div>
