@@ -416,6 +416,237 @@ export function detectKillzoneEntry(
     }
 }
 
+// ── Tier 2: W-X-Y Institutional Killzone ──
+
+import type { MarketStateResult } from '@/lib/utils/market-state'
+
+export interface WXYProjection {
+    waveW: { start: number; end: number; distancePips: number }
+    xWave: { peak: number }
+    waveYProjection: number
+    waveYZone: { high: number; low: number }
+}
+
+export interface InstitutionalKillzoneSetup extends KillzoneSetup {
+    marketState: MarketStateResult | null
+    wxyProjection: WXYProjection | null
+    institutionalBox: KillzoneBox | null
+}
+
+const EMPTY_INSTITUTIONAL: InstitutionalKillzoneSetup = {
+    ...EMPTY_SETUP,
+    marketState: null,
+    wxyProjection: null,
+    institutionalBox: null,
+}
+
+/**
+ * Detect Institutional Killzone — enhanced with W-X-Y wave projection.
+ *
+ * Only runs when Tier 1 detects complex_correction (proceedToTier2 === true).
+ *
+ * Algorithm:
+ * 1. Call existing detectKillzone() for base setup
+ * 2. Find Wave W: first major swing inside the correction
+ * 3. Find X-Wave peak: opposing swing after Wave W
+ * 4. Project Wave Y: xWavePeak ± waveWDistance
+ * 5. Build Volume Profile over full M15 window (extended POC)
+ * 6. Institutional box = intersection of Wave Y zone and Volume POC
+ */
+export function detectInstitutionalKillzone(
+    h1WaveState: H1WaveState,
+    m15Candles: OandaCandle[],
+    pair: string,
+    marketState: MarketStateResult,
+): InstitutionalKillzoneSetup {
+    // Guard: only run if Tier 1 says complex correction
+    if (!marketState.proceedToTier2) {
+        return { ...EMPTY_INSTITUTIONAL, marketState, narrative: 'Tier 1: Not complex correction — institutional killzone skipped.' }
+    }
+
+    // Get base killzone setup first
+    const baseSetup = detectKillzone(h1WaveState, m15Candles, pair)
+
+    // Build result extending base setup
+    const result: InstitutionalKillzoneSetup = {
+        ...baseSetup,
+        marketState,
+        wxyProjection: null,
+        institutionalBox: null,
+    }
+
+    if (m15Candles.length < 50) {
+        result.narrative = baseSetup.narrative + ' (Insufficient M15 data for W-X-Y projection.)'
+        return result
+    }
+
+    const isBullish = h1WaveState.direction === 'bullish'
+    const assetConfig = getAssetConfig(pair)
+    const pipMult = assetConfig.pointMultiplier
+
+    // ── Find swing points in M15 data for W-X-Y detection ──
+    const swingLookback = 5
+    const swingHighs: Array<{ index: number; price: number }> = []
+    const swingLows: Array<{ index: number; price: number }> = []
+
+    for (let i = swingLookback; i < m15Candles.length - swingLookback; i++) {
+        const high = parseFloat(m15Candles[i].mid.h)
+        const low = parseFloat(m15Candles[i].mid.l)
+        let isSwingHigh = true
+        let isSwingLow = true
+
+        for (let j = 1; j <= swingLookback; j++) {
+            if (high <= parseFloat(m15Candles[i - j].mid.h) || high <= parseFloat(m15Candles[i + j].mid.h)) {
+                isSwingHigh = false
+            }
+            if (low >= parseFloat(m15Candles[i - j].mid.l) || low >= parseFloat(m15Candles[i + j].mid.l)) {
+                isSwingLow = false
+            }
+        }
+
+        if (isSwingHigh) swingHighs.push({ index: i, price: high })
+        if (isSwingLow) swingLows.push({ index: i, price: low })
+    }
+
+    // ── W-X-Y Detection ──
+    // For bullish correction (price dropping): Wave W = swing low, X = swing high, Y = projected low
+    // For bearish correction (price rising):  Wave W = swing high, X = swing low, Y = projected high
+    let wxyProjection: WXYProjection | null = null
+
+    if (isBullish && swingLows.length >= 1 && swingHighs.length >= 1) {
+        // Bullish macro → correction goes DOWN
+        // Wave W: first significant swing low (deepest drop in first half)
+        const halfIdx = Math.floor(m15Candles.length / 2)
+        const firstHalfLows = swingLows.filter(s => s.index < halfIdx)
+        const waveWPoint = firstHalfLows.length > 0
+            ? firstHalfLows.reduce((min, s) => s.price < min.price ? s : min, firstHalfLows[0])
+            : swingLows[0]
+
+        const waveWStart = parseFloat(m15Candles[0].mid.c)
+        const waveWEnd = waveWPoint.price
+        const wDistance = Math.abs(waveWStart - waveWEnd)
+
+        // X-Wave peak: highest swing high after Wave W
+        const postWHighs = swingHighs.filter(s => s.index > waveWPoint.index)
+        const xWavePoint = postWHighs.length > 0
+            ? postWHighs.reduce((max, s) => s.price > max.price ? s : max, postWHighs[0])
+            : null
+
+        if (xWavePoint && wDistance > 0) {
+            const yProjection = xWavePoint.price - wDistance
+            const yZoneHalf = wDistance * 0.1 // ±10% of W distance
+
+            wxyProjection = {
+                waveW: { start: waveWStart, end: waveWEnd, distancePips: Math.round(wDistance * pipMult * 10) / 10 },
+                xWave: { peak: xWavePoint.price },
+                waveYProjection: yProjection,
+                waveYZone: { high: yProjection + yZoneHalf, low: yProjection - yZoneHalf },
+            }
+        }
+    } else if (!isBullish && swingHighs.length >= 1 && swingLows.length >= 1) {
+        // Bearish macro → correction goes UP
+        const halfIdx = Math.floor(m15Candles.length / 2)
+        const firstHalfHighs = swingHighs.filter(s => s.index < halfIdx)
+        const waveWPoint = firstHalfHighs.length > 0
+            ? firstHalfHighs.reduce((max, s) => s.price > max.price ? s : max, firstHalfHighs[0])
+            : swingHighs[0]
+
+        const waveWStart = parseFloat(m15Candles[0].mid.c)
+        const waveWEnd = waveWPoint.price
+        const wDistance = Math.abs(waveWEnd - waveWStart)
+
+        // X-Wave trough: lowest swing low after Wave W
+        const postWLows = swingLows.filter(s => s.index > waveWPoint.index)
+        const xWavePoint = postWLows.length > 0
+            ? postWLows.reduce((min, s) => s.price < min.price ? s : min, postWLows[0])
+            : null
+
+        if (xWavePoint && wDistance > 0) {
+            const yProjection = xWavePoint.price + wDistance
+            const yZoneHalf = wDistance * 0.1
+
+            wxyProjection = {
+                waveW: { start: waveWStart, end: waveWEnd, distancePips: Math.round(wDistance * pipMult * 10) / 10 },
+                xWave: { peak: xWavePoint.price },
+                waveYProjection: yProjection,
+                waveYZone: { high: yProjection + yZoneHalf, low: yProjection - yZoneHalf },
+            }
+        }
+    }
+
+    result.wxyProjection = wxyProjection
+
+    if (!wxyProjection) {
+        result.narrative = baseSetup.narrative + ' (Unable to project W-X-Y — insufficient swing structure.)'
+        return result
+    }
+
+    // ── Build extended Volume Profile over all M15 candles ──
+    const extendedProfile = buildVolumeProfile(m15Candles, 50)
+    const extendedPOC = extendedProfile.vpoc
+
+    // ── Build Institutional Box ──
+    // Intersection of Wave Y zone and extended POC
+    const yZone = wxyProjection.waveYZone
+    const pocInsideYZone = extendedPOC >= yZone.low && extendedPOC <= yZone.high
+    const pocNearYZone = Math.abs(extendedPOC - wxyProjection.waveYProjection) * pipMult <= 30
+
+    if (pocInsideYZone || pocNearYZone) {
+        // Center institutional box on the POC/Y-projection midpoint
+        const instCenter = (extendedPOC + wxyProjection.waveYProjection) / 2
+        const rawWidth = Math.max(10, Math.min(25, (yZone.high - yZone.low) * pipMult))
+        const halfW = (rawWidth / pipMult) / 2
+
+        result.institutionalBox = {
+            high: instCenter + halfW,
+            low: instCenter - halfW,
+            center: instCenter,
+            widthPips: Math.round(rawWidth * 10) / 10,
+        }
+
+        // Boost confidence for W-X-Y alignment
+        let extraConfidence = 0
+        const extraFactors: string[] = []
+
+        if (pocInsideYZone) {
+            extraConfidence += 20
+            extraFactors.push('POC inside Wave Y zone')
+        } else {
+            extraConfidence += 10
+            extraFactors.push('POC near Wave Y zone')
+        }
+
+        if (marketState.atrSqueeze) {
+            extraConfidence += 15
+            extraFactors.push('ATR squeeze active (diamond accumulation)')
+        }
+
+        // Check for HVN near Y zone
+        const hvnNearY = extendedProfile.hvn.filter(h => h >= yZone.low && h <= yZone.high).length
+        if (hvnNearY >= 1) {
+            extraConfidence += 10
+            extraFactors.push(`${hvnNearY} HVN near Wave Y zone`)
+        }
+
+        result.confidence = Math.min(100, baseSetup.confidence + extraConfidence)
+        result.confluenceFactors = [...baseSetup.confluenceFactors, ...extraFactors]
+
+        // Use institutional box as the primary box if it has higher confluence
+        if (result.institutionalBox && extraConfidence > 20) {
+            result.box = result.institutionalBox
+        }
+    }
+
+    const dp = assetConfig.decimalPlaces
+    result.narrative = `Institutional Killzone (Tier 2): W-X-Y projection → Y target at ${wxyProjection.waveYProjection.toFixed(dp)}. ` +
+        (result.institutionalBox
+            ? `Institutional box: ${result.institutionalBox.high.toFixed(dp)} - ${result.institutionalBox.low.toFixed(dp)} (${result.institutionalBox.widthPips} ${assetConfig.pointLabel}). `
+            : 'No institutional box — POC too far from Y zone. ') +
+        `Confidence: ${result.confidence}%.${marketState.diamondAccumulation ? ' Diamond accumulation pattern active.' : ''}`
+
+    return result
+}
+
 // ── Helpers ──
 
 /**

@@ -2,9 +2,11 @@ import { VALID_PAIRS } from '@/lib/utils/valid-pairs'
 import { getCandles } from '@/lib/data/candle-fetcher'
 import { detectH1ElliottWave } from '@/lib/utils/elliott-wave-h1'
 import { calculateRSI, calculateMACD } from '@/lib/utils/indicators'
-import { detectKillzone } from '@/lib/utils/killzone-detector'
+import { detectKillzone, detectInstitutionalKillzone } from '@/lib/utils/killzone-detector'
 import type { KillzoneSetup } from '@/lib/utils/killzone-detector'
 import type { H1WaveState } from '@/lib/utils/elliott-wave-h1'
+import { detectMarketState } from '@/lib/utils/market-state'
+import type { MarketRegime } from '@/lib/utils/market-state'
 
 /**
  * Result for a single pair scan
@@ -33,6 +35,13 @@ export interface PairKillzoneState {
     fibZoneLow: number | null
     volumePOC: number | null
     priceInBox: boolean
+
+    // Tier 1: Market State
+    marketRegime: MarketRegime
+    maCrossCount: number
+    atrSqueeze: boolean
+    proceedToTier2: boolean
+    wxyProjection: number | null
 
     scannedAt: string
 }
@@ -116,8 +125,20 @@ async function scanSinglePair(pair: string): Promise<PairKillzoneState> {
         h1Macd.signalLine
     )
 
-    // Detect Killzone if Wave 2/4 in progress
-    const killzone = detectKillzone(waveState, m15Candles, pair)
+    // Tier 1: Detect market state
+    const marketState = detectMarketState(m15Candles)
+
+    // Detect Killzone — use institutional version if Tier 1 says complex correction
+    let killzone: KillzoneSetup
+    let wxyProjection: number | null = null
+
+    if (marketState.proceedToTier2) {
+        const instKz = detectInstitutionalKillzone(waveState, m15Candles, pair, marketState)
+        killzone = instKz
+        wxyProjection = instKz.wxyProjection?.waveYProjection ?? null
+    } else {
+        killzone = detectKillzone(waveState, m15Candles, pair)
+    }
 
     // Build result object
     const result: PairKillzoneState = {
@@ -139,6 +160,11 @@ async function scanSinglePair(pair: string): Promise<PairKillzoneState> {
         fibZoneLow: killzone.fibZone?.fibLow ?? null,
         volumePOC: killzone.pullbackPOC?.poc ?? null,
         priceInBox: killzone.priceInBox,
+        marketRegime: marketState.regime,
+        maCrossCount: marketState.maCrossCount,
+        atrSqueeze: marketState.atrSqueeze,
+        proceedToTier2: marketState.proceedToTier2,
+        wxyProjection,
         scannedAt,
     }
 
@@ -171,6 +197,11 @@ function createErrorState(pair: string, error: unknown): PairKillzoneState {
         fibZoneLow: null,
         volumePOC: null,
         priceInBox: false,
+        marketRegime: 'unknown',
+        maCrossCount: 0,
+        atrSqueeze: false,
+        proceedToTier2: false,
+        wxyProjection: null,
         scannedAt: new Date().toISOString(),
     }
 }

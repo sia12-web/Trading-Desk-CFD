@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { scanAllPairs } from '@/lib/killzone/multi-pair-scanner'
 import { sendTelegramMessage } from '@/lib/notifications/telegram'
+import { executeInstitutionalProtocol } from '@/lib/killzone/auto-executor'
+import type { AutoExecutionConfig } from '@/lib/killzone/auto-executor'
 import type { KillzoneMonitorResult } from '@/lib/types/database'
 
 /**
@@ -145,7 +147,63 @@ export async function GET(req: NextRequest) {
         }
 
         // ═══════════════════════════════════════════════════════════════════
-        // Step 5: Upsert all scan results to database
+        // Step 5: Auto-Execution for qualifying pairs (Tier 1 → 2 → 3)
+        // ═══════════════════════════════════════════════════════════════════
+        let autoExecutionCount = 0
+        const tier2Pairs = successfulScans.filter(s => s.proceedToTier2 && s.killzoneDetected)
+
+        if (tier2Pairs.length > 0) {
+            // Load auto-execution config from first user with it enabled
+            const { data: autoExecPrefs } = await client
+                .from('notification_preferences')
+                .select('user_id, auto_execution_enabled, auto_execution_dry_run, auto_execution_max_trades_per_day, auto_execution_risk_amount, auto_execution_min_confidence')
+                .eq('auto_execution_enabled', true)
+                .limit(1)
+                .single()
+
+            if (autoExecPrefs) {
+                const autoConfig: AutoExecutionConfig = {
+                    enabled: true,
+                    dryRunMode: autoExecPrefs.auto_execution_dry_run ?? true,
+                    maxTradesPerDay: autoExecPrefs.auto_execution_max_trades_per_day ?? 3,
+                    riskAmount: autoExecPrefs.auto_execution_risk_amount ?? 17,
+                    minKillzoneConfidence: autoExecPrefs.auto_execution_min_confidence ?? 60,
+                    pairs: tier2Pairs.map(p => p.pair),
+                }
+
+                console.log(`[KillzoneMonitorCron] Running auto-execution for ${tier2Pairs.length} qualifying pairs (dryRun: ${autoConfig.dryRunMode})`)
+
+                for (const scan of tier2Pairs) {
+                    try {
+                        const result = await executeInstitutionalProtocol(scan.pair, autoConfig, autoExecPrefs.user_id)
+                        if (result.execution.executed || result.execution.dryRun) {
+                            autoExecutionCount++
+                        }
+
+                        // Send Telegram for auto-executed trades
+                        if (result.execution.executed && result.execution.entryPrice) {
+                            const { data: alertUsers } = await client
+                                .from('notification_preferences')
+                                .select('telegram_chat_id')
+                                .eq('killzone_alerts_enabled', true)
+                                .not('telegram_chat_id', 'is', null)
+
+                            if (alertUsers && alertUsers.length > 0) {
+                                const execMsg = `${result.execution.direction === 'long' ? 'BUY' : 'SELL'} ${scan.pair}\nEntry: ${result.execution.entryPrice.toFixed(5)}\nSL: ${result.execution.stopLoss?.toFixed(5)}\nTP1: ${result.execution.takeProfit1?.toFixed(5)}\nTP2: ${result.execution.takeProfit2?.toFixed(5)}\nUnits: ${result.execution.positionSize?.units}\nRisk: $${result.execution.positionSize?.riskAmount}`
+                                for (const u of alertUsers) {
+                                    await sendTelegramMessage(u.telegram_chat_id, `Auto-Executed: ${scan.pair}`, execMsg)
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error(`[KillzoneMonitorCron] Auto-execution error for ${scan.pair}:`, err)
+                    }
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // Step 6: Upsert all scan results to database
         // ═══════════════════════════════════════════════════════════════════
         for (const scan of successfulScans) {
             await client
@@ -169,6 +227,10 @@ export async function GET(req: NextRequest) {
                     price_in_box: scan.priceInBox,
                     alert_sent: alerts.some(a => a.pair === scan.pair),
                     alert_sent_at: alerts.some(a => a.pair === scan.pair) ? new Date().toISOString() : null,
+                    market_regime: scan.marketRegime,
+                    ma_cross_count: scan.maCrossCount,
+                    atr_squeeze: scan.atrSqueeze,
+                    wxy_projection: scan.wxyProjection,
                 }, {
                     onConflict: 'pair',
                 })
@@ -183,6 +245,8 @@ export async function GET(req: NextRequest) {
             wave2_complete: successfulScans.filter(s => s.wave2Complete).length,
             wave4_complete: successfulScans.filter(s => s.wave4Complete).length,
             alerts_sent: alerts.length,
+            auto_executions: autoExecutionCount,
+            tier2_qualifying: tier2Pairs.length,
             duration_ms: duration,
         })
     } catch (error) {

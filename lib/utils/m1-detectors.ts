@@ -191,6 +191,111 @@ export function detectVolumeClimax(
     return none
 }
 
+// ── Wyckoff Spring / Upthrust Detection (Tier 3) ──
+
+export interface WyckoffSpring {
+    triggered: boolean
+    direction: 'long' | 'short' | 'none'
+    springCandle: {
+        time: string | null
+        low: number
+        high: number
+        close: number
+        volume: number
+        volumeRatio: number
+    } | null
+    stopLoss: number | null
+    narrative: string
+}
+
+/**
+ * Detect Wyckoff Spring (bullish) or Upthrust (bearish) on M1 candles.
+ *
+ * Bullish Spring: wick punches BELOW box low, but candle CLOSES back inside (or above) box.
+ *   Volume must be >= 3x average (institutional commitment).
+ *   SL = absolute low of the spring wick.
+ *
+ * Bearish Upthrust: wick punches ABOVE box high, but candle CLOSES back inside (or below) box.
+ *   Volume must be >= 3x average (institutional commitment).
+ *   SL = absolute high of the upthrust wick.
+ */
+export function detectWyckoffSpring(
+    m1Candles: OandaCandle[],
+    killzoneBox: { high: number; low: number },
+    isBullish: boolean,
+    volumeThreshold: number = 3.0,
+    lookback: number = 20,
+): WyckoffSpring {
+    const none: WyckoffSpring = {
+        triggered: false,
+        direction: 'none',
+        springCandle: null,
+        stopLoss: null,
+        narrative: 'No Wyckoff spring/upthrust detected',
+    }
+
+    if (m1Candles.length < lookback + 5) return none
+
+    // Calculate average volume over lookback window (excluding last 5 candles)
+    const volumeWindow = m1Candles.slice(-(lookback + 5), -5)
+    const avgVolume = volumeWindow.reduce((sum, c) => sum + (c.volume ?? 0), 0) / volumeWindow.length
+    if (avgVolume <= 0) return none
+
+    // Scan last 5 candles for spring/upthrust
+    const recentCandles = m1Candles.slice(-5)
+
+    for (let i = recentCandles.length - 1; i >= 0; i--) {
+        const c = recentCandles[i]
+        const low = parseFloat(c.mid.l)
+        const high = parseFloat(c.mid.h)
+        const close = parseFloat(c.mid.c)
+        const vol = c.volume ?? 0
+        const volumeRatio = vol / avgVolume
+
+        if (volumeRatio < volumeThreshold) continue
+
+        if (isBullish) {
+            // Bullish Spring: wick below box low, close back inside/above box
+            if (low < killzoneBox.low && close >= killzoneBox.low) {
+                return {
+                    triggered: true,
+                    direction: 'long',
+                    springCandle: {
+                        time: c.time,
+                        low,
+                        high,
+                        close,
+                        volume: vol,
+                        volumeRatio: Math.round(volumeRatio * 10) / 10,
+                    },
+                    stopLoss: low, // SL at absolute wick low
+                    narrative: `Wyckoff Spring detected! Wick punched below box (${killzoneBox.low.toFixed(5)}) to ${low.toFixed(5)}, closed back at ${close.toFixed(5)}. Volume ${Math.round(volumeRatio * 10) / 10}x average. SL at wick low ${low.toFixed(5)}.`,
+                }
+            }
+        } else {
+            // Bearish Upthrust: wick above box high, close back inside/below box
+            if (high > killzoneBox.high && close <= killzoneBox.high) {
+                return {
+                    triggered: true,
+                    direction: 'short',
+                    springCandle: {
+                        time: c.time,
+                        low,
+                        high,
+                        close,
+                        volume: vol,
+                        volumeRatio: Math.round(volumeRatio * 10) / 10,
+                    },
+                    stopLoss: high, // SL at absolute wick high
+                    narrative: `Wyckoff Upthrust detected! Wick punched above box (${killzoneBox.high.toFixed(5)}) to ${high.toFixed(5)}, closed back at ${close.toFixed(5)}. Volume ${Math.round(volumeRatio * 10) / 10}x average. SL at wick high ${high.toFixed(5)}.`,
+                }
+            }
+        }
+    }
+
+    return none
+}
+
 /**
  * Detect a Diamond Box (Wave 4 consolidation zone) on M15 candles.
  * A horizontal range where price chops sideways after a Wave 3 impulse.

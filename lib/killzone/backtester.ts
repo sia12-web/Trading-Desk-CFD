@@ -8,7 +8,8 @@
 import { getCandles } from '@/lib/data/candle-fetcher'
 import { detectH1ElliottWave } from '@/lib/utils/elliott-wave-h1'
 import { calculateRSI, calculateMACD } from '@/lib/utils/indicators'
-import { detectKillzone, detectKillzoneEntry } from '@/lib/utils/killzone-detector'
+import { detectKillzone, detectInstitutionalKillzone } from '@/lib/utils/killzone-detector'
+import { detectMarketState } from '@/lib/utils/market-state'
 import type { BacktestTrade, BacktestMetrics } from '@/lib/correlation/backtester'
 
 export interface KillzoneBacktestResult {
@@ -17,6 +18,8 @@ export interface KillzoneBacktestResult {
     total_killzones_detected: number
     total_entries_triggered: number
     trigger_rate: number // % of killzones that triggered entry
+    tier1_pass_count: number
+    tier2_pass_count: number
     trades: BacktestTrade[]
     metrics: BacktestMetrics
     equity_curve: Array<{ date: string; equity: number }>
@@ -58,6 +61,8 @@ export async function backtestKillzoneForPair(
     const trades: BacktestTrade[] = []
     let killzonesDetected = 0
     let entriesTriggered = 0
+    let tier1PassCount = 0
+    let tier2PassCount = 0
     let accountBalance = 10000 // Starting capital
 
     const equityCurve: Array<{ date: string; equity: number }> = [
@@ -94,8 +99,16 @@ export async function backtestKillzoneForPair(
 
         const m15Window = m15Candles.slice(m15Index - 200, m15Index)
 
-        // Detect Killzone
-        const killzone = detectKillzone(waveState, m15Window, pair)
+        // Tier 1: Market state pre-filter
+        const marketState = detectMarketState(m15Window)
+        if (marketState.proceedToTier2) tier1PassCount++
+
+        // Detect Killzone — use institutional version when complex correction
+        const killzone = marketState.proceedToTier2
+            ? detectInstitutionalKillzone(waveState, m15Window, pair, marketState)
+            : detectKillzone(waveState, m15Window, pair)
+
+        if (killzone.detected) tier2PassCount++
 
         if (!killzone.detected) continue
 
@@ -207,6 +220,8 @@ export async function backtestKillzoneForPair(
         total_killzones_detected: killzonesDetected,
         total_entries_triggered: entriesTriggered,
         trigger_rate: triggerRate,
+        tier1_pass_count: tier1PassCount,
+        tier2_pass_count: tier2PassCount,
         trades,
         metrics,
         equity_curve: equityCurve,

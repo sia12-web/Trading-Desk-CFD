@@ -1210,6 +1210,12 @@ export interface KillzoneMonitorResult {
     // Alert Tracking
     alert_sent: boolean
     alert_sent_at: string | null
+
+    // Tier 1: Market State
+    market_regime: string | null
+    ma_cross_count: number | null
+    atr_squeeze: boolean
+    wxy_projection: number | null
 }
 
 export interface KillzoneAlert {
@@ -1222,5 +1228,42 @@ export interface KillzoneAlert {
     confidence: number
     telegram_sent: boolean
     telegram_chat_id: string | null
+    created_at: string
+}
+
+export interface KillzoneAutoExecution {
+    id: string
+    pair: string
+
+    // Tier 1
+    tier1_regime: string | null
+    tier1_cross_count: number | null
+    tier1_atr_squeeze: boolean
+
+    // Tier 2
+    tier2_detected: boolean
+    tier2_confidence: number | null
+    tier2_box_high: number | null
+    tier2_box_low: number | null
+    tier2_wxy_projection: number | null
+
+    // Tier 3
+    tier3_triggered: boolean
+    tier3_spring_volume_ratio: number | null
+
+    // Execution
+    executed: boolean
+    dry_run: boolean
+    direction: string | null
+    entry_price: number | null
+    stop_loss: number | null
+    take_profit_1: number | null
+    take_profit_2: number | null
+    units: number | null
+    lots: number | null
+    risk_amount: number | null
+    order_id: string | null
+    blocked_reason: string | null
+
     created_at: string
 }

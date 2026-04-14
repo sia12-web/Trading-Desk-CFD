@@ -52,6 +52,13 @@ export default function SettingsPage() {
     const [enableBreakReminders, setEnableBreakReminders] = useState(true)
     const [savingPrefs, setSavingPrefs] = useState(false)
 
+    // Auto-Execution settings
+    const [autoExecEnabled, setAutoExecEnabled] = useState(false)
+    const [autoExecDryRun, setAutoExecDryRun] = useState(true)
+    const [autoExecMaxTrades, setAutoExecMaxTrades] = useState(3)
+    const [autoExecRiskAmount, setAutoExecRiskAmount] = useState(17)
+    const [autoExecMinConfidence, setAutoExecMinConfidence] = useState(60)
+
     // Telegram testing state
     const [testingTelegram, setTestingTelegram] = useState(false)
 
@@ -166,6 +173,11 @@ export default function SettingsPage() {
                 setTradingEndTime(prefs.trading_end_time || '21:00')
                 setEnableHourlyCheckins(prefs.enable_hourly_checkins ?? true)
                 setEnableBreakReminders(prefs.enable_break_reminders ?? true)
+                setAutoExecEnabled(prefs.auto_execution_enabled ?? false)
+                setAutoExecDryRun(prefs.auto_execution_dry_run ?? true)
+                setAutoExecMaxTrades(prefs.auto_execution_max_trades_per_day ?? 3)
+                setAutoExecRiskAmount(prefs.auto_execution_risk_amount ?? 17)
+                setAutoExecMinConfidence(prefs.auto_execution_min_confidence ?? 60)
             }
         } catch (err) {
             console.error('Failed to load preferences:', err)
@@ -187,7 +199,12 @@ export default function SettingsPage() {
                     trading_start_time: tradingStartTime,
                     trading_end_time: tradingEndTime,
                     enable_hourly_checkins: enableHourlyCheckins,
-                    enable_break_reminders: enableBreakReminders
+                    enable_break_reminders: enableBreakReminders,
+                    auto_execution_enabled: autoExecEnabled,
+                    auto_execution_dry_run: autoExecDryRun,
+                    auto_execution_max_trades_per_day: autoExecMaxTrades,
+                    auto_execution_risk_amount: autoExecRiskAmount,
+                    auto_execution_min_confidence: autoExecMinConfidence,
                 })
             })
 
@@ -765,6 +782,98 @@ export default function SettingsPage() {
                                     <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${killzoneAlertsEnabled ? 'translate-x-6 scale-110' : 'translate-x-0'}`} />
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Auto-Execution Settings */}
+                        <div className="space-y-4 pt-4 border-t border-neutral-800">
+                            <h4 className="text-sm font-bold text-white uppercase tracking-wider">Auto-Execution (Three-Tier Protocol)</h4>
+
+                            {/* Enable Auto-Execution */}
+                            <div className="flex items-center justify-between p-6 bg-neutral-800/30 rounded-2xl border border-neutral-700/50 hover:bg-neutral-800/50 transition-all cursor-pointer group" onClick={() => setAutoExecEnabled(!autoExecEnabled)}>
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-3 rounded-xl border ${autoExecEnabled ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-neutral-800 border-neutral-700 text-neutral-500'}`}>
+                                        <Zap size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-white group-hover:text-red-400 transition-colors">Enable Auto-Execution</p>
+                                        <p className="text-xs text-neutral-500 mt-1">Automatically execute trades when all 3 tiers confirm (Tier 1 + 2 + 3)</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    className={`relative w-12 h-6 rounded-full transition-all duration-300 ${autoExecEnabled ? 'bg-red-600 shadow-[0_0_15px_-5px_rgba(239,68,68,0.5)]' : 'bg-neutral-700'}`}
+                                >
+                                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${autoExecEnabled ? 'translate-x-6 scale-110' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+
+                            {autoExecEnabled && (
+                                <>
+                                    {/* Dry Run Mode */}
+                                    <div className="flex items-center justify-between p-6 bg-neutral-800/30 rounded-2xl border border-yellow-700/30 hover:bg-neutral-800/50 transition-all cursor-pointer group" onClick={() => setAutoExecDryRun(!autoExecDryRun)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className={`p-3 rounded-xl border ${autoExecDryRun ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                                                <AlertTriangle size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-white group-hover:text-yellow-400 transition-colors">Dry Run Mode</p>
+                                                <p className="text-xs text-neutral-500 mt-1">
+                                                    {autoExecDryRun
+                                                        ? 'SAFE: Log trades without executing — no real money at risk'
+                                                        : 'LIVE: Real orders will be placed on your broker account'}
+                                                </p>
+                                                {!autoExecDryRun && (
+                                                    <p className="text-xs text-red-400 mt-1 font-bold">WARNING: Real money trades will be executed!</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className={`relative w-12 h-6 rounded-full transition-all duration-300 ${autoExecDryRun ? 'bg-yellow-600' : 'bg-red-600 shadow-[0_0_15px_-5px_rgba(239,68,68,0.5)]'}`}
+                                        >
+                                            <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${autoExecDryRun ? 'translate-x-6 scale-110' : 'translate-x-0'}`} />
+                                        </button>
+                                    </div>
+
+                                    {/* Risk Amount + Max Trades + Min Confidence */}
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="p-4 bg-neutral-800/30 rounded-2xl border border-neutral-700/50">
+                                            <label className="text-xs text-neutral-400 block mb-2">Risk Amount ($)</label>
+                                            <input
+                                                type="number"
+                                                value={autoExecRiskAmount}
+                                                onChange={e => setAutoExecRiskAmount(Number(e.target.value))}
+                                                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm"
+                                                min={1}
+                                                max={100}
+                                            />
+                                            <p className="text-[10px] text-neutral-600 mt-1">2% of $850 = $17</p>
+                                        </div>
+                                        <div className="p-4 bg-neutral-800/30 rounded-2xl border border-neutral-700/50">
+                                            <label className="text-xs text-neutral-400 block mb-2">Max Trades/Day</label>
+                                            <input
+                                                type="number"
+                                                value={autoExecMaxTrades}
+                                                onChange={e => setAutoExecMaxTrades(Number(e.target.value))}
+                                                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm"
+                                                min={1}
+                                                max={10}
+                                            />
+                                        </div>
+                                        <div className="p-4 bg-neutral-800/30 rounded-2xl border border-neutral-700/50">
+                                            <label className="text-xs text-neutral-400 block mb-2">Min Confidence (%)</label>
+                                            <input
+                                                type="number"
+                                                value={autoExecMinConfidence}
+                                                onChange={e => setAutoExecMinConfidence(Number(e.target.value))}
+                                                className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm"
+                                                min={30}
+                                                max={100}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="pt-6 border-t border-neutral-800 flex justify-end">
