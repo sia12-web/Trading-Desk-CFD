@@ -44,12 +44,20 @@ export async function POST(req: NextRequest) {
         }
 
         // Run simulation
+        console.log(`[WhaleSimulator API] Starting simulation for ${date}`)
         const replay = await runWhaleSimulation(date)
+        console.log(`[WhaleSimulator API] Simulation completed successfully`)
 
         return NextResponse.json(replay)
     } catch (err) {
         console.error('[WhaleSimulator] Error:', err)
         const message = err instanceof Error ? err.message : 'Simulation failed'
-        return NextResponse.json({ error: message }, { status: 500 })
+        const stack = err instanceof Error ? err.stack : undefined
+        console.error('[WhaleSimulator] Stack:', stack)
+
+        return NextResponse.json({
+            error: message,
+            details: process.env.NODE_ENV === 'development' ? stack : undefined
+        }, { status: 500 })
     }
 }

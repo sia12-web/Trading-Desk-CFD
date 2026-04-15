@@ -39,16 +39,21 @@ const SESSION_MINUTES = 180  // 3 hours
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
+    console.log(`[WhaleEngine] Starting simulation for ${date}`)
+
     // 1. Build UTC time window for 08:30-11:30 ET
     const { from, to } = buildSessionWindow(date)
+    console.log(`[WhaleEngine] Session window: ${from} to ${to}`)
 
     // 2. Fetch M1 candles
+    console.log(`[WhaleEngine] Fetching ${INSTRUMENT} M1 candles...`)
     const allCandles = await fetchHistoricalCandles({
         instrument: INSTRUMENT,
         granularity: 'M1',
         from,
         to,
     })
+    console.log(`[WhaleEngine] Fetched ${allCandles.length} candles`)
 
     if (allCandles.length < STEPS * CANDLES_PER_STEP) {
         throw new Error(`Insufficient candles: got ${allCandles.length}, need at least ${STEPS * CANDLES_PER_STEP}. Is ${date} a trading day?`)
@@ -70,7 +75,9 @@ export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
     const steps: SimulationStep[] = []
 
     // 5. Run 12 steps
+    console.log(`[WhaleEngine] Starting 12-step simulation...`)
     for (let step = 0; step < STEPS; step++) {
+        console.log(`[WhaleEngine] Step ${step + 1}/12 starting...`)
         const startIdx = step * CANDLES_PER_STEP
         const endIdx = Math.min(startIdx + CANDLES_PER_STEP, allCandles.length)
         const minutesElapsed = step * (SESSION_MINUTES / STEPS)
@@ -98,28 +105,33 @@ export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
         let decision: WhaleDecision
 
         try {
+            console.log(`[WhaleEngine] Step ${step + 1}: Calling Gemini...`)
             geminiRaw = await callGemini(
                 buildGeminiWhalePrompt(market, book, retail, recentActions),
                 { timeout: 30_000 }
             )
 
+            console.log(`[WhaleEngine] Step ${step + 1}: Calling DeepSeek...`)
             deepseekRaw = await callDeepSeek(
                 buildDeepSeekWhalePrompt(market, book, retail, geminiRaw, recentActions),
                 { timeout: 30_000 }
             )
 
+            console.log(`[WhaleEngine] Step ${step + 1}: Calling Claude...`)
             claudeRaw = await callClaude(
                 buildClaudeWhalePrompt(market, book, retail, geminiRaw, deepseekRaw, recentActions),
                 { timeout: 30_000, model: 'claude-sonnet-4-5-20250929' }
             )
 
+            console.log(`[WhaleEngine] Step ${step + 1}: Parsing decision...`)
             decision = parseAIJson<WhaleDecision>(claudeRaw)
+            console.log(`[WhaleEngine] Step ${step + 1}: Decision = ${decision.action} (${decision.units} units)`)
         } catch (err) {
-            console.error(`[WhaleEngine] AI error at step ${step}:`, err)
+            console.error(`[WhaleEngine] AI error at step ${step + 1}:`, err)
             decision = {
                 action: 'hold',
                 units: 0,
-                reasoning: 'AI call failed, defaulting to hold.',
+                reasoning: `AI call failed at step ${step + 1}: ${err instanceof Error ? err.message : 'Unknown error'}`,
                 confidence: 0,
                 retailImpact: 'No impact — holding position.',
             }
@@ -153,10 +165,14 @@ export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
     }
 
     // 6. Build ATR comparison
+    console.log(`[WhaleEngine] Building ATR comparison...`)
     const whaleVolatility = calculateWhaleVolatility(book.actions, allCandles.length, PIP_MULTIPLIER)
 
     // 7. Build chart data
+    console.log(`[WhaleEngine] Building chart data...`)
     const candleData = buildCandleChartData(allCandles, donchian, volumeProfile.vpoc, book.actions)
+
+    console.log(`[WhaleEngine] Simulation complete! Total PnL: ${(book.realizedPnl + book.unrealizedPnl - book.manipulationCost).toFixed(1)} pips`)
 
     return {
         date,
