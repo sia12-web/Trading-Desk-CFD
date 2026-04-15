@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Anchor, Play, Pause, SkipForward, RotateCcw, Loader2, Calendar } from 'lucide-react'
+import { Anchor, Play, Pause, SkipForward, RotateCcw, Loader2, Calendar, BarChart3, TrendingUp } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PriceChart } from './_components/PriceChart'
+import { CandlestickChart } from './_components/CandlestickChart'
 import { InventoryPanel } from './_components/InventoryPanel'
 import { RetailGauge } from './_components/RetailGauge'
 import { ATRComparison } from './_components/ATRComparison'
@@ -29,6 +30,7 @@ export default function MarketMakerPage() {
     const [error, setError] = useState<string | null>(null)
     const [currentStep, setCurrentStep] = useState(0)
     const [playing, setPlaying] = useState(false)
+    const [chartType, setChartType] = useState<'candlestick' | 'line'>('candlestick')
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     // Playback control
@@ -202,11 +204,42 @@ export default function MarketMakerPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                         <Card className="lg:col-span-3 border-neutral-800 bg-neutral-900/50">
                             <CardContent className="py-4">
-                                <PriceChart
-                                    data={replay.candleData}
-                                    currentStep={currentStep}
-                                    candlesPerStep={CANDLES_PER_STEP}
-                                />
+                                {/* Chart Type Toggle */}
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-xs text-neutral-500">Chart:</span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setChartType('candlestick')}
+                                        className={`h-7 text-xs ${chartType === 'candlestick' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}
+                                    >
+                                        <BarChart3 size={12} className="mr-1" />
+                                        Candlestick
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setChartType('line')}
+                                        className={`h-7 text-xs ${chartType === 'line' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}
+                                    >
+                                        <TrendingUp size={12} className="mr-1" />
+                                        Line
+                                    </Button>
+                                </div>
+
+                                {chartType === 'candlestick' ? (
+                                    <CandlestickChart
+                                        data={replay.candleData}
+                                        currentStep={currentStep}
+                                        candlesPerStep={CANDLES_PER_STEP}
+                                    />
+                                ) : (
+                                    <PriceChart
+                                        data={replay.candleData}
+                                        currentStep={currentStep}
+                                        candlesPerStep={CANDLES_PER_STEP}
+                                    />
+                                )}
                             </CardContent>
                         </Card>
 
