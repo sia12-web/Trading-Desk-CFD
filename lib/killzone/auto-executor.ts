@@ -25,6 +25,7 @@ import { isCrypto } from '@/lib/data/asset-config'
 import { createKrakenMarketOrder } from '@/lib/kraken/client'
 import { getAssetConfig } from '@/lib/data/asset-config'
 import { createClient } from '@/lib/supabase/server'
+import { registerManagedTrade } from '@/lib/trade-monitor/register'
 
 // ── Config ──
 
@@ -330,17 +331,17 @@ export async function executeInstitutionalProtocol(
             }
         } else {
             // OANDA execution for forex/indices
+            // No takeProfitOnFill — Trade Monitor manages TP1/TP2 split lifecycle
             const oandaResult = await createMarketOrder({
                 instrument,
                 units,
                 stopLossOnFill: { price: stopLoss.toFixed(dp) },
-                takeProfitOnFill: { price: takeProfit1.toFixed(dp) },
                 clientExtensions: {
                     comment: `KZ Auto: Tier 1-2-3 ${tier2.confidence}%`,
                     tag: 'killzone_auto',
                 },
             })
-            orderId = oandaResult.data?.orderFillTransaction?.id ?? null
+            orderId = oandaResult.data?.orderFillTransaction?.tradeOpened?.tradeID ?? null
             if (oandaResult.error) {
                 console.error(`[AutoExec] ${pair} OANDA execution error:`, oandaResult.error)
             }
@@ -352,7 +353,7 @@ export async function executeInstitutionalProtocol(
     // ═══════════════════════════════════════════════════════════════════
     // Log to database
     // ═══════════════════════════════════════════════════════════════════
-    await client.from('killzone_auto_executions').insert({
+    const { data: insertedExec } = await client.from('killzone_auto_executions').insert({
         pair,
         tier1_regime: tier1.regime,
         tier1_cross_count: tier1.maCrossCount,
@@ -376,7 +377,24 @@ export async function executeInstitutionalProtocol(
         risk_amount: config.riskAmount,
         order_id: orderId,
         blocked_reason: null,
-    })
+    }).select('id').single()
+
+    // Register for Trade Monitor lifecycle management (TP1 partial close → breakeven → TP2)
+    if (executed && orderId && !isCrypto(pair) && insertedExec) {
+        await registerManagedTrade({
+            source: 'killzone',
+            sourceExecutionId: insertedExec.id,
+            oandaTradeId: orderId,
+            pair,
+            instrument,
+            direction,
+            entryPrice,
+            stopLoss,
+            takeProfit1,
+            takeProfit2,
+            units: positionSize.units,
+        })
+    }
 
     return {
         pair,

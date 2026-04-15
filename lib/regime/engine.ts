@@ -20,6 +20,7 @@ import { createMarketOrder, getCurrentPrices } from '@/lib/oanda/client'
 import { createKrakenMarketOrder } from '@/lib/kraken/client'
 import { isCrypto, getAssetConfig } from '@/lib/data/asset-config'
 import { createClient } from '@/lib/supabase/server'
+import { registerManagedTrade } from '@/lib/trade-monitor/register'
 
 import { classifyRegime } from './classifier'
 import { detectMomentum } from './momentum-bot'
@@ -196,6 +197,7 @@ export async function executeRegimeProtocol(
             console.log(`[RegimeEngine] ${pair} GHOST DRY RUN: ${direction.toUpperCase()} at ${entryPrice.toFixed(dp)}, SL ${stopLoss.toFixed(dp)}, TP ${takeProfit1?.toFixed(dp)}`)
         } else {
             const units = direction === 'long' ? positionSize.units : -positionSize.units
+            // Ghost Bot: keep takeProfitOnFill (1:1 R:R, no split TP — not registered with Trade Monitor)
             const oandaResult = await createMarketOrder({
                 instrument,
                 units,
@@ -203,7 +205,7 @@ export async function executeRegimeProtocol(
                 takeProfitOnFill: takeProfit1 ? { price: takeProfit1.toFixed(dp) } : undefined,
                 clientExtensions: { comment: `Ghost: ${ghostWindow.event} fade`, tag: 'ghost_auto' },
             })
-            orderId = oandaResult.data?.orderFillTransaction?.id ?? null
+            orderId = oandaResult.data?.orderFillTransaction?.tradeOpened?.tradeID ?? null
         }
 
         await client.from('regime_auto_executions').insert({
@@ -520,18 +522,18 @@ export async function executeRegimeProtocol(
                 ? { distance: momentumSetup.trailingStopDistance.toFixed(dp) }
                 : undefined
 
+            // No takeProfitOnFill — Trade Monitor manages TP1/TP2 split lifecycle
             const oandaResult = await createMarketOrder({
                 instrument,
                 units,
                 stopLossOnFill: { price: stopLoss.toFixed(dp) },
-                takeProfitOnFill: takeProfit1 ? { price: takeProfit1.toFixed(dp) } : undefined,
                 trailingStopLossOnFill: trailingStopOnFill,
                 clientExtensions: {
                     comment: `Regime: ${regime.regime} → ${regime.activeBot} (${regime.confidence}%)`,
                     tag: 'regime_auto',
                 },
             })
-            orderId = oandaResult.data?.orderFillTransaction?.id ?? null
+            orderId = oandaResult.data?.orderFillTransaction?.tradeOpened?.tradeID ?? null
             if (oandaResult.error) {
                 console.error(`[RegimeEngine] ${pair} OANDA error:`, oandaResult.error)
             }
@@ -543,7 +545,7 @@ export async function executeRegimeProtocol(
     // ═══════════════════════════════════════════════════════════════════
     // Step 9: Log to Database
     // ═══════════════════════════════════════════════════════════════════
-    await client.from('regime_auto_executions').insert({
+    const { data: insertedExec } = await client.from('regime_auto_executions').insert({
         pair,
         regime: regime.regime,
         active_bot: regime.activeBot,
@@ -564,7 +566,24 @@ export async function executeRegimeProtocol(
         blocked_reason: null,
         condition_black: regime.conditionBlack,
         trailing_stop_distance: momentumSetup?.trailingStopDistance ?? null,
-    })
+    }).select('id').single()
+
+    // Register for Trade Monitor lifecycle management (TP1 partial close → breakeven → TP2)
+    if (executed && orderId && !isCrypto(pair) && insertedExec && takeProfit1 && takeProfit2) {
+        await registerManagedTrade({
+            source: 'regime',
+            sourceExecutionId: insertedExec.id,
+            oandaTradeId: orderId,
+            pair,
+            instrument,
+            direction: direction as 'long' | 'short',
+            entryPrice,
+            stopLoss,
+            takeProfit1,
+            takeProfit2,
+            units: positionSize.units,
+        })
+    }
 
     return {
         pair, regime, botUsed: regime.activeBot,

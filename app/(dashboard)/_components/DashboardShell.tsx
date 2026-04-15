@@ -33,6 +33,7 @@ import {
     Crosshair,
     Swords,
     Ghost,
+    Anchor,
 } from 'lucide-react'
 import LinkNext from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -81,6 +82,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         { label: 'Execution Log', href: '/execution-log', icon: History },
         { label: 'References', href: '/references', icon: BookMarked },
         { label: 'Trap Protocol', href: '/trap', icon: Ghost },
+        { label: 'Whale Sim', href: '/market-maker', icon: Anchor },
         { label: 'Settings', href: '/settings', icon: Settings },
     ]
 

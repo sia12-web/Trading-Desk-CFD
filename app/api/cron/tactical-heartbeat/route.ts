@@ -5,6 +5,7 @@ import { isGhostWindow, isNewsBlackout } from '@/lib/regime/news-guard'
 import { getCurrentPrices, closeTrade } from '@/lib/oanda/client'
 import { isCrypto } from '@/lib/data/asset-config'
 import { executeRegimeProtocol } from '@/lib/regime/engine'
+import { monitorManagedTrades } from '@/lib/trade-monitor/monitor'
 import { sendTelegramMessage } from '@/lib/notifications/telegram'
 
 export const dynamic = 'force-dynamic'
@@ -111,11 +112,29 @@ export async function GET(req: NextRequest) {
             }
         }
 
+        // 4. Trade Monitor: manage TP1/TP2 split lifecycle for auto-executed trades
+        let monitorResult = null
+        try {
+            monitorResult = await monitorManagedTrades()
+            if (monitorResult.actions.length > 0) {
+                console.log(`[TacticalHeartbeat] Trade Monitor: ${monitorResult.tp1_closes} TP1, ${monitorResult.tp2_closes} TP2, ${monitorResult.breakeven_moves} BE, ${monitorResult.stopped_out} SL`)
+            }
+        } catch (monitorError) {
+            console.error('[TacticalHeartbeat] Trade Monitor error:', monitorError)
+        }
+
         const duration = Date.now() - startTime
         return NextResponse.json({
             success: true,
             ghosts_active: ghostAwakenings,
             news_blackouts: blackouts,
+            trade_monitor: monitorResult ? {
+                checked: monitorResult.checked,
+                actions: monitorResult.actions.length,
+                tp1_closes: monitorResult.tp1_closes,
+                tp2_closes: monitorResult.tp2_closes,
+                stopped_out: monitorResult.stopped_out,
+            } : null,
             duration_ms: duration
         })
 
