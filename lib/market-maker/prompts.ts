@@ -25,12 +25,35 @@ export function buildGeminiWhalePrompt(
         `  - ${a.type.toUpperCase()} ${a.units} units @ ${a.price.toFixed(3)} (${a.phase})`
     ).join('\n')
 
+    const priceVsFairValue = market.currentPrice > market.fairValueProfile.premiumZone ? 'PREMIUM (expensive)' :
+        market.currentPrice < market.fairValueProfile.discountZone ? 'DISCOUNT (cheap)' :
+        'FAIR VALUE'
+
     return `You are an institutional market analyst working for a large whale fund trading EUR/JPY.
 
-CURRENT SESSION STATE:
+═══ SESSION CONTEXT ═══
+ASIAN SESSION (00:00-09:00 UTC):
+${market.asianSession.narrative}
+- Range: ${market.asianSession.range.toFixed(1)} pips | Direction: ${market.asianSession.direction.toUpperCase()}
+- Open: ${market.asianSession.open.toFixed(3)} | Close: ${market.asianSession.close.toFixed(3)}
+- Imbalances: ${market.asianSession.imbalances} unfilled gaps
+
+LONDON SESSION (08:00-13:00 UTC):
+${market.londonSession.narrative}
+- Range: ${market.londonSession.range.toFixed(1)} pips | Direction: ${market.londonSession.direction.toUpperCase()}
+- Open: ${market.londonSession.open.toFixed(3)} | Close: ${market.londonSession.close.toFixed(3)}
+- Imbalances: ${market.londonSession.imbalances} unfilled gaps
+
+30-DAY FAIR VALUE:
+- Fair Value (POC): ${market.fairValueProfile.fairValue.toFixed(3)} (${market.fairValueProfile.daysCalculated} days)
+- Value Area: ${market.fairValueProfile.valueAreaLow.toFixed(3)} — ${market.fairValueProfile.valueAreaHigh.toFixed(3)}
+- Premium Zone (expensive): ${market.fairValueProfile.premiumZone.toFixed(3)}+
+- Discount Zone (cheap): ${market.fairValueProfile.discountZone.toFixed(3)}−
+
+CURRENT SESSION STATE (NEW YORK):
 - Phase: ${market.phase.toUpperCase()}
 - Time: ${market.minutesElapsed} minutes into the 3-hour session
-- Price: ${market.currentPrice.toFixed(3)}
+- Price: ${market.currentPrice.toFixed(3)} [${priceVsFairValue}]
 - Session Range: ${market.sessionLow.toFixed(3)} — ${market.sessionHigh.toFixed(3)}
 
 ORDER FLOW DATA:
@@ -59,6 +82,13 @@ Identify the optimal floor (accumulation zone) and ceiling (distribution zone) b
 1. Where retail stops are clustered (Donchian levels)
 2. Where institutional volume is concentrated (POC, Value Area)
 3. Current CVD flow direction
+4. What Asian/London sessions established (imbalances = magnets for price)
+5. 30-day fair value (accumulate at discount, distribute at premium)
+
+INSTITUTIONAL INSIGHT:
+- If price is at DISCOUNT vs fair value → good accumulation zone
+- If price is at PREMIUM vs fair value → good distribution zone
+- Imbalances from Asian/London = unfilled orders that NY session may revisit
 
 Respond in valid JSON only:
 {
@@ -85,10 +115,18 @@ export function buildDeepSeekWhalePrompt(
         ? Math.round((book.totalDistributed / Math.max(book.totalAccumulated, 1)) * 100)
         : 0
 
+    const priceVsFairValue = market.currentPrice > market.fairValueProfile.premiumZone ? 'PREMIUM' :
+        market.currentPrice < market.fairValueProfile.discountZone ? 'DISCOUNT' :
+        'FAIR'
+
     return `You are a quantitative analyst for an institutional whale desk trading EUR/JPY.
 
 PHASE: ${market.phase.toUpperCase()} (${market.minutesElapsed}/180 min)
-PRICE: ${market.currentPrice.toFixed(3)}
+PRICE: ${market.currentPrice.toFixed(3)} [${priceVsFairValue} vs 30-day fair: ${market.fairValueProfile.fairValue.toFixed(3)}]
+
+SESSION CONTEXT:
+- Asian: ${market.asianSession.direction} ${market.asianSession.range.toFixed(1)} pips, ${market.asianSession.imbalances} gaps
+- London: ${market.londonSession.direction} ${market.londonSession.range.toFixed(1)} pips, ${market.londonSession.imbalances} gaps
 
 STRUCTURAL ANALYSIS (from our pattern analyst):
 ${geminiOutput}
@@ -145,8 +183,31 @@ export function buildClaudeWhalePrompt(
         `  Step ${a.candleIndex}: ${a.type} ${a.units}u @ ${a.price.toFixed(3)} — "${a.reasoning}"`
     ).join('\n')
 
+    const priceVsFairValue = market.currentPrice > market.fairValueProfile.premiumZone ? 'PREMIUM (expensive)' :
+        market.currentPrice < market.fairValueProfile.discountZone ? 'DISCOUNT (cheap)' :
+        'FAIR VALUE'
+
     return `You are the chief decision maker for an institutional whale fund.
 You have UNLIMITED capital. EUR/JPY, M1 timeframe.
+
+═══ SESSION CONTEXT (What Happened Before NY) ═══
+ASIAN SESSION (00:00-09:00 UTC):
+${market.asianSession.narrative}
+Direction: ${market.asianSession.direction.toUpperCase()} | Range: ${market.asianSession.range.toFixed(1)} pips | Gaps: ${market.asianSession.imbalances}
+
+LONDON SESSION (08:00-13:00 UTC):
+${market.londonSession.narrative}
+Direction: ${market.londonSession.direction.toUpperCase()} | Range: ${market.londonSession.range.toFixed(1)} pips | Gaps: ${market.londonSession.imbalances}
+
+30-DAY FAIR VALUE:
+Fair Value: ${market.fairValueProfile.fairValue.toFixed(3)} (${market.fairValueProfile.daysCalculated}-day POC)
+Current Price: ${market.currentPrice.toFixed(3)} [${priceVsFairValue}]
+Value Area: ${market.fairValueProfile.valueAreaLow.toFixed(3)} — ${market.fairValueProfile.valueAreaHigh.toFixed(3)}
+
+INSTITUTIONAL INSIGHT:
+- Accumulate when price is at DISCOUNT vs fair value
+- Distribute when price is at PREMIUM vs fair value
+- Imbalances from earlier sessions are magnets for NY session reversals
 
 Your analysts have provided their recommendations:
 

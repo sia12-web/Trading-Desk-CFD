@@ -61,6 +61,32 @@ export interface RetailState {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Session Context (Asian, London context for NY whale)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface SessionContext {
+    session: 'asian' | 'london'
+    open: number
+    high: number
+    low: number
+    close: number
+    range: number  // high - low in pips
+    direction: 'bullish' | 'bearish' | 'ranging'
+    volumeAvg: number
+    imbalances: number  // Count of unfilled gaps/imbalances
+    narrative: string  // What happened this session
+}
+
+export interface FairValueProfile {
+    fairValue: number  // 30-day volume POC (true fair price)
+    valueAreaHigh: number  // 70% volume high
+    valueAreaLow: number  // 70% volume low
+    premiumZone: number  // Above fair value (expensive)
+    discountZone: number  // Below fair value (cheap)
+    daysCalculated: number
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Market Snapshot (given to AI each step)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -77,10 +103,14 @@ export interface MarketSnapshot {
     donchianHigh: number
     donchianLow: number
     donchianMiddle: number
-    // Volume Profile
+    // Volume Profile (session-specific)
     volumePOC: number
     valueAreaHigh: number
     valueAreaLow: number
+    // NEW: Session context
+    asianSession: SessionContext
+    londonSession: SessionContext
+    fairValueProfile: FairValueProfile
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
