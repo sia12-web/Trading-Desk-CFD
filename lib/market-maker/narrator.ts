@@ -11,7 +11,7 @@
 import { callDeepSeek } from '@/lib/ai/clients/deepseek'
 import { parseAIJson } from '@/lib/ai/parse-response'
 import type {
-    WhaleAction, RetailEvent, MarketSnapshot, WhaleBook, WhalePsychology,
+    WhaleAction, RetailEvent, MarketSnapshot, WhaleBook, WhalePsychology, WhaleStrategy,
 } from './types'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -22,9 +22,10 @@ export async function generateNarrative(
     whaleAction: WhaleAction,
     retailEvents: RetailEvent[],
     market: MarketSnapshot,
-    book: WhaleBook
+    book: WhaleBook,
+    strategy: WhaleStrategy
 ): Promise<WhalePsychology> {
-    const prompt = buildNarratorPrompt(whaleAction, retailEvents, market, book)
+    const prompt = buildNarratorPrompt(whaleAction, retailEvents, market, book, strategy)
 
     try {
         const response = await callDeepSeek(prompt, {
@@ -47,7 +48,8 @@ function buildNarratorPrompt(
     whaleAction: WhaleAction,
     retailEvents: RetailEvent[],
     market: MarketSnapshot,
-    book: WhaleBook
+    book: WhaleBook,
+    strategy: WhaleStrategy
 ): string {
     const fairValue = market.fairValueProfile.fairValue || market.volumePOC
     const priceVsFair = fairValue > 0
@@ -86,6 +88,15 @@ WHALE'S BOOK:
   Inventory: ${book.positionSize} units @ avg ${book.averageEntry > 0 ? book.averageEntry.toFixed(3) : 'flat'}
   Unrealized: ${book.unrealizedPnl.toFixed(1)} pips | Realized: ${book.realizedPnl.toFixed(1)} pips
   Total PnL: ${totalPnl.toFixed(1)} pips | Manipulation cost: ${book.manipulationCost.toFixed(1)} pips
+
+STRATEGIC CAMPAIGN:
+  Goal: ${strategy.goal.toUpperCase().replace('_', ' ')} (targeting ${strategy.targetSize} units)
+  Phase: ${strategy.currentPhase.toUpperCase()}
+  Progress: ${strategy.progress.accumulated} accumulated / ${strategy.progress.distributed} distributed (net: ${strategy.progress.netPosition})
+  Entry Zone: ${strategy.entryZone.min.toFixed(3)}-${strategy.entryZone.max.toFixed(3)}
+  Exit Zone: ${strategy.exitZone.min.toFixed(3)}-${strategy.exitZone.max.toFixed(3)}
+  Campaign Reasoning: "${strategy.reasoning}"
+  Target Reached: ${strategy.progress.targetReached ? 'YES' : 'NO'}
 
 RETAIL THIS STEP:
   ${retailSummary || 'No retail activity this step.'}

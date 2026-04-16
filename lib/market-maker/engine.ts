@@ -20,6 +20,8 @@ import { calculateCVD, calculateDonchianChannel } from '@/lib/utils/donchian-cvd
 import { buildVolumeProfile } from '@/lib/utils/volume-profile'
 import { calculateATR } from '@/lib/utils/indicators'
 import { makeWhaleDecision } from './whale-logic'
+import { makeStrategicDecision } from './whale-logic-strategic'
+import { planCampaign, updateStrategyProgress } from './campaign-planner'
 import { createRetailTraders, updateRetailTraders, snapshotTraders } from './retail-traders'
 import { generateNarrative } from './narrator'
 import { detectInstitutionalBias } from './bias-detector'
@@ -89,6 +91,11 @@ export async function runWhaleSimulation(date: string, instrument: string): Prom
     const institutionalBias = detectInstitutionalBias(historicalCandles, londonCandles, fullDayCandles, nyOpenPrice)
     console.log(`[WhaleEngine] Institutional Bias: ${institutionalBias.finalBias} (${institutionalBias.finalConfidence}% confidence, ${institutionalBias.consensusScore}/3 consensus)`)
 
+    // 3.6. Plan whale's strategic campaign based on bias + fair value
+    const whaleStrategy = planCampaign(institutionalBias, fairValueProfile, nyOpenPrice, PIP_MULTIPLIER)
+    console.log(`[WhaleEngine] Campaign Goal: ${whaleStrategy.goal} | Target: ${whaleStrategy.targetSize} units`)
+    console.log(`[WhaleEngine] Entry Zone: ${whaleStrategy.entryZone.min.toFixed(3)}-${whaleStrategy.entryZone.max.toFixed(3)} | Exit Zone: ${whaleStrategy.exitZone.min.toFixed(3)}-${whaleStrategy.exitZone.max.toFixed(3)}`)
+
     // 4. Pre-compute indicators on NY session
     const highs = allCandles.map(c => parseFloat(c.mid.h))
     const lows = allCandles.map(c => parseFloat(c.mid.l))
@@ -102,6 +109,7 @@ export async function runWhaleSimulation(date: string, instrument: string): Prom
     // 5. Initialize state
     let book = createInitialBook()
     let retailers = createRetailTraders(50)
+    let currentStrategy = whaleStrategy  // Track strategic campaign progress
     const steps: SimulationStep[] = []
 
     // 6. Run 12 steps
@@ -127,14 +135,23 @@ export async function runWhaleSimulation(date: string, instrument: string): Prom
             book.unrealizedPnl = (market.currentPrice - book.averageEntry) * PIP_MULTIPLIER
         }
 
-        // Deterministic whale decision (instant — no AI)
-        const decision = makeWhaleDecision(market, book, retailers, phase)
-        console.log(`[WhaleEngine]   Whale: ${decision.action} ${decision.units}u | confidence ${decision.confidence}`)
+        // Strategic whale decision based on campaign goal (instant — no AI)
+        const decision = makeStrategicDecision(market, book, currentStrategy, retailers, minutesElapsed, PIP_MULTIPLIER)
+        console.log(`[WhaleEngine]   Whale: ${decision.action} ${decision.units}u | ${currentStrategy.goal} phase: ${currentStrategy.currentPhase}`)
 
         // Sanitize and apply
         const sanitized = sanitizeDecision(decision, book, market, phase)
         const action = applyDecision(sanitized, book, market, phase, currentIdx, PIP_MULTIPLIER)
         book = updateBook(book, action, market.currentPrice, PIP_MULTIPLIER)
+
+        // Update strategy progress
+        currentStrategy = updateStrategyProgress(
+            currentStrategy,
+            book.totalAccumulated,
+            book.totalDistributed,
+            book.positionSize,
+            book.averageEntry
+        )
 
         // Update retail traders (per candle for accurate stop-out detection)
         const stepCandles = allCandles.slice(startIdx, endIdx)
@@ -150,9 +167,9 @@ export async function runWhaleSimulation(date: string, instrument: string): Prom
         const fomoEntries = allRetailEvents.filter(e => e.type === 'fomo').length
         console.log(`[WhaleEngine]   Retail: ${allRetailEvents.length} events (${stoppedOut} stopped, ${fomoEntries} FOMO)`)
 
-        // DeepSeek narrator (1 cheap LLM call)
+        // DeepSeek narrator (1 cheap LLM call with strategic context)
         console.log(`[WhaleEngine]   Narrating...`)
-        const psychology = await generateNarrative(action, allRetailEvents, market, book)
+        const psychology = await generateNarrative(action, allRetailEvents, market, book, currentStrategy)
 
         // Build stop loss heatmap
         const stopLossHeatmap = buildStopLossHeatmap(retailers)
@@ -198,6 +215,7 @@ export async function runWhaleSimulation(date: string, instrument: string): Prom
         finalBook: book,
         finalRetailTraders: retailers,
         institutionalBias,
+        whaleStrategy: currentStrategy,
         retailAggregateStats,
         atrComparison: { realATR, whaleVolatility },
         candleData,

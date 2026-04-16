@@ -21,6 +21,44 @@ export type SessionPhase =
     | 'cleanup'         // 10:30-11:30 ET — Forced position unwind
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Strategic Campaign (Goal-Oriented Whale)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type CampaignGoal =
+    | 'accumulate_long'   // Goal: Accumulate X units cheap, distribute expensive (net long campaign)
+    | 'distribute_short'  // Goal: Distribute X units expensive, buy back cheap (net short campaign)
+    | 'opportunistic'     // Goal: Trade both directions around fair value (no directional bias)
+
+export type CampaignPhase =
+    | 'building'       // Accumulating inventory toward target size
+    | 'manipulating'   // Using inventory to improve avg entry via stop hunts
+    | 'distributing'   // Selling inventory into retail FOMO
+    | 'completed'      // Goal achieved, position closed
+
+export interface WhaleStrategy {
+    goal: CampaignGoal
+    targetSize: number          // Target inventory size (e.g., 10,000 units)
+    entryZone: {                // Price zone for accumulation
+        min: number             // Bottom of entry zone
+        max: number             // Top of entry zone (fair value)
+    }
+    exitZone: {                 // Price zone for distribution
+        min: number             // Bottom of exit zone (fair value)
+        max: number             // Top of exit zone (premium)
+    }
+    manipulationBudget: number  // Max pips allowed for manipulation cost
+    reasoning: string           // Why this campaign was chosen
+    currentPhase: CampaignPhase
+    progress: {
+        accumulated: number     // Units accumulated so far
+        distributed: number     // Units distributed so far
+        netPosition: number     // Current net position
+        avgEntry: number        // Current average entry price
+        targetReached: boolean  // Has target size been reached?
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Whale's Book (Inventory)
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -262,6 +300,8 @@ export interface SessionReplay {
     }
     // Institutional bias detection (Operator's 3-Step Protocol)
     institutionalBias: InstitutionalBias
+    // Whale's strategic campaign
+    whaleStrategy: WhaleStrategy
     // Chart data (pre-processed for frontend)
     candleData: CandleChartPoint[]
 }
