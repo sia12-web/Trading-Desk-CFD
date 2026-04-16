@@ -27,8 +27,8 @@ export function StrategyPanel({ strategy, currentStep }: StrategyPanelProps) {
     // Phase progress
     const phaseSteps = ['building', 'manipulating', 'distributing', 'completed']
     const currentPhaseIndex = phaseSteps.indexOf(currentPhase)
-    const progressPct = progress.targetReached ? 100 :
-                        (progress.accumulated / targetSize) * 100
+    const progressPct = progress?.targetReached ? 100 :
+                        targetSize > 0 ? ((progress?.accumulated ?? 0) / targetSize) * 100 : 0
 
     return (
         <div className={`rounded-lg border p-4 ${goalBg}`}>
@@ -97,28 +97,28 @@ export function StrategyPanel({ strategy, currentStep }: StrategyPanelProps) {
                 <div className="bg-gray-800/50 rounded p-2">
                     <div className="text-[10px] text-gray-400 uppercase mb-0.5">Accumulated</div>
                     <div className="text-sm font-semibold text-green-400">
-                        {progress.accumulated.toLocaleString()}
+                        {(progress?.accumulated ?? 0).toLocaleString()}
                     </div>
                     <div className="text-[10px] text-gray-500">
-                        {((progress.accumulated / targetSize) * 100).toFixed(0)}%
+                        {targetSize > 0 ? (((progress?.accumulated ?? 0) / targetSize) * 100).toFixed(0) : 0}%
                     </div>
                 </div>
                 <div className="bg-gray-800/50 rounded p-2">
                     <div className="text-[10px] text-gray-400 uppercase mb-0.5">Distributed</div>
                     <div className="text-sm font-semibold text-red-400">
-                        {progress.distributed.toLocaleString()}
+                        {(progress?.distributed ?? 0).toLocaleString()}
                     </div>
                     <div className="text-[10px] text-gray-500">
-                        {((progress.distributed / targetSize) * 100).toFixed(0)}%
+                        {targetSize > 0 ? (((progress?.distributed ?? 0) / targetSize) * 100).toFixed(0) : 0}%
                     </div>
                 </div>
                 <div className="bg-gray-800/50 rounded p-2">
                     <div className="text-[10px] text-gray-400 uppercase mb-0.5">Net Position</div>
-                    <div className={`text-sm font-semibold ${progress.netPosition > 0 ? 'text-green-400' : progress.netPosition < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                        {progress.netPosition.toLocaleString()}
+                    <div className={`text-sm font-semibold ${(progress?.netPosition ?? 0) > 0 ? 'text-green-400' : (progress?.netPosition ?? 0) < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                        {(progress?.netPosition ?? 0).toLocaleString()}
                     </div>
                     <div className="text-[10px] text-gray-500">
-                        @ {progress.avgEntry > 0 ? progress.avgEntry.toFixed(3) : '—'}
+                        @ {(progress?.avgEntry ?? 0) > 0 ? (progress.avgEntry ?? 0).toFixed(3) : '—'}
                     </div>
                 </div>
             </div>
@@ -128,13 +128,13 @@ export function StrategyPanel({ strategy, currentStep }: StrategyPanelProps) {
                 <div className="bg-green-500/5 border border-green-500/20 rounded p-2">
                     <div className="text-[10px] text-green-400 uppercase mb-0.5">Entry Zone</div>
                     <div className="text-xs font-mono text-gray-300">
-                        {entryZone.min.toFixed(3)} - {entryZone.max.toFixed(3)}
+                        {(entryZone?.min ?? 0).toFixed(3)} - {(entryZone?.max ?? 0).toFixed(3)}
                     </div>
                 </div>
                 <div className="bg-red-500/5 border border-red-500/20 rounded p-2">
                     <div className="text-[10px] text-red-400 uppercase mb-0.5">Exit Zone</div>
                     <div className="text-xs font-mono text-gray-300">
-                        {exitZone.min.toFixed(3)} - {exitZone.max.toFixed(3)}
+                        {(exitZone?.min ?? 0).toFixed(3)} - {(exitZone?.max ?? 0).toFixed(3)}
                     </div>
                 </div>
             </div>

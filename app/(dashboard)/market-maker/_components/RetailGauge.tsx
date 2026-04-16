@@ -131,13 +131,13 @@ export function RetailGauge({ traders, aggregateStats }: RetailGaugeProps) {
                     <div className="flex justify-between">
                         <span>Avg Retail PnL:</span>
                         <span className={aggregateStats.avgPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                            {aggregateStats.avgPnl >= 0 ? '+' : ''}{aggregateStats.avgPnl.toFixed(1)} pips
+                            {(aggregateStats.avgPnl ?? 0) >= 0 ? '+' : ''}{(aggregateStats.avgPnl ?? 0).toFixed(1)} pips
                         </span>
                     </div>
                     <div className="flex justify-between mt-0.5">
                         <span>Total lost to whale:</span>
                         <span className="text-red-400">
-                            {aggregateStats.totalVolumeLost.toFixed(1)} pips
+                            {(aggregateStats.totalVolumeLost ?? 0).toFixed(1)} pips
                         </span>
                     </div>
                 </div>

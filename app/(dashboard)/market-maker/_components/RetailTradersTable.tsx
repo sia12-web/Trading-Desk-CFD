@@ -103,13 +103,13 @@ export function RetailTradersTable({ traders }: RetailTradersTableProps) {
                                         )}
                                     </td>
                                     <td className="py-1 px-1 text-right font-mono text-neutral-400">
-                                        {t.position ? t.position.entryPrice.toFixed(3) : '—'}
+                                        {t.position ? (t.position.entryPrice ?? 0).toFixed(3) : '—'}
                                     </td>
                                     <td className="py-1 px-1 text-right font-mono text-neutral-500">
-                                        {t.position ? t.position.stopLoss.toFixed(3) : '—'}
+                                        {t.position ? (t.position.stopLoss ?? 0).toFixed(3) : '—'}
                                     </td>
                                     <td className={`py-1 px-1 text-right font-mono ${t.totalPnl > 0 ? 'text-emerald-400' : t.totalPnl < 0 ? 'text-red-400' : 'text-neutral-600'}`}>
-                                        {t.totalPnl !== 0 ? `${t.totalPnl > 0 ? '+' : ''}${t.totalPnl.toFixed(1)}` : '0.0'}
+                                        {(t.totalPnl ?? 0) !== 0 ? `${(t.totalPnl ?? 0) > 0 ? '+' : ''}${(t.totalPnl ?? 0).toFixed(1)}` : '0.0'}
                                     </td>
                                     <td className="py-1 px-1">
                                         <span className={`px-1.5 py-0.5 rounded text-[10px] ${statusBadge.bg} ${statusBadge.text}`}>

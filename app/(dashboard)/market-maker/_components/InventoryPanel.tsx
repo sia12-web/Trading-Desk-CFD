@@ -8,7 +8,7 @@ interface InventoryPanelProps {
 }
 
 export function InventoryPanel({ book }: InventoryPanelProps) {
-    const totalPnl = book.realizedPnl + book.unrealizedPnl - book.manipulationCost
+    const totalPnl = (book.realizedPnl ?? 0) + (book.unrealizedPnl ?? 0) - (book.manipulationCost ?? 0)
     const distributionPctRaw = book.totalAccumulated > 0
         ? Math.round((book.totalDistributed / book.totalAccumulated) * 100)
         : 0
@@ -23,7 +23,7 @@ export function InventoryPanel({ book }: InventoryPanelProps) {
 
             <div className="grid grid-cols-2 gap-2">
                 <Stat label="Position" value={`${book.positionSize.toLocaleString()} units`} />
-                <Stat label="Avg Entry" value={book.averageEntry > 0 ? book.averageEntry.toFixed(3) : '—'} />
+                <Stat label="Avg Entry" value={(book.averageEntry ?? 0) > 0 ? (book.averageEntry ?? 0).toFixed(3) : '—'} />
             </div>
 
             <div className="border-t border-neutral-800 pt-2 space-y-1">
@@ -91,7 +91,7 @@ function PnlRow({ icon, label, pips, alwaysNeg }: { icon: React.ReactNode; label
                 {icon} {label}
             </span>
             <span className={`font-mono ${color}`}>
-                {pips >= 0 && !alwaysNeg ? '+' : ''}{pips.toFixed(1)}p
+                {(pips ?? 0) >= 0 && !alwaysNeg ? '+' : ''}{(pips ?? 0).toFixed(1)}p
             </span>
         </div>
     )

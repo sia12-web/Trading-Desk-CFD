@@ -107,7 +107,7 @@ export default function MarketMakerPage() {
     const retailSnapshots = step?.retailSnapshots ?? []
 
     const netPnl = replay
-        ? replay.finalBook.realizedPnl + replay.finalBook.unrealizedPnl - replay.finalBook.manipulationCost
+        ? (replay.finalBook?.realizedPnl ?? 0) + (replay.finalBook?.unrealizedPnl ?? 0) - (replay.finalBook?.manipulationCost ?? 0)
         : 0
 
     return (
@@ -230,8 +230,8 @@ export default function MarketMakerPage() {
                         />
                         <StatCard
                             label="Retail Avg PnL"
-                            value={`${replay.retailAggregateStats.avgPnl >= 0 ? '+' : ''}${replay.retailAggregateStats.avgPnl.toFixed(1)}p`}
-                            color={replay.retailAggregateStats.avgPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}
+                            value={`${(replay.retailAggregateStats?.avgPnl ?? 0) >= 0 ? '+' : ''}${(replay.retailAggregateStats?.avgPnl ?? 0).toFixed(1)}p`}
+                            color={(replay.retailAggregateStats?.avgPnl ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}
                         />
                     </div>
 

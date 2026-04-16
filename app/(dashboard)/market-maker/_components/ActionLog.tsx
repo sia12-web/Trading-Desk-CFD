@@ -46,7 +46,7 @@ export function ActionLog({ steps, currentStep }: ActionLogProps) {
                                     <span className="text-neutral-500">{step.decision.units.toLocaleString()}u</span>
                                 )}
                                 <span className="text-neutral-500 ml-auto font-mono">
-                                    @ {step.market.currentPrice.toFixed(3)}
+                                    @ {(step.market?.currentPrice ?? 0).toFixed(3)}
                                 </span>
                                 <span className="text-neutral-600 text-[10px]">
                                     {step.decision.confidence}%

@@ -71,9 +71,9 @@ export function EventFeed({ events, allPreviousEvents }: EventFeedProps) {
                                     <p className="text-[11px] text-neutral-400 leading-snug">
                                         {event.reason}
                                     </p>
-                                    {event.pnl !== undefined && (
-                                        <span className={`text-[10px] font-mono ${event.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                            {event.pnl >= 0 ? '+' : ''}{event.pnl.toFixed(1)} pips
+                                    {event.pnl != null && (
+                                        <span className={`text-[10px] font-mono ${(event.pnl ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            {(event.pnl ?? 0) >= 0 ? '+' : ''}{(event.pnl ?? 0).toFixed(1)} pips
                                         </span>
                                     )}
                                 </div>
