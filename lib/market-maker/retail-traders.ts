@@ -112,6 +112,12 @@ export function updateRetailTraders(
     const currentPrice = typeof candle.mid.c === 'string' ? parseFloat(candle.mid.c) : candle.mid.c
     const high = typeof candle.mid.h === 'string' ? parseFloat(candle.mid.h) : candle.mid.h
     const low = typeof candle.mid.l === 'string' ? parseFloat(candle.mid.l) : candle.mid.l
+    const candleVolume = candle.volume
+
+    // Detect momentum spikes (whale manipulation or distribution)
+    const avgVolume = 1000 // Baseline
+    const volumeSpike = candleVolume > avgVolume * 1.5
+    const priceSpike = (high - low) * pipMultiplier > 3  // More than 3 pips range
 
     const updated = traders.map(trader => {
         const t = { ...trader, position: trader.position ? { ...trader.position } : null }
@@ -165,6 +171,66 @@ export function updateRetailTraders(
 
                 t.position = null
                 return t
+            }
+        }
+
+        // ── 1.5. Fear-based early exits (panic close before hitting SL) ──
+        if (t.position && t.experience !== 'advanced') {
+            const unrealizedPnL = t.position.direction === 'long'
+                ? (currentPrice - t.position.entryPrice) * pipMultiplier
+                : (t.position.entryPrice - currentPrice) * pipMultiplier
+
+            const distanceToSL = Math.abs(currentPrice - t.position.stopLoss) * pipMultiplier
+            const riskPips = Math.abs(t.position.entryPrice - t.position.stopLoss) * pipMultiplier
+
+            // Novice: panic if down 70%+ of risk
+            if (t.experience === 'novice' && unrealizedPnL < -riskPips * 0.7 && seededRandom() < 0.5) {
+                const exitPrice = currentPrice
+                const pnl = unrealizedPnL
+                t.totalPnl += pnl
+                t.totalTrades++
+                t.status = 'stopped_out'
+
+                events.push({
+                    traderId: t.id,
+                    traderName: t.name,
+                    timestamp: candle.time,
+                    type: 'panic',
+                    price: exitPrice,
+                    pnl,
+                    reason: `PANIC EXIT at ${exitPrice.toFixed(3)} (${pnl.toFixed(1)} pips) — closed early before hitting SL. Fear took over.`,
+                })
+
+                t.position = null
+                return t
+            }
+
+            // Intermediate: panic if down 85%+ of risk AND whale manipulating against them
+            if (t.experience === 'intermediate' && unrealizedPnL < -riskPips * 0.85) {
+                const whaleAgainstPosition =
+                    (t.position.direction === 'long' && whaleAction.type === 'manipulate' && whaleAction.manipulationDirection === 'down') ||
+                    (t.position.direction === 'short' && whaleAction.type === 'manipulate' && whaleAction.manipulationDirection === 'up')
+
+                if (whaleAgainstPosition && seededRandom() < 0.3) {
+                    const exitPrice = currentPrice
+                    const pnl = unrealizedPnL
+                    t.totalPnl += pnl
+                    t.totalTrades++
+                    t.status = 'stopped_out'
+
+                    events.push({
+                        traderId: t.id,
+                        traderName: t.name,
+                        timestamp: candle.time,
+                        type: 'panic',
+                        price: exitPrice,
+                        pnl,
+                        reason: `PANIC EXIT at ${exitPrice.toFixed(3)} (${pnl.toFixed(1)} pips) — saw manipulation against position, cut loss early.`,
+                    })
+
+                    t.position = null
+                    return t
+                }
             }
         }
 
@@ -244,6 +310,52 @@ export function updateRetailTraders(
                         reason: `FOMO LONG at ${currentPrice.toFixed(3)} — chasing sudden price spike (whale's manipulation)`,
                     })
                 }
+                // ENHANCED: Distribution FOMO — volume spike + rally = novices buy the top
+                else if (whaleAction.type === 'distribute' && volumeSpike && currentPrice > market.volumePOC && roll < 0.55) {
+                    const sl = market.donchianMiddle
+                    const tp = currentPrice + (currentPrice - sl) * 1.8
+                    t.position = {
+                        direction: 'long',
+                        entryPrice: currentPrice,
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
+                        stopLoss: sl,
+                        takeProfit: tp,
+                        enteredAt: candle.time,
+                        reason: 'FOMO: volume spike + breakout = must be real!',
+                    }
+                    t.status = 'in_position'
+                    events.push({
+                        traderId: t.id,
+                        traderName: t.name,
+                        timestamp: candle.time,
+                        type: 'fomo',
+                        price: currentPrice,
+                        reason: `FOMO LONG at ${currentPrice.toFixed(3)} — volume spike + rally! Whale distributing into this buy pressure.`,
+                    })
+                }
+                // REVENGE TRADING: Novices with negative PnL (recently stopped) jump back in
+                else if (t.totalPnl < -5 && t.totalTrades > 0 && roll < 0.35) {
+                    const sl = currentPrice > market.donchianMiddle ? market.donchianLow : market.donchianHigh
+                    const tp = currentPrice + (currentPrice - sl) * 1.5
+                    t.position = {
+                        direction: 'long',
+                        entryPrice: currentPrice,
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
+                        stopLoss: sl,
+                        takeProfit: tp,
+                        enteredAt: candle.time,
+                        reason: 'Revenge trade after stop-out',
+                    }
+                    t.status = 'in_position'
+                    events.push({
+                        traderId: t.id,
+                        traderName: t.name,
+                        timestamp: candle.time,
+                        type: 'fomo',
+                        price: currentPrice,
+                        reason: `REVENGE TRADE at ${currentPrice.toFixed(3)} — just got stopped, trying to "get it back". Emotional trading.`,
+                    })
+                }
             }
 
             // INTERMEDIATE: Pullback entries, value area awareness
@@ -298,6 +410,53 @@ export function updateRetailTraders(
                         type: 'entry',
                         price: currentPrice,
                         reason: `SHORT at ${currentPrice.toFixed(3)} — resistance rejection, falling CVD, SL at ${sl.toFixed(3)}`,
+                    })
+                }
+                // ENHANCED: Intermediate FOMO during big volume + breakout (less than novice, but still vulnerable)
+                else if (whaleAction.type === 'distribute' && volumeSpike && priceSpike && currentPrice > market.donchianHigh && roll < 0.25) {
+                    const sl = market.donchianLow
+                    const tp = currentPrice + (currentPrice - sl) * 2.0
+                    t.position = {
+                        direction: 'long',
+                        entryPrice: currentPrice,
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
+                        stopLoss: sl,
+                        takeProfit: tp,
+                        enteredAt: candle.time,
+                        reason: 'Volume breakout — looks legit',
+                    }
+                    t.status = 'in_position'
+                    events.push({
+                        traderId: t.id,
+                        traderName: t.name,
+                        timestamp: candle.time,
+                        type: 'fomo',
+                        price: currentPrice,
+                        reason: `FOMO LONG at ${currentPrice.toFixed(3)} — high volume breakout. Whale distributing.`,
+                    })
+                }
+                // PANIC SELL: Intermediate sees whale manipulation down + they're long = panic exit
+                else if (whaleAction.type === 'manipulate' && whaleAction.manipulationDirection === 'down' &&
+                         currentPrice < market.donchianMiddle && roll < 0.2) {
+                    const sl = market.donchianHigh
+                    const tp = currentPrice - (sl - currentPrice) * 1.5
+                    t.position = {
+                        direction: 'short',
+                        entryPrice: currentPrice,
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
+                        stopLoss: sl,
+                        takeProfit: tp,
+                        enteredAt: candle.time,
+                        reason: 'Panic short on breakdown',
+                    }
+                    t.status = 'in_position'
+                    events.push({
+                        traderId: t.id,
+                        traderName: t.name,
+                        timestamp: candle.time,
+                        type: 'panic',
+                        price: currentPrice,
+                        reason: `PANIC SHORT at ${currentPrice.toFixed(3)} — saw breakdown + manipulation. Selling into whale's bid.`,
                     })
                 }
             }

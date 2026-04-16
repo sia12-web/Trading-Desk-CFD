@@ -15,6 +15,7 @@ import { PsychologyPanel } from './_components/PsychologyPanel'
 import { EventFeed } from './_components/EventFeed'
 import { RetailTradersTable } from './_components/RetailTradersTable'
 import { BiasPanel } from './_components/BiasPanel'
+import { StrategyPanel } from './_components/StrategyPanel'
 import type { SessionReplay } from '@/lib/market-maker/types'
 
 const STEPS = 12
@@ -268,6 +269,11 @@ export default function MarketMakerPage() {
 
                     {/* Institutional Bias Panel */}
                     <BiasPanel bias={replay.institutionalBias} />
+
+                    {/* Campaign Strategy Panel */}
+                    {replay.whaleStrategy && (
+                        <StrategyPanel strategy={replay.whaleStrategy} currentStep={currentStep + 1} />
+                    )}
 
                     {/* Main Grid: Chart + Inventory */}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
