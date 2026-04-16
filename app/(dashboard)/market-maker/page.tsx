@@ -14,6 +14,7 @@ import { ActionLog } from './_components/ActionLog'
 import { PsychologyPanel } from './_components/PsychologyPanel'
 import { EventFeed } from './_components/EventFeed'
 import { RetailTradersTable } from './_components/RetailTradersTable'
+import { BiasPanel } from './_components/BiasPanel'
 import type { SessionReplay } from '@/lib/market-maker/types'
 
 const STEPS = 12
@@ -227,6 +228,9 @@ export default function MarketMakerPage() {
                             <SessionTimeline currentStep={currentStep} totalSteps={STEPS} />
                         </CardContent>
                     </Card>
+
+                    {/* Institutional Bias Panel */}
+                    <BiasPanel bias={replay.institutionalBias} />
 
                     {/* Main Grid: Chart + Inventory */}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">

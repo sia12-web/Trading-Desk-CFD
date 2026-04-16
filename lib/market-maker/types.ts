@@ -135,6 +135,47 @@ export interface SessionContext {
     narrative: string  // What happened this session
 }
 
+// Institutional Bias (Operator's 3-Step Protocol)
+export type BiasDirection = 'LONG' | 'SHORT' | 'NEUTRAL'
+
+export interface InstitutionalBias {
+    h1Proximity: {
+        donchianHigh: number
+        donchianLow: number
+        donchianMiddle: number
+        currentPrice: number
+        distanceToFloor: number
+        distanceToCeiling: number
+        bias: BiasDirection
+        confidence: number
+        reasoning: string
+    }
+    londonHandoff: {
+        londonOpen: number
+        londonClose: number
+        londonHigh: number
+        londonLow: number
+        londonRange: number
+        londonDirection: 'bullish' | 'bearish' | 'ranging'
+        londonTrend: 'strong' | 'moderate' | 'weak'
+        bias: BiasDirection
+        confidence: number
+        reasoning: string
+    }
+    cvdDivergence: {
+        priceChange: number
+        cvdChange: number
+        divergence: 'bearish' | 'bullish' | 'none'
+        bias: BiasDirection
+        confidence: number
+        reasoning: string
+    }
+    finalBias: BiasDirection
+    finalConfidence: number
+    consensusScore: number
+    summary: string
+}
+
 export interface FairValueProfile {
     fairValue: number  // 30-day volume POC (true fair price)
     valueAreaHigh: number  // 70% volume high
@@ -219,6 +260,8 @@ export interface SessionReplay {
         realATR: number[]         // Actual ATR values per candle
         whaleVolatility: number[] // Volatility caused by whale actions per candle
     }
+    // Institutional bias detection (Operator's 3-Step Protocol)
+    institutionalBias: InstitutionalBias
     // Chart data (pre-processed for frontend)
     candleData: CandleChartPoint[]
 }
@@ -226,6 +269,7 @@ export interface SessionReplay {
 export interface CandleChartPoint {
     time: string
     index: number
+    open: number
     close: number
     high: number
     low: number

@@ -141,7 +141,7 @@ export function CandlestickChart({ data, currentStep, candlesPerStep }: Candlest
         // Format data for lightweight-charts
         const candleData = visible.map(d => ({
             time: new Date(d.time).getTime() / 1000, // Unix timestamp in seconds
-            open: d.close, // Using close as we only have close price, not full OHLC
+            open: d.open,
             high: d.high,
             low: d.low,
             close: d.close,

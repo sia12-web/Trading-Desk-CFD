@@ -22,6 +22,7 @@ import { calculateATR } from '@/lib/utils/indicators'
 import { makeWhaleDecision } from './whale-logic'
 import { createRetailTraders, updateRetailTraders, snapshotTraders } from './retail-traders'
 import { generateNarrative } from './narrator'
+import { detectInstitutionalBias } from './bias-detector'
 import type { OandaCandle } from '@/lib/types/oanda'
 import type {
     SessionReplay, SimulationStep, WhaleBook, WhaleAction, WhaleDecision,
@@ -76,6 +77,12 @@ export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
     const londonSession = calculateSessionContext(londonCandles, 'london', PIP_MULTIPLIER)
     const fairValueProfile = calculateFairValueProfile(historicalCandles)
     console.log(`[WhaleEngine] Fair value: ${fairValueProfile.fairValue.toFixed(3)} (${fairValueProfile.daysCalculated} days)`)
+
+    // 3.5. Detect institutional bias (Operator's 3-Step Protocol)
+    const nyOpenPrice = parseFloat(allCandles[0].mid.o)
+    const fullDayCandles = [...asianCandles, ...londonCandles, ...allCandles]
+    const institutionalBias = detectInstitutionalBias(historicalCandles, londonCandles, fullDayCandles, nyOpenPrice)
+    console.log(`[WhaleEngine] Institutional Bias: ${institutionalBias.finalBias} (${institutionalBias.finalConfidence}% confidence, ${institutionalBias.consensusScore}/3 consensus)`)
 
     // 4. Pre-compute indicators on NY session
     const highs = allCandles.map(c => parseFloat(c.mid.h))
@@ -185,6 +192,7 @@ export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
         steps,
         finalBook: book,
         finalRetailTraders: retailers,
+        institutionalBias,
         retailAggregateStats,
         atrComparison: { realATR, whaleVolatility },
         candleData,
@@ -460,6 +468,7 @@ function buildCandleChartData(
         return {
             time: c.time,
             index: i,
+            open: parseFloat(c.mid.o),
             close: parseFloat(c.mid.c),
             high: parseFloat(c.mid.h),
             low: parseFloat(c.mid.l),
