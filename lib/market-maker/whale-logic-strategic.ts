@@ -12,6 +12,7 @@
  * - Retail psychology exploitation (FOMO, fear)
  */
 
+import { analyzeManipulationOpportunity, estimateManipulationCost as calcManipCost } from './manipulation-tactics'
 import type {
     WhaleDecision, WhaleBook, MarketSnapshot, WhaleStrategy,
     RetailTrader, CampaignGoal, CampaignPhase,
@@ -80,23 +81,27 @@ function executeLongCampaign(
             }
         }
 
-        // If above entry zone → wait for pullback or manipulate down
+        // If above entry zone → manipulate down to improve entry
         if (currentPrice > entryZone.max) {
-            const stopAnalysis = analyzeRetailStops(retailers, market)
-            if (stopAnalysis.below.count >= 5) {
+            const manipAnalysis = analyzeManipulationOpportunity(
+                market, book, 'building', retailers, pipMultiplier, 'improve_entry'
+            )
+
+            if (manipAnalysis.shouldManipulate && manipAnalysis.direction === 'down') {
                 return {
                     action: 'manipulate',
                     units: 0,
                     manipulationDirection: 'down',
-                    reasoning: `Price above entry zone (${currentPrice.toFixed(3)} > ${entryZone.max.toFixed(3)}). Manipulating DOWN to trigger ${stopAnalysis.below.count} retail long stops and push price into entry zone.`,
+                    reasoning: `Price above entry zone (${currentPrice.toFixed(3)} > ${entryZone.max.toFixed(3)}). ${manipAnalysis.reasoning}`,
                     confidence: 80,
-                    retailImpact: `Stop hunt targeting ${stopAnalysis.below.count} retail longs. Their forced sells push price into whale's buy zone.`,
+                    retailImpact: `${manipAnalysis.expectedGain} Pushing price into buy zone.`,
                 }
             }
+
             return {
                 action: 'hold',
                 units: 0,
-                reasoning: `Price above entry zone. Waiting for pullback to ${entryZone.max.toFixed(3)} or retail stops to build up.`,
+                reasoning: `Price above entry zone. Waiting for pullback to ${entryZone.max.toFixed(3)} or retail stop clusters to form.`,
                 confidence: 60,
                 retailImpact: 'Whale watching. Retail building positions that will be targeted later.',
             }
@@ -115,22 +120,25 @@ function executeLongCampaign(
 
     // PHASE 2: MANIPULATING (improve avg entry via stop hunts)
     if (currentPhase === 'manipulating') {
-        const stopAnalysis = analyzeRetailStops(retailers, market)
+        // Use sophisticated inventory-based manipulation tactics
+        const manipAnalysis = analyzeManipulationOpportunity(
+            market, book, 'manipulating', retailers, pipMultiplier, 'protect_profit'
+        )
 
-        // If price in entry zone → manipulate down to trigger stops and buy cheaper
-        if (inEntryZone && stopAnalysis.below.count >= 5) {
+        // Execute manipulation if opportunity exists
+        if (manipAnalysis.shouldManipulate && manipAnalysis.direction && manipAnalysis.targetCluster) {
             return {
                 action: 'manipulate',
                 units: 0,
-                manipulationDirection: 'down',
-                reasoning: `MANIPULATION phase: Whale has ${progress.accumulated} units. Pushing price DOWN to trigger ${stopAnalysis.below.count} retail stops and improve average entry from ${book.averageEntry.toFixed(3)}.`,
+                manipulationDirection: manipAnalysis.direction,
+                reasoning: `${manipAnalysis.reasoning} Inventory: ${book.positionSize} units. ${manipAnalysis.intensity.toUpperCase()} manipulation.`,
                 confidence: 90,
-                retailImpact: `${stopAnalysis.below.count} retail longs about to be stopped out. Whale will absorb their panic sells at better prices.`,
+                retailImpact: `${manipAnalysis.expectedGain} Whale using ${book.positionSize} units as ammunition.`,
             }
         }
 
         // After manipulation, accumulate more at better prices
-        if (currentPrice < book.averageEntry && inEntryZone) {
+        if (currentPrice < book.averageEntry && inEntryZone && progress.accumulated < targetSize) {
             const buySize = Math.min(2000, targetSize - progress.accumulated)
             return {
                 action: 'accumulate',
@@ -168,6 +176,22 @@ function executeLongCampaign(
 
     // PHASE 3: DISTRIBUTING (sell into retail FOMO at premium)
     if (currentPhase === 'distributing') {
+        // Check if we should manipulate to trigger panic exits
+        const manipAnalysis = analyzeManipulationOpportunity(
+            market, book, 'distributing', retailers, pipMultiplier, 'trigger_exits'
+        )
+
+        if (manipAnalysis.shouldManipulate && book.positionSize > targetSize * 0.5) {
+            return {
+                action: 'manipulate',
+                units: 0,
+                manipulationDirection: manipAnalysis.direction!,
+                reasoning: `DISTRIBUTION phase with ${book.positionSize} units to unload. ${manipAnalysis.reasoning}`,
+                confidence: 85,
+                retailImpact: `${manipAnalysis.expectedGain} Accelerating distribution.`,
+            }
+        }
+
         if (inExitZone && book.positionSize > 0) {
             const fomoLongs = retailers.filter(t => t.position?.direction === 'long').length
             const exitLiquidityRatio = fomoLongs / 50
@@ -262,15 +286,18 @@ function executeShortCampaign(
         }
 
         if (currentPrice < entryZone.min) {
-            const stopAnalysis = analyzeRetailStops(retailers, market)
-            if (stopAnalysis.above.count >= 5) {
+            const manipAnalysis = analyzeManipulationOpportunity(
+                market, book, 'building', retailers, pipMultiplier, 'improve_entry'
+            )
+
+            if (manipAnalysis.shouldManipulate && manipAnalysis.direction === 'up') {
                 return {
                     action: 'manipulate',
                     units: 0,
                     manipulationDirection: 'up',
-                    reasoning: `Price below entry zone. Manipulating UP to trigger ${stopAnalysis.above.count} retail short stops and push price into premium zone for distribution.`,
+                    reasoning: `Price below premium zone. ${manipAnalysis.reasoning}`,
                     confidence: 80,
-                    retailImpact: `Stop hunt targeting ${stopAnalysis.above.count} retail shorts. Their forced covering pushes price to whale's sell zone.`,
+                    retailImpact: `${manipAnalysis.expectedGain} Pushing price into short entry zone.`,
                 }
             }
         }
@@ -390,39 +417,4 @@ function forceCleanup(book: WhaleBook, market: MarketSnapshot, strategy: WhaleSt
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Retail Stop Analysis Helper
-// ═══════════════════════════════════════════════════════════════════════════
-
-function analyzeRetailStops(
-    retailers: RetailTrader[],
-    market: MarketSnapshot
-): {
-    below: { level: number; count: number }
-    above: { level: number; count: number }
-} {
-    const longStops: number[] = []
-    const shortStops: number[] = []
-
-    for (const trader of retailers) {
-        if (!trader.position) continue
-        if (trader.position.direction === 'long') {
-            longStops.push(trader.position.stopLoss)
-        } else {
-            shortStops.push(trader.position.stopLoss)
-        }
-    }
-
-    const belowLevel = longStops.length > 0
-        ? longStops.reduce((a, b) => a + b, 0) / longStops.length
-        : market.donchianLow
-
-    const aboveLevel = shortStops.length > 0
-        ? shortStops.reduce((a, b) => a + b, 0) / shortStops.length
-        : market.donchianHigh
-
-    return {
-        below: { level: belowLevel, count: longStops.length },
-        above: { level: aboveLevel, count: shortStops.length },
-    }
-}
+// Old analyzeRetailStops() removed — replaced by sophisticated analyzeStopClusters() in manipulation-tactics.ts
