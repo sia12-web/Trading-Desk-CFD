@@ -125,10 +125,10 @@ export function MarketIndicesWidget() {
                                     {formatLevel(index.currentLevel)}
                                 </span>
                                 <span className={`text-xs font-semibold min-w-[50px] text-right ${isPositive1d ? 'text-green-400' : 'text-red-400'}`}>
-                                    {isPositive1d ? '+' : ''}{index.change1d.toFixed(2)}%
+                                    {isPositive1d ? '+' : ''}{(index.change1d ?? 0).toFixed(2)}%
                                 </span>
                                 <span className={`text-[10px] font-mono min-w-[50px] text-right ${isPositive5d ? 'text-green-400/60' : 'text-red-400/60'}`}>
-                                    {isPositive5d ? '+' : ''}{index.change5d.toFixed(1)}%
+                                    {isPositive5d ? '+' : ''}{(index.change5d ?? 0).toFixed(1)}%
                                 </span>
                             </div>
                         </div>
@@ -152,9 +152,9 @@ export function MarketIndicesWidget() {
 }
 
 function formatLevel(level: number): string {
-    if (level >= 10000) return level.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-    if (level >= 1000) return level.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-    return level.toFixed(2)
+    if (level >= 10000) return (level ?? 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    if (level >= 1000) return (level ?? 0).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    return (level ?? 0).toFixed(2)
 }
 
 function formatTimeAgo(date: Date): string {

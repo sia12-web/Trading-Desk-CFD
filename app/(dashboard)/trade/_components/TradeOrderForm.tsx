@@ -501,22 +501,22 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                                 if (isCrypto) {
                                                     // Crypto: units = USD amount / price
                                                     const calculatedUnits = activeEntryPrice > 0 ? val / activeEntryPrice : 0
-                                                    setUnits(calculatedUnits > 0 ? parseFloat(calculatedUnits.toFixed(8)) : 0.00001)
+                                                    setUnits(calculatedUnits > 0 ? parseFloat((calculatedUnits ?? 0).toFixed(8)) : 0.00001)
                                                 } else {
                                                     // Forex: units = margin / (marginRate * baseConversionRate)
                                                     const calculatedUnits = Math.round(val / (marginRate * baseConversionRate))
                                                     setUnits(calculatedUnits > 0 ? calculatedUnits : 1)
                                                 }
                                             } else {
-                                                setUnits(isCrypto ? parseFloat(val.toFixed(8)) || 0 : Math.round(val))
+                                                setUnits(isCrypto ? parseFloat((val ?? 0).toFixed(8)) || 0 : Math.round(val))
                                             }
                                         }}
                                         className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-mono font-bold outline-none"
                                     />
                                     <p className="text-[10px] text-neutral-500 font-mono">
                                         {sizeMode === 'margin'
-                                            ? (isCrypto ? `≈ ${units.toFixed(8)} ${baseCurrency}` : `≈ ${units.toLocaleString()} units`)
-                                            : (isCrypto ? `≈ $${marginRequired.toFixed(2)} USD` : `≈ ${marginRequired.toFixed(2)} ${accountCurrency} margin`)}
+                                            ? (isCrypto ? `≈ ${(units ?? 0).toFixed(8)} ${baseCurrency}` : `≈ ${units.toLocaleString()} units`)
++                                            : (isCrypto ? `≈ $${(marginRequired ?? 0).toFixed(2)} USD` : `≈ ${(marginRequired ?? 0).toFixed(2)} ${accountCurrency} margin`)}
                                     </p>
                                 </div>
                                 <div className="space-y-4">
@@ -524,8 +524,8 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                     <input type="number" step="0.00001" value={orderType === 'MARKET' ? entryPrice : limitPrice} disabled={orderType === 'MARKET'} onChange={(e) => setLimitPrice(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-neutral-700 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-mono font-bold outline-none" />
                                     {currentPrice && (
                                         <div className="flex justify-between text-[10px] font-mono">
-                                            <span className="text-red-400">BID: {bidPrice.toFixed(instrumentDetails?.displayPrecision || 5)}</span>
-                                            <span className="text-green-400">ASK: {askPrice.toFixed(instrumentDetails?.displayPrecision || 5)}</span>
+                                            <span className="text-red-400">BID: {(bidPrice ?? 0).toFixed(instrumentDetails?.displayPrecision || 5)}</span>
++                                            <span className="text-green-400">ASK: {(askPrice ?? 0).toFixed(instrumentDetails?.displayPrecision || 5)}</span>
                                         </div>
                                     )}
                                 </div>
@@ -535,12 +535,12 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Stop Loss</label>
                                     <input type="number" step="0.00001" value={stopLoss || ''} onChange={(e) => setStopLoss(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-red-500/30 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-mono font-bold outline-none" />
-                                    {stopLoss > 0 && <p className="text-[10px] text-red-400 font-mono">Risk: {riskAmount.toFixed(2)} {accountCurrency}</p>}
+                                    {stopLoss > 0 && <p className="text-[10px] text-red-400 font-mono">Risk: {(riskAmount ?? 0).toFixed(2)} {accountCurrency}</p>}
                                 </div>
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">Take Profit</label>
                                     <input type="number" step="0.00001" value={takeProfit || ''} onChange={(e) => setTakeProfit(parseFloat(e.target.value))} className="w-full bg-neutral-800 border border-green-500/30 rounded-2xl px-4 py-3 md:px-6 md:py-4 text-white font-mono font-bold outline-none" />
-                                    {takeProfit > 0 && <p className="text-[10px] text-green-400 font-mono">Reward: {rewardAmount.toFixed(2)} {accountCurrency}</p>}
+                                    {takeProfit > 0 && <p className="text-[10px] text-green-400 font-mono">Reward: {(rewardAmount ?? 0).toFixed(2)} {accountCurrency}</p>}
                                 </div>
                             </div>
 
@@ -556,7 +556,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 <div className={`w-3 h-3 rounded-full animate-pulse ${currentPrice ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`} />
                                 <div>
                                     <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em]">OANDA STREAM</p>
-                                    <p className="text-xs font-bold text-white tracking-tight">LIVE POLLING {currentPrice ? '@ ' + askPrice.toFixed(instrumentDetails?.displayPrecision || 5) : 'PENDING...'}</p>
+                                    <p className="text-xs font-bold text-white tracking-tight">LIVE POLLING {currentPrice ? '@ ' + (askPrice ?? 0).toFixed(instrumentDetails?.displayPrecision || 5) : 'PENDING...'}</p>
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -585,7 +585,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-neutral-500">Opening Spread</span>
-                                    <span className="text-blue-400 font-mono font-bold">{liveSpread.toFixed(1)} {label}</span>
+                                    <span className="text-blue-400 font-mono font-bold">{(liveSpread ?? 0).toFixed(1)} {label}</span>
                                 </div>
                                 {instrumentDetails?.financing && (
                                     <div className="flex justify-between items-center text-sm">
@@ -600,20 +600,20 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 <div className="h-[1px] bg-neutral-800/50 my-2" />
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-neutral-500">Distance to SL</span>
-                                    <span className="text-red-400 font-mono font-bold">{riskPips.toFixed(1)} {label}</span>
+                                    <span className="text-red-400 font-mono font-bold">{(riskPips ?? 0).toFixed(1)} {label}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-neutral-500">Distance to TP</span>
-                                    <span className="text-green-400 font-mono font-bold">{rewardPips.toFixed(1)} {label}</span>
+                                    <span className="text-green-400 font-mono font-bold">{(rewardPips ?? 0).toFixed(1)} {label}</span>
                                 </div>
                                 <div className="h-[1px] bg-neutral-800/50 my-2" />
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-neutral-500">Risk Amount</span>
-                                    <span className="text-red-400 font-bold">{riskAmount.toFixed(2)} {accountCurrency}</span>
+                                    <span className="text-red-400 font-bold">{(riskAmount ?? 0).toFixed(2)} {accountCurrency}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-neutral-500">Reward Amount</span>
-                                    <span className="text-green-400 font-bold">{rewardAmount.toFixed(2)} {accountCurrency}</span>
+                                    <span className="text-green-400 font-bold">{(rewardAmount ?? 0).toFixed(2)} {accountCurrency}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-neutral-500">R:R Ratio</span>
@@ -622,7 +622,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                 <div className="h-[1px] bg-neutral-800/50 my-2" />
                                 <div className="flex justify-between items-center text-xs">
                                     <span className="text-neutral-600">Margin Required</span>
-                                    <span className="text-neutral-400 font-mono italic">~{marginRequired.toFixed(2)} {accountCurrency}</span>
+                                    <span className="text-neutral-400 font-mono italic">~{(marginRequired ?? 0).toFixed(2)} {accountCurrency}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-[10px]">
                                     <span className="text-neutral-700 uppercase tracking-tighter">Est. Account Power</span>
@@ -656,8 +656,8 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                         <h3 className="text-2xl font-bold text-white">Confirm Order</h3>
                         <div className="bg-neutral-800 p-6 rounded-2xl space-y-3">
                             <div className="flex justify-between text-sm"><span className="text-neutral-500">Instrument</span><span className="font-bold">{selectedInstrument}</span></div>
-                            <div className="flex justify-between text-sm"><span className="text-neutral-500">Size</span><span className="font-bold">{isCryptoInstrument(selectedInstrument) ? `${units} ${selectedInstrument.replace('CRYPTO_', '').split('_')[0]}` : `${(units / getUnitsPerLot(selectedInstrument)).toFixed(2)} lots (${units} units)`}</span></div>
-                            <div className="flex justify-between text-sm"><span className="text-neutral-400">Risk</span><span className="font-bold text-red-400">{riskAmount.toFixed(2)} {accountCurrency}</span></div>
+                            <div className="flex justify-between text-sm"><span className="text-neutral-500">Size</span><span className="font-bold">{isCryptoInstrument(selectedInstrument) ? `${units} ${selectedInstrument.replace('CRYPTO_', '').split('_')[0]}` : `${((units ?? 0) / getUnitsPerLot(selectedInstrument)).toFixed(2)} lots (${units} units)`}</span></div>
+                            <div className="flex justify-between text-sm"><span className="text-neutral-400">Risk</span><span className="font-bold text-red-400">{(riskAmount ?? 0).toFixed(2)} {accountCurrency}</span></div>
                         </div>
                         <input type="text" value={confirmText} onChange={(e) => setConfirmText(e.target.value.toUpperCase())} placeholder="TYPE 'CONFIRM'" className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-4 text-center font-bold text-white outline-none" />
                         <div className="flex gap-4">
