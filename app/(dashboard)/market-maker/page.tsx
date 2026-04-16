@@ -401,10 +401,11 @@ export default function MarketMakerPage() {
 }
 
 function StatCard({ label, value, color }: { label: string; value: string; color?: string }) {
+    const displayValue = value === 'NaN' || value === 'undefined' ? '0' : value
     return (
         <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg px-3 py-2">
             <div className="text-[10px] text-neutral-600 uppercase">{label}</div>
-            <div className={`text-sm font-mono font-semibold ${color ?? 'text-neutral-200'}`}>{value}</div>
+            <div className={`text-sm font-mono font-semibold ${color ?? 'text-neutral-200'}`}>{displayValue}</div>
         </div>
     )
 }

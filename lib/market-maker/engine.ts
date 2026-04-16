@@ -88,7 +88,7 @@ export async function runWhaleSimulation(date: string, instrument: string): Prom
     // 3.5. Detect institutional bias (Operator's 3-Step Protocol)
     const nyOpenPrice = parseFloat(allCandles[0].mid.o)
     const fullDayCandles = [...asianCandles, ...londonCandles, ...allCandles]
-    const institutionalBias = detectInstitutionalBias(historicalCandles, londonCandles, fullDayCandles, nyOpenPrice)
+    const institutionalBias = detectInstitutionalBias(historicalCandles, londonCandles, fullDayCandles, nyOpenPrice, PIP_MULTIPLIER)
     console.log(`[WhaleEngine] Institutional Bias: ${institutionalBias.finalBias} (${institutionalBias.finalConfidence}% confidence, ${institutionalBias.consensusScore}/3 consensus)`)
 
     // 3.6. Plan whale's strategic campaign based on bias + fair value
@@ -385,24 +385,45 @@ function updateBook(book: WhaleBook, action: WhaleAction, currentPrice: number, 
 
     switch (action.type) {
         case 'accumulate': {
-            const totalCost = updated.averageEntry * updated.positionSize + action.price * action.units
-            updated.positionSize += action.units
-            updated.averageEntry = updated.positionSize > 0 ? totalCost / updated.positionSize : 0
+            if (updated.positionSize < 0) {
+                const coverUnits = Math.min(action.units, Math.abs(updated.positionSize))
+                const profit = (updated.averageEntry - action.price) * coverUnits * pipMultiplier
+                updated.realizedPnl += profit
+                updated.positionSize += coverUnits
+                const remainingUnits = action.units - coverUnits
+                if (remainingUnits > 0) {
+                    updated.positionSize = remainingUnits
+                    updated.averageEntry = action.price
+                } else if (updated.positionSize === 0) {
+                    updated.averageEntry = 0
+                }
+            } else {
+                const totalCost = updated.averageEntry * updated.positionSize + action.price * action.units
+                updated.positionSize += action.units
+                updated.averageEntry = updated.positionSize > 0 ? totalCost / updated.positionSize : 0
+            }
             updated.totalAccumulated += action.units
             break
         }
         case 'distribute': {
-            const sellUnits = Math.min(action.units, updated.positionSize)
-            if (sellUnits > 0 && updated.averageEntry > 0) {
-                const pnlPips = (action.price - updated.averageEntry) * pipMultiplier
-                updated.realizedPnl += pnlPips * (sellUnits / 1000)
+            if (updated.positionSize > 0) {
+                const sellUnits = Math.min(action.units, updated.positionSize)
+                const profit = (action.price - updated.averageEntry) * sellUnits * pipMultiplier
+                updated.realizedPnl += profit
                 updated.positionSize -= sellUnits
-                updated.totalDistributed += sellUnits
-                if (updated.positionSize <= 0) {
-                    updated.positionSize = 0
+                const remainingUnits = action.units - sellUnits
+                if (remainingUnits > 0) {
+                    updated.positionSize = -remainingUnits
+                    updated.averageEntry = action.price
+                } else if (updated.positionSize === 0) {
                     updated.averageEntry = 0
                 }
+            } else {
+                const totalProceeds = updated.averageEntry * Math.abs(updated.positionSize) + action.price * action.units
+                updated.positionSize -= action.units
+                updated.averageEntry = Math.abs(updated.positionSize) > 0 ? totalProceeds / Math.abs(updated.positionSize) : 0
             }
+            updated.totalDistributed += action.units
             break
         }
         case 'manipulate': {

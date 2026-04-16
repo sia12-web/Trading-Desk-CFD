@@ -30,8 +30,8 @@ export function RetailGauge({ traders, aggregateStats }: RetailGaugeProps) {
     const biasColor = bias === 'LONG' ? 'text-emerald-400' : bias === 'SHORT' ? 'text-red-400' : 'text-neutral-500'
 
     // Sentiment: 50 = neutral, higher = greedier (more positioned)
-    const positionedPct = (inPosition.length / traders.length) * 100
-    const sentiment = Math.round(positionedPct * 1.5) // 0-75% positioned → 0-100 sentiment
+    const positionedPct = traders.length > 0 ? (inPosition.length / traders.length) * 100 : 0
+    const sentiment = isNaN(positionedPct) ? 0 : Math.round(positionedPct * 1.5) // 0-75% positioned → 0-100 sentiment
 
     const sentimentLabel = sentiment > 70 ? 'Extreme Greed'
         : sentiment > 55 ? 'Greedy'
@@ -71,13 +71,13 @@ export function RetailGauge({ traders, aggregateStats }: RetailGaugeProps) {
                 {longs > 0 && (
                     <div
                         className="h-full bg-emerald-600 transition-all duration-500"
-                        style={{ width: `${(longs / traders.length) * 100}%` }}
+                        style={{ width: `${traders.length > 0 ? (longs / traders.length) * 100 : 0}%` }}
                     />
                 )}
                 {shorts > 0 && (
                     <div
                         className="h-full bg-red-600 transition-all duration-500"
-                        style={{ width: `${(shorts / traders.length) * 100}%` }}
+                        style={{ width: `${traders.length > 0 ? (shorts / traders.length) * 100 : 0}%` }}
                     />
                 )}
             </div>

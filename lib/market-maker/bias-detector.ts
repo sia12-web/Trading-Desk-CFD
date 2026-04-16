@@ -63,7 +63,7 @@ export interface InstitutionalBias {
     summary: string
 }
 
-const PIP_MULTIPLIER = 100  // EUR/JPY
+// const PIP_MULTIPLIER = 100  // Removed - now passed from engine
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Main Entry Point
@@ -73,11 +73,12 @@ export function detectInstitutionalBias(
     h1Candles: OandaCandle[],
     londonCandles: OandaCandle[],
     fullDayCandles: OandaCandle[],  // 24h window for CVD
-    nyOpenPrice: number
+    nyOpenPrice: number,
+    pipMultiplier: number = 100 // Fallback
 ): InstitutionalBias {
-    const h1Prox = analyzeH1Proximity(h1Candles, nyOpenPrice)
-    const londonHand = analyzeLondonHandoff(londonCandles, nyOpenPrice)
-    const cvdDiv = analyzeCVDDivergence(fullDayCandles, nyOpenPrice)
+    const h1Prox = analyzeH1Proximity(h1Candles, nyOpenPrice, pipMultiplier)
+    const londonHand = analyzeLondonHandoff(londonCandles, nyOpenPrice, pipMultiplier)
+    const cvdDiv = analyzeCVDDivergence(fullDayCandles, nyOpenPrice, pipMultiplier)
 
     // Final bias: majority vote, weighted by confidence
     const biasVotes = [h1Prox.bias, londonHand.bias, cvdDiv.bias]
@@ -130,7 +131,7 @@ export function detectInstitutionalBias(
 // Step 1: H1 Donchian Proximity
 // ═══════════════════════════════════════════════════════════════════════════
 
-function analyzeH1Proximity(h1Candles: OandaCandle[], nyOpenPrice: number) {
+function analyzeH1Proximity(h1Candles: OandaCandle[], nyOpenPrice: number, pipMultiplier: number) {
     if (h1Candles.length < 50) {
         return {
             donchianHigh: 0,
@@ -147,18 +148,18 @@ function analyzeH1Proximity(h1Candles: OandaCandle[], nyOpenPrice: number) {
 
     const highs = h1Candles.map(c => parseFloat(c.mid.h))
     const lows = h1Candles.map(c => parseFloat(c.mid.l))
-    const donchian = calculateDonchianChannel(highs, lows, 50, PIP_MULTIPLIER)
+    const donchian = calculateDonchianChannel(highs, lows, 50, pipMultiplier)
 
     const lastIdx = donchian.high.length - 1
     const donchianHigh = donchian.high[lastIdx]
     const donchianLow = donchian.low[lastIdx]
     const donchianMiddle = donchian.middle[lastIdx]
 
-    const distanceToFloor = (nyOpenPrice - donchianLow) * PIP_MULTIPLIER
-    const distanceToCeiling = (donchianHigh - nyOpenPrice) * PIP_MULTIPLIER
+    const distanceToFloor = (nyOpenPrice - donchianLow) * pipMultiplier
+    const distanceToCeiling = (donchianHigh - nyOpenPrice) * pipMultiplier
 
     // Proximity threshold: within 20% of range from floor/ceiling
-    const range = (donchianHigh - donchianLow) * PIP_MULTIPLIER
+    const range = (donchianHigh - donchianLow) * pipMultiplier
     const proximityThreshold = range * 0.2
 
     let bias: BiasDirection = 'NEUTRAL'
@@ -196,7 +197,7 @@ function analyzeH1Proximity(h1Candles: OandaCandle[], nyOpenPrice: number) {
 // Step 2: London Handoff
 // ═══════════════════════════════════════════════════════════════════════════
 
-function analyzeLondonHandoff(londonCandles: OandaCandle[], nyOpenPrice: number) {
+function analyzeLondonHandoff(londonCandles: OandaCandle[], nyOpenPrice: number, pipMultiplier: number) {
     if (londonCandles.length < 60) {
         return {
             londonOpen: nyOpenPrice,
@@ -216,9 +217,8 @@ function analyzeLondonHandoff(londonCandles: OandaCandle[], nyOpenPrice: number)
     const londonClose = parseFloat(londonCandles[londonCandles.length - 1].mid.c)
     const londonHigh = Math.max(...londonCandles.map(c => parseFloat(c.mid.h)))
     const londonLow = Math.min(...londonCandles.map(c => parseFloat(c.mid.l)))
-    const londonRange = (londonHigh - londonLow) * PIP_MULTIPLIER
-
-    const londonMove = (londonClose - londonOpen) * PIP_MULTIPLIER
+    const londonRange = (londonHigh - londonLow) * pipMultiplier
+    const londonMove = (londonClose - londonOpen) * pipMultiplier
     const londonDirection: 'bullish' | 'bearish' | 'ranging' =
         londonMove > 10 ? 'bullish' :
         londonMove < -10 ? 'bearish' :
@@ -278,7 +278,7 @@ function analyzeLondonHandoff(londonCandles: OandaCandle[], nyOpenPrice: number)
 // Step 3: Daily CVD X-Ray
 // ═══════════════════════════════════════════════════════════════════════════
 
-function analyzeCVDDivergence(fullDayCandles: OandaCandle[], nyOpenPrice: number) {
+function analyzeCVDDivergence(fullDayCandles: OandaCandle[], nyOpenPrice: number, pipMultiplier: number) {
     if (fullDayCandles.length < 50) {
         return {
             priceChange: 0,
@@ -292,7 +292,7 @@ function analyzeCVDDivergence(fullDayCandles: OandaCandle[], nyOpenPrice: number
 
     const cvdResult = calculateCVD(fullDayCandles, 50)
     const overnightOpen = parseFloat(fullDayCandles[0].mid.o)
-    const priceChange = (nyOpenPrice - overnightOpen) * PIP_MULTIPLIER
+    const priceChange = (nyOpenPrice - overnightOpen) * pipMultiplier
 
     const cvdStart = cvdResult.cvd[0]
     const cvdEnd = cvdResult.cvd[cvdResult.cvd.length - 1]

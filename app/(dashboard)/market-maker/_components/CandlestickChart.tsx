@@ -131,72 +131,85 @@ export function CandlestickChart({ data, currentStep, candlesPerStep }: Candlest
     }, [])
 
     useEffect(() => {
-        if (!candleSeriesRef.current || !donchianHighRef.current || !donchianLowRef.current || !pocLineRef.current || !markersSeriesRef.current) return
+        try {
+            if (!candleSeriesRef.current || !donchianHighRef.current || !donchianLowRef.current || !pocLineRef.current || !markersSeriesRef.current) return
 
-        const visibleEnd = Math.min((currentStep + 1) * candlesPerStep, data.length)
-        const visible = data.slice(0, visibleEnd)
+            const visibleEnd = Math.min((currentStep + 1) * candlesPerStep, data.length)
+            const visible = data.slice(0, visibleEnd)
 
-        if (visible.length === 0) return
+            if (visible.length === 0) return
 
-        // Format data for lightweight-charts
-        const candleData = visible.map(d => ({
-            time: new Date(d.time).getTime() / 1000, // Unix timestamp in seconds
-            open: d.open,
-            high: d.high,
-            low: d.low,
-            close: d.close,
-        }))
+            // Format data for lightweight-charts - Filter out any invalid timestamps
+            const candleData = visible.map(d => {
+                const time = new Date(d.time).getTime() / 1000
+                return {
+                    time: isNaN(time) ? 0 : time,
+                    open: d.open || 0,
+                    high: d.high || 0,
+                    low: d.low || 0,
+                    close: d.close || 0,
+                }
+            }).filter(d => d.time > 0)
 
-        const donchianHighData = visible
-            .filter(d => d.donchianHigh)
-            .map(d => ({
-                time: new Date(d.time).getTime() / 1000,
-                value: d.donchianHigh!,
+            const donchianHighData = visible
+                .filter(d => d.donchianHigh && !isNaN(d.donchianHigh))
+                .map(d => ({
+                    time: new Date(d.time).getTime() / 1000,
+                    value: d.donchianHigh!,
+                })).filter(d => !isNaN(d.time))
+
+            const donchianLowData = visible
+                .filter(d => d.donchianLow && !isNaN(d.donchianLow))
+                .map(d => ({
+                    time: new Date(d.time).getTime() / 1000,
+                    value: d.donchianLow!,
+                })).filter(d => !isNaN(d.time))
+
+            const pocData = visible
+                .filter(d => d.volumePOC && d.volumePOC > 0 && !isNaN(d.volumePOC))
+                .map(d => ({
+                    time: new Date(d.time).getTime() / 1000,
+                    value: d.volumePOC!,
+                })).filter(d => !isNaN(d.time))
+
+            // Markers for whale actions
+            const markers = visible
+                .filter(d => d.whaleAction && d.whaleAction !== 'hold')
+                .map(d => {
+                    const time = new Date(d.time).getTime() / 1000
+                    if (isNaN(time)) return null
+                    return {
+                        time,
+                        position: (d.whaleAction === 'accumulate' || d.whaleAction === 'distribute') ? 'belowBar' : 'aboveBar',
+                        color: ACTION_COLORS[d.whaleAction!] || '#3b82f6',
+                        shape: d.whaleAction === 'manipulate' ? 'arrowDown' : 'circle',
+                        text: d.whaleAction === 'accumulate' ? 'BUY' : d.whaleAction === 'distribute' ? 'SELL' : 'HUNT',
+                    }
+                }).filter(Boolean) as any[]
+
+            // Update series
+            if (candleData.length > 0) candleSeriesRef.current.setData(candleData)
+            if (donchianHighData.length > 0) donchianHighRef.current.setData(donchianHighData)
+            if (donchianLowData.length > 0) donchianLowRef.current.setData(donchianLowData)
+            if (pocData.length > 0) pocLineRef.current.setData(pocData)
+
+            // For markers, we need to add them to a line series
+            const invisibleLine = candleData.map(d => ({
+                time: d.time,
+                value: d.close,
             }))
+            
+            if (invisibleLine.length > 0) {
+                markersSeriesRef.current.setData(invisibleLine)
+                markersSeriesRef.current.setMarkers(markers)
+            }
 
-        const donchianLowData = visible
-            .filter(d => d.donchianLow)
-            .map(d => ({
-                time: new Date(d.time).getTime() / 1000,
-                value: d.donchianLow!,
-            }))
-
-        const pocData = visible
-            .filter(d => d.volumePOC && d.volumePOC > 0)
-            .map(d => ({
-                time: new Date(d.time).getTime() / 1000,
-                value: d.volumePOC!,
-            }))
-
-        // Markers for whale actions
-        const markers = visible
-            .filter(d => d.whaleAction && d.whaleAction !== 'hold')
-            .map(d => ({
-                time: new Date(d.time).getTime() / 1000,
-                position: (d.whaleAction === 'accumulate' || d.whaleAction === 'distribute') ? 'belowBar' : 'aboveBar',
-                color: ACTION_COLORS[d.whaleAction!],
-                shape: d.whaleAction === 'manipulate' ? 'arrowDown' : 'circle',
-                text: d.whaleAction === 'accumulate' ? 'BUY' : d.whaleAction === 'distribute' ? 'SELL' : 'HUNT',
-            })) as any[]
-
-        // Update series
-        candleSeriesRef.current.setData(candleData)
-        donchianHighRef.current.setData(donchianHighData)
-        donchianLowRef.current.setData(donchianLowData)
-        pocLineRef.current.setData(pocData)
-
-        // For markers, we need to add them to a line series
-        // Create invisible line using close prices
-        const invisibleLine = visible.map(d => ({
-            time: new Date(d.time).getTime() / 1000,
-            value: d.close,
-        }))
-        markersSeriesRef.current.setData(invisibleLine)
-        markersSeriesRef.current.setMarkers(markers)
-
-        // Fit content
-        if (chartRef.current) {
-            chartRef.current.timeScale().fitContent()
+            // Fit content
+            if (chartRef.current) {
+                chartRef.current.timeScale().fitContent()
+            }
+        } catch (err) {
+            console.error('[CandlestickChart] Error updating chart data:', err)
         }
     }, [data, currentStep, candlesPerStep])
 

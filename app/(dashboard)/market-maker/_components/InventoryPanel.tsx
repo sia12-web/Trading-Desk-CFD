@@ -9,9 +9,10 @@ interface InventoryPanelProps {
 
 export function InventoryPanel({ book }: InventoryPanelProps) {
     const totalPnl = book.realizedPnl + book.unrealizedPnl - book.manipulationCost
-    const distributionPct = book.totalAccumulated > 0
+    const distributionPctRaw = book.totalAccumulated > 0
         ? Math.round((book.totalDistributed / book.totalAccumulated) * 100)
         : 0
+    const distributionPct = isNaN(distributionPctRaw) ? 0 : distributionPctRaw
 
     return (
         <div className="space-y-3">
