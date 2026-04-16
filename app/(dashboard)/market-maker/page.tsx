@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Anchor, Play, Pause, SkipForward, RotateCcw, Loader2, Calendar, BarChart3, TrendingUp } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,9 @@ import { RetailGauge } from './_components/RetailGauge'
 import { ATRComparison } from './_components/ATRComparison'
 import { SessionTimeline } from './_components/SessionTimeline'
 import { ActionLog } from './_components/ActionLog'
+import { PsychologyPanel } from './_components/PsychologyPanel'
+import { EventFeed } from './_components/EventFeed'
+import { RetailTradersTable } from './_components/RetailTradersTable'
 import type { SessionReplay } from '@/lib/market-maker/types'
 
 const STEPS = 12
@@ -19,7 +22,6 @@ const PLAYBACK_INTERVAL_MS = 2000
 
 export default function MarketMakerPage() {
     const [date, setDate] = useState(() => {
-        // Default to last weekday
         const d = new Date()
         d.setDate(d.getDate() - 1)
         while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1)
@@ -81,7 +83,24 @@ export default function MarketMakerPage() {
 
     const step = replay?.steps[currentStep]
     const book = step?.book ?? replay?.finalBook
-    const retail = step?.retail ?? replay?.finalRetail
+
+    // Collect all events up to current step
+    const { currentEvents, previousEvents } = useMemo(() => {
+        if (!replay) return { currentEvents: [], previousEvents: [] }
+        const current = replay.steps[currentStep]?.retailEvents ?? []
+        const previous = replay.steps
+            .slice(0, currentStep)
+            .flatMap(s => s.retailEvents)
+            .reverse()
+        return { currentEvents: current, previousEvents: previous }
+    }, [replay, currentStep])
+
+    // Current retail trader snapshots
+    const retailSnapshots = step?.retailSnapshots ?? []
+
+    const netPnl = replay
+        ? replay.finalBook.realizedPnl + replay.finalBook.unrealizedPnl - replay.finalBook.manipulationCost
+        : 0
 
     return (
         <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
@@ -93,7 +112,7 @@ export default function MarketMakerPage() {
                         Whale Simulator
                     </h1>
                     <p className="text-sm text-neutral-500 mt-1">
-                        Educational: AI Trio plays as an institutional whale on EUR/JPY M1
+                        Deterministic whale engine + 50 retail traders + DeepSeek narrator on EUR/JPY M1
                     </p>
                 </div>
 
@@ -130,9 +149,9 @@ export default function MarketMakerPage() {
                 <Card className="border-cyan-800/30 bg-gradient-to-b from-cyan-950/20 to-neutral-900/50">
                     <CardContent className="py-12 text-center">
                         <Loader2 size={32} className="animate-spin mx-auto text-cyan-400 mb-4" />
-                        <p className="text-neutral-400">Running 12-step simulation with AI Trio...</p>
+                        <p className="text-neutral-400">Running 12-step whale simulation...</p>
                         <p className="text-xs text-neutral-600 mt-2">
-                            36 AI calls (Gemini + DeepSeek + Claude x 12 steps). This takes 2-4 minutes.
+                            Deterministic whale logic + 50 retail traders + DeepSeek narrator. ~30-60 seconds.
                         </p>
                     </CardContent>
                 </Card>
@@ -151,16 +170,25 @@ export default function MarketMakerPage() {
             {replay && !loading && (
                 <>
                     {/* Stats Banner */}
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                         <StatCard label="Date" value={replay.date} />
                         <StatCard label="Candles" value={replay.totalCandles.toString()} />
                         <StatCard label="Steps" value={`${currentStep + 1} / ${STEPS}`} />
                         <StatCard
-                            label="Net PnL"
-                            value={`${((replay.finalBook.realizedPnl + replay.finalBook.unrealizedPnl - replay.finalBook.manipulationCost)).toFixed(1)}p`}
-                            color={replay.finalBook.realizedPnl > 0 ? 'text-emerald-400' : 'text-red-400'}
+                            label="Whale PnL"
+                            value={`${netPnl >= 0 ? '+' : ''}${netPnl.toFixed(1)}p`}
+                            color={netPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}
                         />
-                        <StatCard label="Victims" value={replay.finalRetail.stopHuntVictims.toString()} color="text-red-400" />
+                        <StatCard
+                            label="Retail Stopped"
+                            value={replay.retailAggregateStats.totalStoppedOut.toString()}
+                            color="text-red-400"
+                        />
+                        <StatCard
+                            label="Retail Avg PnL"
+                            value={`${replay.retailAggregateStats.avgPnl >= 0 ? '+' : ''}${replay.retailAggregateStats.avgPnl.toFixed(1)}p`}
+                            color={replay.retailAggregateStats.avgPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}
+                        />
                     </div>
 
                     {/* Playback Controls + Timeline */}
@@ -250,7 +278,30 @@ export default function MarketMakerPage() {
                         </Card>
                     </div>
 
-                    {/* Bottom Grid: ATR + Retail + Action Log */}
+                    {/* Whale Psychology Panel */}
+                    {step?.psychology && (
+                        <PsychologyPanel psychology={step.psychology} />
+                    )}
+
+                    {/* Middle Grid: Event Feed + Retail Table */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <Card className="border-neutral-800 bg-neutral-900/50">
+                            <CardContent className="py-4">
+                                <EventFeed
+                                    events={currentEvents}
+                                    allPreviousEvents={previousEvents}
+                                />
+                            </CardContent>
+                        </Card>
+
+                        <Card className="lg:col-span-2 border-neutral-800 bg-neutral-900/50">
+                            <CardContent className="py-4">
+                                <RetailTradersTable traders={retailSnapshots} />
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Bottom Grid: ATR + Retail Gauge + Action Log */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <Card className="border-neutral-800 bg-neutral-900/50">
                             <CardContent className="py-4">
@@ -265,7 +316,10 @@ export default function MarketMakerPage() {
 
                         <Card className="border-neutral-800 bg-neutral-900/50">
                             <CardContent className="py-4">
-                                {retail && <RetailGauge retail={retail} />}
+                                <RetailGauge
+                                    traders={retailSnapshots}
+                                    aggregateStats={replay.retailAggregateStats}
+                                />
                             </CardContent>
                         </Card>
 
@@ -287,7 +341,8 @@ export default function MarketMakerPage() {
                             Select a date and run the simulation
                         </h2>
                         <p className="text-sm text-neutral-600 max-w-md mx-auto">
-                            The AI Trio will play as an institutional whale on EUR/JPY M1 data.
+                            A deterministic whale engine plays as an institutional market maker on EUR/JPY M1.
+                            50 retail traders with FOMO react to the whale&apos;s manipulation.
                             Watch how accumulation, manipulation, and distribution create the price action
                             that retail traders see as &ldquo;ATR&rdquo;.
                         </p>

@@ -1,10 +1,11 @@
 /**
- * Market Maker / Whale Simulator — Types
+ * Whale Psychology Simulator — Types
  *
- * Educational simulation where the AI Trio plays as an institutional whale
- * on EUR/JPY M1 data from 08:30-11:30 AM ET.
+ * Educational simulation where a deterministic whale engine + 50 individual
+ * retail traders + one DeepSeek narrator simulate how institutional market
+ * makers think and exploit retail psychology on EUR/JPY M1 data.
  *
- * Key insight: ATR is NOT given to the AI. The AI's manipulation actions
+ * Key insight: ATR is NOT given to the whale. The whale's manipulation actions
  * should CREATE ATR-like volatility, proving that institutional manipulation
  * explains real ATR behavior.
  */
@@ -48,16 +49,73 @@ export interface WhaleBook {
     actions: WhaleAction[]       // Full action history
 }
 
+export interface WhaleDecision {
+    action: WhaleActionType
+    units: number
+    manipulationDirection?: 'up' | 'down'
+    reasoning: string
+    confidence: number            // 0-100
+    retailImpact: string          // How this hurts/helps retail
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
-// Retail Crowd State
+// Individual Retail Traders (50 agents)
 // ═══════════════════════════════════════════════════════════════════════════
 
-export interface RetailState {
-    sentiment: number            // 0-100 (0=extreme fear, 100=extreme greed)
-    breakoutBias: 'long' | 'short' | 'neutral'
-    stopHuntVictims: number      // Cumulative count of retail stops triggered
-    fomoIntensity: number        // 0-100
-    narrative: string            // Human-readable retail crowd belief
+export type ExperienceLevel = 'novice' | 'intermediate' | 'advanced'
+
+export type RetailTraderStatus = 'watching' | 'in_position' | 'stopped_out' | 'took_profit'
+
+export interface RetailTrader {
+    id: number                    // 1-50
+    name: string                  // "Eager Bull #1"
+    accountSize: number           // $1000-$5000
+    riskTolerance: number         // 1-5% per trade
+    fomoScore: number             // 0-100 (FOMO propensity)
+    experience: ExperienceLevel
+    position: RetailPosition | null
+    totalPnl: number              // Running PnL in pips
+    totalTrades: number
+    status: RetailTraderStatus
+}
+
+export interface RetailPosition {
+    direction: 'long' | 'short'
+    entryPrice: number
+    units: number
+    stopLoss: number
+    takeProfit: number
+    enteredAt: string             // ISO timestamp
+    reason: string                // Why they entered
+}
+
+export interface RetailEvent {
+    traderId: number
+    traderName: string
+    timestamp: string
+    type: 'entry' | 'stop_out' | 'take_profit' | 'fomo' | 'panic'
+    price: number
+    pnl?: number                  // For exits
+    reason: string                // Human-readable
+}
+
+export interface RetailTraderSnapshot {
+    traderId: number
+    name: string
+    experience: ExperienceLevel
+    position: RetailPosition | null
+    totalPnl: number
+    status: RetailTraderStatus
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Whale Psychology (DeepSeek Narrator Output)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface WhalePsychology {
+    narrative: string             // 3-5 sentences explaining whale's thinking
+    retailExploitation: string    // How retail gets exploited this step
+    educationalInsight: string    // Key lesson for the user
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -87,7 +145,7 @@ export interface FairValueProfile {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Market Snapshot (given to AI each step)
+// Market Snapshot (given to whale each step)
 // ═══════════════════════════════════════════════════════════════════════════
 
 export interface MarketSnapshot {
@@ -107,39 +165,10 @@ export interface MarketSnapshot {
     volumePOC: number
     valueAreaHigh: number
     valueAreaLow: number
-    // NEW: Session context
+    // Session context
     asianSession: SessionContext
     londonSession: SessionContext
     fairValueProfile: FairValueProfile
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// AI Outputs
-// ═══════════════════════════════════════════════════════════════════════════
-
-export interface GeminiOutput {
-    floor: number
-    ceiling: number
-    retailStopZone: number
-    structuralBias: 'bullish' | 'bearish' | 'neutral'
-    narrative: string
-}
-
-export interface DeepSeekOutput {
-    recommendedAction: WhaleActionType
-    units: number
-    manipulationCost: number
-    expectedPnlImpact: number
-    riskAssessment: string
-}
-
-export interface WhaleDecision {
-    action: WhaleActionType
-    units: number
-    manipulationDirection?: 'up' | 'down'
-    reasoning: string
-    confidence: number            // 0-100
-    retailImpact: string          // How this hurts/helps retail
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -153,12 +182,16 @@ export interface SimulationStep {
     candleEndIndex: number
     market: MarketSnapshot
     book: WhaleBook
-    retail: RetailState
     decision: WhaleDecision
-    aiResponses: {
-        gemini: string            // Raw Gemini output
-        deepseek: string          // Raw DeepSeek output
-        claude: string            // Raw Claude output
+    // Whale psychology (DeepSeek narrator)
+    psychology: WhalePsychology
+    // Individual retail trader data
+    retailEvents: RetailEvent[]
+    retailSnapshots: RetailTraderSnapshot[]
+    // Stop loss heatmap (where retail stops cluster)
+    stopLossHeatmap: {
+        levels: number[]          // Price levels with stops
+        counts: number[]          // How many stops at each level
     }
 }
 
@@ -175,7 +208,13 @@ export interface SessionReplay {
     totalCandles: number
     steps: SimulationStep[]
     finalBook: WhaleBook
-    finalRetail: RetailState
+    finalRetailTraders: RetailTrader[]
+    retailAggregateStats: {
+        totalStoppedOut: number
+        totalProfitable: number
+        avgPnl: number            // Average pips per trader
+        totalVolumeLost: number   // Total pips lost by retail to whale
+    }
     atrComparison: {
         realATR: number[]         // Actual ATR values per candle
         whaleVolatility: number[] // Volatility caused by whale actions per candle
