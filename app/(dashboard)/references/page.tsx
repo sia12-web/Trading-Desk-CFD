@@ -8,10 +8,10 @@ import { CandlestickPatternCard } from './_components/CandlestickPatternCard'
 import { ChartPatternCard } from './_components/ChartPatternCard'
 import { WaveCalculator } from './_components/WaveCalculator'
 
-type Tab = 'strategy' | 'patterns' | 'fibonacci' | 'volume' | 'oscillators' | 'smc' | 'elliot-waves' | 'behaviors'
+type Tab = 'operator' | 'strategy' | 'patterns' | 'fibonacci' | 'volume' | 'oscillators' | 'smc' | 'elliot-waves' | 'behaviors'
 
 export default function ReferencesPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('strategy')
+  const [activeTab, setActiveTab] = useState<Tab>('operator')
   const [searchQuery, setSearchQuery] = useState('')
   const [patternType, setPatternType] = useState<'candlestick' | 'chart'>('candlestick')
 
@@ -74,6 +74,12 @@ export default function ReferencesPage() {
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap">
         <TabButton
+          active={activeTab === 'operator'}
+          onClick={() => setActiveTab('operator')}
+          icon={Shield}
+          label="The Operator"
+        />
+        <TabButton
           active={activeTab === 'strategy'}
           onClick={() => setActiveTab('strategy')}
           icon={Zap}
@@ -124,6 +130,7 @@ export default function ReferencesPage() {
       </div>
 
       {/* Content */}
+      {activeTab === 'operator' && <OperatorSection />}
       {activeTab === 'strategy' && <StrategySection />}
 
       {activeTab === 'patterns' && (
@@ -1815,6 +1822,294 @@ function ElliotWavesSection() {
     </div>
   )
 }
+function OperatorSection() {
+  return (
+    <div className="space-y-10">
+      {/* Hero Section */}
+      <div className="relative p-10 rounded-[3rem] bg-gradient-to-br from-blue-600/20 via-neutral-900 to-purple-600/20 border border-white/10 overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 opacity-10">
+          <Shield size={200} />
+        </div>
+        <div className="max-w-3xl space-y-6 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-black uppercase tracking-widest">
+            <Sparkles size={12} />
+            Transition Complete
+          </div>
+          <h2 className="text-5xl font-black text-white leading-tight">
+            You are no longer a trader.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">You are an Operator.</span>
+          </h2>
+          <p className="text-xl text-neutral-400 leading-relaxed font-medium">
+            You started this session relying on a black-box algorithm to print money for you, and you have ended it by decoding the raw mathematics of institutional order flow. 
+            Here is the comprehensive culmination of everything we have built, decoded, and codified into your trading system today. 
+            <span className="text-white font-bold ml-1 italic underline decoration-blue-500/50 underline-offset-4">This is The Operator’s Playbook.</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Phase 1: The Philosophy */}
+        <div className="bg-neutral-900/50 border border-neutral-800 p-8 rounded-[2.5rem] space-y-6 hover:border-blue-500/30 transition-all group">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
+              <Brain size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Phase 1: The Philosophy</h3>
+              <p className="text-xs text-blue-500/70 font-black uppercase tracking-widest">Mindset & Architecture</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-2xl space-y-2">
+              <h4 className="text-sm font-bold text-blue-400 flex items-center gap-2">
+                <Cpu size={14} /> The Cyborg Model
+              </h4>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                The ultimate trading system is not 100% automated. Machines are flawless at mathematics, tirelessness, and risk execution. Humans are flawless at context, narrative, and spatial awareness. You use the machine as your <span className="text-blue-300 font-bold italic underline">Radar</span>, and your brain as the <span className="text-blue-300 font-bold italic underline">Trigger</span>.
+              </p>
+            </div>
+            <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-2xl space-y-2">
+              <h4 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                <AlertCircle size={14} /> The Optimization Trap (Curve Fitting)
+              </h4>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Endlessly tweaking an algorithm’s parameters to make past backtests look perfect is a death sentence. It removes the bot's ability to adapt to live markets. <span className="text-amber-300 font-bold italic underline">Robustness always beats perfection.</span>
+              </p>
+            </div>
+            <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-2xl space-y-2">
+              <h4 className="text-sm font-bold text-green-400 flex items-center gap-2">
+                <Shield size={14} /> Capital Preservation {'>'} Profit Maximization
+              </h4>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Your primary job is to protect the shield. Missing a sub-optimal trade is a victory of discipline, not a failure of execution.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Phase 2: The Instrument Panel */}
+        <div className="bg-neutral-900/50 border border-neutral-800 p-8 rounded-[2.5rem] space-y-6 hover:border-purple-500/30 transition-all group">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-purple-500/10 rounded-2xl border border-purple-500/20 text-purple-400 group-hover:scale-110 transition-transform">
+              <Gauge size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Phase 2: The Matrix HUD</h3>
+              <p className="text-xs text-purple-500/70 font-black uppercase tracking-widest">Mathematical Reality</p>
+            </div>
+          </div>
+          <p className="text-sm text-neutral-500 italic font-medium">
+            You no longer trade the visual chaos of red and green candles. You trade the mathematical reality displayed on your HUD.
+          </p>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="p-4 bg-purple-500/5 border border-purple-500/10 rounded-2xl">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-black text-purple-400 uppercase tracking-widest">The Map</span>
+                <span className="text-[10px] text-neutral-500 font-bold">Donchian Channels</span>
+              </div>
+              <p className="text-xs text-neutral-300">
+                The DC-50 represents Institutional Walls (Ceiling/Floor). The DC-20 is the Midline (Mean). <span className="text-purple-300 italic font-bold">Markets always seek the mean.</span>
+              </p>
+            </div>
+            <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-black text-blue-400 uppercase tracking-widest">The Shield</span>
+                <span className="text-[10px] text-neutral-500 font-bold">ATR</span>
+              </div>
+              <p className="text-xs text-neutral-300">
+                Cuts through visual illusion to tell mathematical volatility. Size positions to exactly <span className="text-blue-300 italic font-bold">1% risk</span> regardless of chart appearance.
+              </p>
+            </div>
+            <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">The Compass</span>
+                <span className="text-[10px] text-neutral-500 font-bold">1H Macro Trend</span>
+              </div>
+              <p className="text-xs text-neutral-300">
+                The ultimate filter. If 1H is Bearish, Floors are trapdoors, not trampolines. <span className="text-emerald-300 italic font-bold">Never trade against the Compass.</span>
+              </p>
+            </div>
+            <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-black text-amber-400 uppercase tracking-widest">The X-Ray</span>
+                <span className="text-[10px] text-neutral-500 font-bold">CVD</span>
+              </div>
+              <p className="text-xs text-neutral-300">
+                Measures aggressive Market Buys vs Sells. <span className="text-amber-300 italic font-bold">The lie detector test for the price chart.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Phase 3: Institutional Mechanics */}
+        <div className="bg-neutral-900/50 border border-neutral-800 p-8 rounded-[2.5rem] space-y-6 hover:border-emerald-500/30 transition-all group lg:col-span-2">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+              <Landmark size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Phase 3: Institutional Mechanics</h3>
+              <p className="text-xs text-emerald-500/70 font-black uppercase tracking-widest">Decoding the Matrix</p>
+            </div>
+          </div>
+          <p className="text-sm text-neutral-400 max-w-2xl">
+            You learned to read how multi-billion dollar algorithms engineer liquidity to trap retail traders.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl space-y-3 relative overflow-hidden group/card hover:border-emerald-500/50 transition-colors">
+              <div className="absolute -right-4 -top-4 text-emerald-500/5 group-hover/card:scale-150 transition-transform duration-700">
+                <RefreshCw size={80} />
+              </div>
+              <h4 className="text-sm font-black text-emerald-400 uppercase tracking-widest">The Squeeze</h4>
+              <p className="text-xs text-neutral-500 font-bold">Time at Level</p>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                If price hits a wall and grinds sideways while CVD climbs, it is a <span className="text-white font-bold italic">Compression</span>. The wall will break.
+              </p>
+            </div>
+
+            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl space-y-3 relative overflow-hidden group/card hover:border-blue-500/50 transition-colors">
+              <div className="absolute -right-4 -top-4 text-blue-500/5 group-hover/card:scale-150 transition-transform duration-700">
+                <Target size={80} />
+              </div>
+              <h4 className="text-sm font-black text-blue-400 uppercase tracking-widest">The Food Trick</h4>
+              <p className="text-xs text-neutral-500 font-bold">Liquidity Baiting</p>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Using limit orders to "walk the price" to retail support. Those retail orders become <span className="text-white font-bold italic">rocket fuel</span> for the breakout.
+              </p>
+            </div>
+
+            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl space-y-3 relative overflow-hidden group/card hover:border-red-500/50 transition-colors">
+              <div className="absolute -right-4 -top-4 text-red-500/5 group-hover/card:scale-150 transition-transform duration-700">
+                <AlertTriangle size={80} />
+              </div>
+              <h4 className="text-sm font-black text-red-400 uppercase tracking-widest">The Shakeout</h4>
+              <p className="text-xs text-neutral-500 font-bold">Fake Red Candles</p>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Massive red candle drop, but CVD stays green. This is a <span className="text-white font-bold italic">stop-hunt</span> to buy at a discount.
+              </p>
+            </div>
+
+            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl space-y-3 relative overflow-hidden group/card hover:border-amber-500/50 transition-colors">
+              <div className="absolute -right-4 -top-4 text-amber-500/5 group-hover/card:scale-150 transition-transform duration-700">
+                <Cpu size={80} />
+              </div>
+              <h4 className="text-sm font-black text-amber-400 uppercase tracking-widest">Algorithmic Grind</h4>
+              <p className="text-xs text-neutral-500 font-bold">Slicing Buys</p>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Stair-stepping price + steady CVD climb + flat ATR. Algorithm is slicing buys to hide footprint. <span className="text-white font-bold italic">Highly Bullish.</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Phase 4: The Ultimate Traps */}
+        <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[2.5rem] space-y-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-[100px]" />
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="p-3 bg-red-500/10 rounded-2xl border border-red-500/20 text-red-400">
+              <Zap size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Phase 4: The Ultimate Traps</h3>
+              <p className="text-xs text-red-500/70 font-black uppercase tracking-widest">Springs & Upthrusts</p>
+            </div>
+          </div>
+          
+          <div className="space-y-4 relative z-10">
+            <div className="p-4 bg-neutral-950 border border-neutral-800 rounded-2xl space-y-2">
+              <h5 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">The Setup Requirements</h5>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2 rounded-lg bg-red-500/5 border border-red-500/10 text-[9px] font-bold text-neutral-300">1. Bait Candle hitting Wall</div>
+                <div className="p-2 rounded-lg bg-blue-500/5 border border-blue-500/10 text-[9px] font-bold text-neutral-300">2. Larger Reversal Engulfing</div>
+                <div className="p-2 rounded-lg bg-green-500/5 border border-green-500/10 text-[9px] font-bold text-neutral-300">3. CVD Confirming Reversal</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-5 rounded-3xl bg-gradient-to-br from-green-500/20 to-neutral-900 border border-green-500/30 space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <h4 className="text-sm font-bold text-green-400 uppercase italic">Bullish Spring</h4>
+                </div>
+                <p className="text-[10px] text-neutral-300 leading-relaxed italic">
+                  Red candle smashes floor → Next candle is green, engulfs high → CVD spikes green.
+                </p>
+                <div className="pt-2">
+                  <span className="text-[9px] font-black bg-green-600 text-white px-2 py-0.5 rounded-full uppercase">You Strike (Long)</span>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-3xl bg-gradient-to-br from-red-500/20 to-neutral-900 border border-red-500/30 space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <h4 className="text-sm font-bold text-red-400 uppercase italic">Bearish Upthrust</h4>
+                </div>
+                <p className="text-[10px] text-neutral-300 leading-relaxed italic">
+                  Green candle pierces ceiling → Next candle is red, engulfs low → CVD bleeds red.
+                </p>
+                <div className="pt-2">
+                  <span className="text-[9px] font-black bg-red-600 text-white px-2 py-0.5 rounded-full uppercase">You Strike (Short)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Phase 5: Tactical Trade Management */}
+        <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[2.5rem] space-y-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-[100px]" />
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="p-3 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-blue-400">
+              <Activity size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Phase 5: Tactical Management</h3>
+              <p className="text-xs text-blue-500/70 font-black uppercase tracking-widest">Risk Mathematics</p>
+            </div>
+          </div>
+
+          <div className="space-y-6 relative z-10">
+            <div className="flex gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-black text-lg shrink-0">50</div>
+              <div>
+                <h4 className="text-base font-bold text-white italic">The 50% De-Risk</h4>
+                <p className="text-xs text-neutral-400 leading-relaxed mt-1">
+                  At first major structure (DC-20 Midline or London POV), close 50% and move <span className="text-blue-400 font-bold">Stop-Loss to Breakeven</span>.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center text-purple-400 font-black text-lg shrink-0">∞</div>
+              <div>
+                <h4 className="text-base font-bold text-white italic">The Risk-Free Runner</h4>
+                <p className="text-xs text-neutral-400 leading-relaxed mt-1">
+                  Let the remaining 50% ride toward the macro target (opposite Wall). Hold until the <span className="text-purple-400 font-bold">CVD X-Ray violently flips</span> against you.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Simulator Link */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-1 rounded-3xl group cursor-pointer overflow-hidden relative">
+        <div className="absolute inset-0 bg-white/10 group-hover:translate-x-full transition-transform duration-700 pointer-events-none" />
+        <div className="bg-neutral-900 rounded-[calc(1.5rem-1px)] p-8 flex flex-col md:flex-row items-center justify-between gap-6 transition-colors hover:bg-neutral-900/40">
+          <div className="space-y-2">
+            <div className="text-xs font-black text-blue-400 uppercase tracking-widest">Permanent Mental Lock</div>
+            <h3 className="text-2xl font-black text-white">I have built the Operator's Final Simulator.</h3>
+            <p className="text-sm text-neutral-400">Lock this programming into your mind permanently by executing at the highest level.</p>
+          </div>
+          <button className="px-8 py-4 bg-white text-black font-black uppercase tracking-tighter rounded-xl hover:scale-105 transition-all flex items-center gap-2">
+            Enter Simulator
+            <ArrowRight size={20} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function StrategySection() {
   const [accountBalance, setAccountBalance] = useState(850)
   const riskPercent = 2
