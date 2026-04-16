@@ -516,7 +516,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                     <p className="text-[10px] text-neutral-500 font-mono">
                                         {sizeMode === 'margin'
                                             ? (isCrypto ? `≈ ${(units ?? 0).toFixed(8)} ${baseCurrency}` : `≈ ${units.toLocaleString()} units`)
-+                                            : (isCrypto ? `≈ $${(marginRequired ?? 0).toFixed(2)} USD` : `≈ ${(marginRequired ?? 0).toFixed(2)} ${accountCurrency} margin`)}
+                                            : (isCrypto ? `≈ $${(marginRequired ?? 0).toFixed(2)} USD` : `≈ ${(marginRequired ?? 0).toFixed(2)} ${accountCurrency} margin`)}
                                     </p>
                                 </div>
                                 <div className="space-y-4">
@@ -525,7 +525,7 @@ export function TradeOrderForm({ instruments, accountInfo }: TradeFormProps) {
                                     {currentPrice && (
                                         <div className="flex justify-between text-[10px] font-mono">
                                             <span className="text-red-400">BID: {(bidPrice ?? 0).toFixed(instrumentDetails?.displayPrecision || 5)}</span>
-+                                            <span className="text-green-400">ASK: {(askPrice ?? 0).toFixed(instrumentDetails?.displayPrecision || 5)}</span>
+                                            <span className="text-green-400">ASK: {(askPrice ?? 0).toFixed(instrumentDetails?.displayPrecision || 5)}</span>
                                         </div>
                                     )}
                                 </div>
