@@ -350,10 +350,10 @@ export default function WarRoomPage() {
                                         <span className="text-neutral-300 font-medium">{botLabel(entry.activeBot)}</span>
                                     </div>
                                     <div className={entry.adx > 30 ? 'text-emerald-400 font-medium' : entry.adx > 20 ? 'text-neutral-300' : 'text-neutral-500'}>
-                                        {entry.adx.toFixed(1)}
+                                        {(entry.adx ?? 0).toFixed(1)}
                                     </div>
                                     <div className={entry.atrPercentile > 70 ? 'text-amber-400' : entry.atrPercentile < 30 ? 'text-cyan-400' : 'text-neutral-400'}>
-                                        {entry.atrPercentile.toFixed(0)}%
+                                        {(entry.atrPercentile ?? 0).toFixed(0)}%
                                     </div>
                                     <div>
                                         <div className={`font-medium ${entry.confidence >= 70 ? 'text-emerald-400' : entry.confidence >= 50 ? 'text-amber-400' : 'text-neutral-500'}`}>

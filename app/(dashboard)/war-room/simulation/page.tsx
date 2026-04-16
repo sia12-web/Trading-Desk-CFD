@@ -260,10 +260,10 @@ export default function SimulationPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className={`text-3xl font-black ${result.metrics.total_pips > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    {result.metrics.total_pips > 0 ? '+' : ''}{result.metrics.total_pips.toFixed(1)}
+                                    {(result.metrics.total_pips ?? 0) > 0 ? '+' : ''}{(result.metrics.total_pips ?? 0).toFixed(1)}
                                 </div>
                                 <div className="text-xs text-neutral-500 mt-1">
-                                    Net Profit: ${((result.equity_curve[result.equity_curve.length - 1].equity - 10000)).toFixed(2)}
+                                    Net Profit: ${((result.equity_curve[(result.equity_curve?.length ?? 0) - 1]?.equity ?? 10000) - 10000).toFixed(2)}
                                 </div>
                             </CardContent>
                         </Card>
@@ -273,7 +273,7 @@ export default function SimulationPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className={`text-3xl font-black ${result.metrics.profit_factor >= 1.5 ? 'text-emerald-400' : 'text-neutral-300'}`}>
-                                    {result.metrics.profit_factor.toFixed(2)}
+                                    {(result.metrics.profit_factor ?? 0).toFixed(2)}
                                 </div>
                             </CardContent>
                         </Card>
@@ -283,7 +283,7 @@ export default function SimulationPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-3xl font-black text-red-400">
-                                    -{result.metrics.max_drawdown_percent.toFixed(1)}%
+                                    -{(result.metrics.max_drawdown_percent ?? 0).toFixed(1)}%
                                 </div>
                             </CardContent>
                         </Card>
@@ -329,7 +329,7 @@ export default function SimulationPage() {
                                                         {trade.pips > 0 ? '+' : ''}{trade.pips}
                                                     </div>
                                                     <div className={`font-bold ${trade.profit_loss > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                        ${trade.profit_loss > 0 ? '+' : ''}{trade.profit_loss.toFixed(2)}
+                                                        ${(trade.profit_loss ?? 0) > 0 ? '+' : ''}{(trade.profit_loss ?? 0).toFixed(2)}
                                                     </div>
                                                     <div className="text-neutral-400">{trade.duration_hours}h</div>
                                                     <div>
@@ -355,9 +355,9 @@ export default function SimulationPage() {
                                                         </div>
                                                         <div className="space-y-1">
                                                             <div className="text-[10px] text-neutral-500 uppercase">Performance</div>
-                                                            <div className="text-sm text-white">{trade.pips.toFixed(1)} Pips Captured</div>
+                                                            <div className="text-sm text-white">{(trade.pips ?? 0).toFixed(1)} Pips Captured</div>
                                                             <div className={`text-lg font-black ${trade.profit_loss > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                                {trade.profit_loss > 0 ? '+' : ''}${trade.profit_loss.toFixed(2)}
+                                                                {(trade.profit_loss ?? 0) > 0 ? '+' : ''}${(trade.profit_loss ?? 0).toFixed(2)}
                                                             </div>
                                                         </div>
                                                     </div>

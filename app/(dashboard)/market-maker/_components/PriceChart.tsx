@@ -60,7 +60,7 @@ export function PriceChart({ data, currentStep, candlesPerStep }: PriceChartProp
                         stroke="#525252"
                         fontSize={10}
                         domain={['auto', 'auto']}
-                        tickFormatter={(v) => v.toFixed(2)}
+                        tickFormatter={(v) => (Number(v) ?? 0).toFixed(2)}
                     />
                     <Tooltip
                         contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', fontSize: 12 }}

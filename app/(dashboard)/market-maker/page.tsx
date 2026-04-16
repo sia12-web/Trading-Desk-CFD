@@ -220,7 +220,7 @@ export default function MarketMakerPage() {
                         <StatCard label="Steps" value={`${currentStep + 1} / ${STEPS}`} />
                         <StatCard
                             label="Whale PnL"
-                            value={`${netPnl >= 0 ? '+' : ''}${netPnl.toFixed(1)}p`}
+                            value={`${(netPnl ?? 0) >= 0 ? '+' : ''}${(netPnl ?? 0).toFixed(1)}p`}
                             color={netPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}
                         />
                         <StatCard

@@ -49,7 +49,7 @@ export function InventoryPanel({ book }: InventoryPanelProps) {
                 <div className="flex justify-between items-center">
                     <span className="text-xs text-neutral-500">Total PnL</span>
                     <span className={`text-sm font-bold ${totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {totalPnl >= 0 ? '+' : ''}{totalPnl.toFixed(1)} pips
+                        {(totalPnl ?? 0) >= 0 ? '+' : ''}{(totalPnl ?? 0).toFixed(1)} pips
                     </span>
                 </div>
             </div>

@@ -50,7 +50,7 @@ export function ATRComparison({ realATR, whaleVolatility, currentStep, candlesPe
                         <Tooltip
                             contentStyle={{ backgroundColor: '#171717', border: '1px solid #262626', fontSize: 11 }}
                             formatter={(value, name) => [
-                                Number(value).toFixed(4),
+                                (Number(value) ?? 0).toFixed(4),
                                 name === 'realATR' ? 'Real ATR' : 'Whale Vol',
                             ]}
                         />
