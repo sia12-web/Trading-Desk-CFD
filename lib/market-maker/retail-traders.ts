@@ -28,8 +28,6 @@ export function resetSeed(s: number = 42): void {
     seed = s
 }
 
-const PIP_MULTIPLIER = 100 // EUR/JPY
-
 // ═══════════════════════════════════════════════════════════════════════════
 // Trader Names
 // ═══════════════════════════════════════════════════════════════════════════
@@ -106,7 +104,8 @@ export function updateRetailTraders(
     traders: RetailTrader[],
     candle: OandaCandleLike,
     market: MarketSnapshot,
-    whaleAction: WhaleAction
+    whaleAction: WhaleAction,
+    pipMultiplier: number = 100
 ): { traders: RetailTrader[]; events: RetailEvent[] } {
 
     const events: RetailEvent[] = []
@@ -124,7 +123,7 @@ export function updateRetailTraders(
 
             if (stoppedLong || stoppedShort) {
                 const exitPrice = t.position.stopLoss
-                const pnl = calculatePnL(t.position, exitPrice)
+                const pnl = calculatePnL(t.position, exitPrice, pipMultiplier)
                 t.totalPnl += pnl
                 t.totalTrades++
                 t.status = 'stopped_out'
@@ -149,7 +148,7 @@ export function updateRetailTraders(
 
             if (tpLong || tpShort) {
                 const exitPrice = t.position.takeProfit
-                const pnl = calculatePnL(t.position, exitPrice)
+                const pnl = calculatePnL(t.position, exitPrice, pipMultiplier)
                 t.totalPnl += pnl
                 t.totalTrades++
                 t.status = 'took_profit'
@@ -183,7 +182,7 @@ export function updateRetailTraders(
                     t.position = {
                         direction: 'long',
                         entryPrice: currentPrice,
-                        units: calculateUnits(t, currentPrice, sl),
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
                         stopLoss: sl,
                         takeProfit: tp,
                         enteredAt: candle.time,
@@ -206,7 +205,7 @@ export function updateRetailTraders(
                     t.position = {
                         direction: 'short',
                         entryPrice: currentPrice,
-                        units: calculateUnits(t, currentPrice, sl),
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
                         stopLoss: sl,
                         takeProfit: tp,
                         enteredAt: candle.time,
@@ -229,7 +228,7 @@ export function updateRetailTraders(
                     t.position = {
                         direction: 'long',
                         entryPrice: currentPrice,
-                        units: calculateUnits(t, currentPrice, sl),
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
                         stopLoss: sl,
                         takeProfit: tp,
                         enteredAt: candle.time,
@@ -259,7 +258,7 @@ export function updateRetailTraders(
                     t.position = {
                         direction: 'long',
                         entryPrice: currentPrice,
-                        units: calculateUnits(t, currentPrice, sl),
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
                         stopLoss: sl,
                         takeProfit: tp,
                         enteredAt: candle.time,
@@ -285,7 +284,7 @@ export function updateRetailTraders(
                     t.position = {
                         direction: 'short',
                         entryPrice: currentPrice,
-                        units: calculateUnits(t, currentPrice, sl),
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
                         stopLoss: sl,
                         takeProfit: tp,
                         enteredAt: candle.time,
@@ -314,7 +313,7 @@ export function updateRetailTraders(
                     t.position = {
                         direction: 'short',
                         entryPrice: currentPrice,
-                        units: calculateUnits(t, currentPrice, sl),
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
                         stopLoss: sl,
                         takeProfit: tp,
                         enteredAt: candle.time,
@@ -339,7 +338,7 @@ export function updateRetailTraders(
                     t.position = {
                         direction: 'long',
                         entryPrice: currentPrice,
-                        units: calculateUnits(t, currentPrice, sl),
+                        units: calculateUnits(t, currentPrice, sl, pipMultiplier),
                         stopLoss: sl,
                         takeProfit: tp,
                         enteredAt: candle.time,
@@ -368,17 +367,17 @@ export function updateRetailTraders(
 // Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
-function calculateUnits(trader: RetailTrader, entry: number, sl: number): number {
+function calculateUnits(trader: RetailTrader, entry: number, sl: number, pipMultiplier: number): number {
     const riskDollars = trader.accountSize * (trader.riskTolerance / 100)
-    const slDistancePips = Math.abs(entry - sl) * PIP_MULTIPLIER
+    const slDistancePips = Math.abs(entry - sl) * pipMultiplier
     if (slDistancePips <= 0) return 100
     return Math.max(100, Math.floor(riskDollars / slDistancePips * 100))
 }
 
-function calculatePnL(position: RetailPosition, exitPrice: number): number {
+function calculatePnL(position: RetailPosition, exitPrice: number, pipMultiplier: number): number {
     return position.direction === 'long'
-        ? (exitPrice - position.entryPrice) * PIP_MULTIPLIER
-        : (position.entryPrice - exitPrice) * PIP_MULTIPLIER
+        ? (exitPrice - position.entryPrice) * pipMultiplier
+        : (position.entryPrice - exitPrice) * pipMultiplier
 }
 
 export function snapshotTraders(traders: RetailTrader[]): RetailTraderSnapshot[] {

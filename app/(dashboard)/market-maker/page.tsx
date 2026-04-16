@@ -28,6 +28,7 @@ export default function MarketMakerPage() {
         while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1)
         return d.toISOString().split('T')[0]
     })
+    const [instrument, setInstrument] = useState('EUR_JPY')
     const [replay, setReplay] = useState<SessionReplay | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -65,7 +66,7 @@ export default function MarketMakerPage() {
             const res = await fetch('/api/market-maker/simulate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ date }),
+                body: JSON.stringify({ date, instrument }),
             })
 
             if (!res.ok) {
@@ -80,7 +81,7 @@ export default function MarketMakerPage() {
         } finally {
             setLoading(false)
         }
-    }, [date])
+    }, [date, instrument])
 
     const step = replay?.steps[currentStep]
     const book = step?.book ?? replay?.finalBook
@@ -113,11 +114,45 @@ export default function MarketMakerPage() {
                         Whale Simulator
                     </h1>
                     <p className="text-sm text-neutral-500 mt-1">
-                        Deterministic whale engine + 50 retail traders + DeepSeek narrator on EUR/JPY M1
+                        Watch how institutional funds think: London bias → Strategic goal → Inventory manipulation → Retail exploitation
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Instrument Selector */}
+                    <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2">
+                        <span className="text-xs text-neutral-500">Pair:</span>
+                        <select
+                            value={instrument}
+                            onChange={(e) => setInstrument(e.target.value)}
+                            className="bg-transparent text-sm text-neutral-200 outline-none cursor-pointer"
+                            disabled={loading}
+                        >
+                            <optgroup label="Major Forex">
+                                <option value="EUR_USD">EUR/USD</option>
+                                <option value="GBP_USD">GBP/USD</option>
+                                <option value="USD_JPY">USD/JPY</option>
+                                <option value="EUR_JPY">EUR/JPY</option>
+                                <option value="GBP_JPY">GBP/JPY</option>
+                                <option value="AUD_USD">AUD/USD</option>
+                                <option value="USD_CAD">USD/CAD</option>
+                                <option value="NZD_USD">NZD/USD</option>
+                            </optgroup>
+                            <optgroup label="Crypto">
+                                <option value="CRYPTO_BTC_USD">BTC/USD</option>
+                                <option value="CRYPTO_ETH_USD">ETH/USD</option>
+                                <option value="CRYPTO_SOL_USD">SOL/USD</option>
+                                <option value="CRYPTO_XRP_USD">XRP/USD</option>
+                            </optgroup>
+                            <optgroup label="Indices">
+                                <option value="NAS100_USD">NAS100</option>
+                                <option value="SPX500_USD">SPX500</option>
+                                <option value="US30_USD">US30</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    {/* Date Selector */}
                     <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2">
                         <Calendar size={14} className="text-neutral-500" />
                         <input
@@ -128,6 +163,8 @@ export default function MarketMakerPage() {
                             disabled={loading}
                         />
                     </div>
+
+                    {/* Run Button */}
                     <Button
                         onClick={runSimulation}
                         disabled={loading}

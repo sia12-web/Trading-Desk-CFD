@@ -23,6 +23,8 @@ import { makeWhaleDecision } from './whale-logic'
 import { createRetailTraders, updateRetailTraders, snapshotTraders } from './retail-traders'
 import { generateNarrative } from './narrator'
 import { detectInstitutionalBias } from './bias-detector'
+import { getAssetConfig } from '@/lib/data/asset-config'
+import { oandaToDisplayPair } from '@/lib/constants/instruments'
 import type { OandaCandle } from '@/lib/types/oanda'
 import type {
     SessionReplay, SimulationStep, WhaleBook, WhaleAction, WhaleDecision,
@@ -30,9 +32,6 @@ import type {
     SessionContext, FairValueProfile, RetailTrader, RetailEvent,
 } from './types'
 
-const PAIR = 'EUR/JPY'
-const INSTRUMENT = 'EUR_JPY'
-const PIP_MULTIPLIER = 100  // JPY pair
 const STEPS = 12
 const CANDLES_PER_STEP = 15
 const SESSION_MINUTES = 180  // 3 hours
@@ -41,8 +40,14 @@ const SESSION_MINUTES = 180  // 3 hours
 // Main Entry Point
 // ═══════════════════════════════════════════════════════════════════════════
 
-export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
-    console.log(`[WhaleEngine] Starting simulation for ${date}`)
+export async function runWhaleSimulation(date: string, instrument: string): Promise<SessionReplay> {
+    console.log(`[WhaleEngine] Starting simulation for ${instrument} on ${date}`)
+
+    // 0. Get instrument configuration
+    const assetConfig = getAssetConfig(instrument)
+    const PIP_MULTIPLIER = assetConfig.pointMultiplier
+    const displayPair = oandaToDisplayPair(instrument)
+    console.log(`[WhaleEngine] Instrument: ${displayPair} | Pip Multiplier: ${PIP_MULTIPLIER}`)
 
     // 1. Build UTC time windows
     const { from, to } = buildSessionWindow(date)
@@ -61,10 +66,10 @@ export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
     // 2. Fetch all candle data
     console.log(`[WhaleEngine] Fetching candle data...`)
     const [allCandles, asianCandles, londonCandles, historicalCandles] = await Promise.all([
-        fetchHistoricalCandles({ instrument: INSTRUMENT, granularity: 'M1', from, to }),
-        fetchHistoricalCandles({ instrument: INSTRUMENT, granularity: 'M1', from: asianFrom, to: asianTo }),
-        fetchHistoricalCandles({ instrument: INSTRUMENT, granularity: 'M1', from: londonFrom, to: londonTo }),
-        fetchHistoricalCandles({ instrument: INSTRUMENT, granularity: 'H1', from: historicalFrom, to: historicalTo }),
+        fetchHistoricalCandles({ instrument, granularity: 'M1', from, to }),
+        fetchHistoricalCandles({ instrument, granularity: 'M1', from: asianFrom, to: asianTo }),
+        fetchHistoricalCandles({ instrument, granularity: 'M1', from: londonFrom, to: londonTo }),
+        fetchHistoricalCandles({ instrument, granularity: 'H1', from: historicalFrom, to: historicalTo }),
     ])
     console.log(`[WhaleEngine] NY: ${allCandles.length} | Asian: ${asianCandles.length} | London: ${londonCandles.length} | Historical: ${historicalCandles.length}`)
 
@@ -128,15 +133,15 @@ export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
 
         // Sanitize and apply
         const sanitized = sanitizeDecision(decision, book, market, phase)
-        const action = applyDecision(sanitized, book, market, phase, currentIdx)
-        book = updateBook(book, action, market.currentPrice)
+        const action = applyDecision(sanitized, book, market, phase, currentIdx, PIP_MULTIPLIER)
+        book = updateBook(book, action, market.currentPrice, PIP_MULTIPLIER)
 
         // Update retail traders (per candle for accurate stop-out detection)
         const stepCandles = allCandles.slice(startIdx, endIdx)
         const allRetailEvents: RetailEvent[] = []
 
         for (const candle of stepCandles) {
-            const result = updateRetailTraders(retailers, candle, market, action)
+            const result = updateRetailTraders(retailers, candle, market, action, PIP_MULTIPLIER)
             retailers = result.traders
             allRetailEvents.push(...result.events)
         }
@@ -169,7 +174,7 @@ export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
     }
 
     // 7. Build outputs
-    const whaleVolatility = calculateWhaleVolatility(book.actions, allCandles.length)
+    const whaleVolatility = calculateWhaleVolatility(book.actions, allCandles.length, PIP_MULTIPLIER)
     const candleData = buildCandleChartData(allCandles, donchian, volumeProfile.vpoc, book.actions)
 
     const retailAggregateStats = {
@@ -184,8 +189,8 @@ export async function runWhaleSimulation(date: string): Promise<SessionReplay> {
 
     return {
         date,
-        pair: PAIR,
-        instrument: INSTRUMENT,
+        pair: displayPair,
+        instrument,
         sessionStart: from,
         sessionEnd: to,
         totalCandles: allCandles.length,
@@ -320,10 +325,11 @@ function applyDecision(
     _book: WhaleBook,
     market: MarketSnapshot,
     phase: SessionPhase,
-    candleIndex: number
+    candleIndex: number,
+    pipMultiplier: number
 ): WhaleAction {
     const manipulationCost = decision.action === 'manipulate'
-        ? estimateManipulationCost(market)
+        ? estimateManipulationCost(market, pipMultiplier)
         : 0
 
     return {
@@ -356,7 +362,7 @@ function createInitialBook(): WhaleBook {
     }
 }
 
-function updateBook(book: WhaleBook, action: WhaleAction, currentPrice: number): WhaleBook {
+function updateBook(book: WhaleBook, action: WhaleAction, currentPrice: number, pipMultiplier: number): WhaleBook {
     const updated = { ...book, actions: [...book.actions, action] }
 
     switch (action.type) {
@@ -370,7 +376,7 @@ function updateBook(book: WhaleBook, action: WhaleAction, currentPrice: number):
         case 'distribute': {
             const sellUnits = Math.min(action.units, updated.positionSize)
             if (sellUnits > 0 && updated.averageEntry > 0) {
-                const pnlPips = (action.price - updated.averageEntry) * PIP_MULTIPLIER
+                const pnlPips = (action.price - updated.averageEntry) * pipMultiplier
                 updated.realizedPnl += pnlPips * (sellUnits / 1000)
                 updated.positionSize -= sellUnits
                 updated.totalDistributed += sellUnits
@@ -390,7 +396,7 @@ function updateBook(book: WhaleBook, action: WhaleAction, currentPrice: number):
     }
 
     if (updated.positionSize > 0 && updated.averageEntry > 0) {
-        updated.unrealizedPnl = (currentPrice - updated.averageEntry) * PIP_MULTIPLIER
+        updated.unrealizedPnl = (currentPrice - updated.averageEntry) * pipMultiplier
     } else {
         updated.unrealizedPnl = 0
     }
@@ -398,8 +404,8 @@ function updateBook(book: WhaleBook, action: WhaleAction, currentPrice: number):
     return updated
 }
 
-function estimateManipulationCost(market: MarketSnapshot): number {
-    const widthPips = (market.donchianHigh - market.donchianLow) * PIP_MULTIPLIER
+function estimateManipulationCost(market: MarketSnapshot, pipMultiplier: number): number {
+    const widthPips = (market.donchianHigh - market.donchianLow) * pipMultiplier
     return Math.max(2, Math.min(8, widthPips * 0.15))
 }
 
@@ -407,14 +413,14 @@ function estimateManipulationCost(market: MarketSnapshot): number {
 // Whale Volatility (for ATR comparison)
 // ═══════════════════════════════════════════════════════════════════════════
 
-function calculateWhaleVolatility(actions: WhaleAction[], totalCandles: number): number[] {
+function calculateWhaleVolatility(actions: WhaleAction[], totalCandles: number, pipMultiplier: number): number[] {
     const volatility = new Array(totalCandles).fill(0)
     const DECAY_CANDLES = 5
     const DECAY_RATE = 0.6
 
     for (const action of actions) {
         if (action.type !== 'manipulate') continue
-        const spikePips = (action.manipulationCost ?? 5) * PIP_MULTIPLIER / 100
+        const spikePips = (action.manipulationCost ?? 5) * pipMultiplier / 100
         const idx = action.candleIndex
 
         for (let offset = 0; offset < DECAY_CANDLES && idx + offset < totalCandles; offset++) {
