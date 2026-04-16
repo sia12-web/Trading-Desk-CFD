@@ -33,10 +33,15 @@ export default function MarketMakerPage() {
     const [replay, setReplay] = useState<SessionReplay | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [isMounted, setIsMounted] = useState(false)
     const [currentStep, setCurrentStep] = useState(0)
     const [playing, setPlaying] = useState(false)
     const [chartType, setChartType] = useState<'candlestick' | 'line'>('candlestick')
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+    useEffect(() => {
+        setIsMounted(true)
+    }, [])
 
     // Playback control
     useEffect(() => {
@@ -210,8 +215,8 @@ export default function MarketMakerPage() {
                 <>
                     {/* Stats Banner */}
                     <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                        <StatCard label="Date" value={replay.date} />
-                        <StatCard label="Candles" value={replay.totalCandles.toString()} />
+                        <StatCard label="Date" value={String(replay.date ?? '')} />
+                        <StatCard label="Candles" value={String(replay.totalCandles ?? 0)} />
                         <StatCard label="Steps" value={`${currentStep + 1} / ${STEPS}`} />
                         <StatCard
                             label="Whale PnL"
@@ -220,7 +225,7 @@ export default function MarketMakerPage() {
                         />
                         <StatCard
                             label="Retail Stopped"
-                            value={replay.retailAggregateStats.totalStoppedOut.toString()}
+                            value={String(replay.retailAggregateStats.totalStoppedOut ?? 0)}
                             color="text-red-400"
                         />
                         <StatCard
@@ -260,7 +265,7 @@ export default function MarketMakerPage() {
                                     <SkipForward size={14} />
                                 </Button>
                                 <span className="text-xs text-neutral-500 ml-2">
-                                    Step {currentStep + 1}/{STEPS} &mdash; {step?.phase?.toUpperCase() ?? ''}
+                                    Step {currentStep + 1}/{STEPS} &mdash; {(step?.phase ?? '').toUpperCase()}
                                 </span>
                             </div>
                             <SessionTimeline currentStep={currentStep} totalSteps={STEPS} />
