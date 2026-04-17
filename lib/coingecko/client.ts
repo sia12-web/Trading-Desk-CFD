@@ -19,6 +19,9 @@ const CRYPTO_ID_MAP: Record<string, string> = {
     'AVAX_USD': 'avalanche-2',
     'DOT_USD': 'polkadot',
     'MATIC_USD': 'matic-network',
+    'LINK_USD': 'chainlink',
+    'SHIB_USD': 'shiba-inu',
+    'LTC_USD': 'litecoin',
     
     // Legacy support
     'CRYPTO_BTC_USD': 'bitcoin',
@@ -31,6 +34,9 @@ const CRYPTO_ID_MAP: Record<string, string> = {
     'CRYPTO_AVAX_USD': 'avalanche-2',
     'CRYPTO_DOT_USD': 'polkadot',
     'CRYPTO_MATIC_USD': 'matic-network',
+    'CRYPTO_LINK_USD': 'chainlink',
+    'CRYPTO_SHIB_USD': 'shiba-inu',
+    'CRYPTO_LTC_USD': 'litecoin',
 }
 
 // Map timeframes to CoinGecko granularity (in days)
