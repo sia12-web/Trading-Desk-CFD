@@ -450,7 +450,7 @@ export function calculateGatorOscillator(highs: number[], lows: number[]): Gator
     return { upper, lower }
 }
 
-// ── Fast Matrix: Divergence, Stochastic Reload, Golden Pocket ──
+// ── Alignment Strategy: Divergence, Stochastic Reload, Golden Pocket ──
 
 export interface RSIDivergence {
     detected: boolean

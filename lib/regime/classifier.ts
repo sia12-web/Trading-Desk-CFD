@@ -225,7 +225,7 @@ function computeRegimeIndicators(
     // ── Spread width ratio ──
     // Since OANDA doesn't provide spread in candle data, estimate from ATR behavior
     // A sudden ATR spike with no directional movement suggests spread widening
-    // For now, set to 1.0 (normal) — the War Room API will pass live spread from OANDA pricing
+    // For now, set to 1.0 (normal) - the Regime Monitor API will pass live spread from OANDA pricing
     const spreadWidthRatio = 1.0  // Updated by engine when live pricing is available
 
     return {

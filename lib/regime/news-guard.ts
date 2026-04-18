@@ -185,11 +185,11 @@ export async function isGhostWindow(pair: string): Promise<GhostWindow> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// War Room Helpers
+// Regime Monitor Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Get upcoming HIGH-impact events for the War Room display.
+ * Get upcoming HIGH-impact events for the Dashboard display.
  * Returns events within the next N hours.
  */
 export async function getUpcomingHighImpactEvents(

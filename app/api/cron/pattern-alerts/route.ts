@@ -8,7 +8,7 @@ import { shouldRunCron, getMontrealTime } from '@/lib/utils/trading-hours'
  *
  * Runs every 15 minutes during ACTIVE trading sessions only.
  *
- * MONTREAL FAST MATRIX SCHEDULE:
+ * MONTREAL TRADING SCHEDULE:
  * ✅ 7:30 AM - 11:30 AM EST (NY core + recon)
  * ✅ 2:00 AM - 4:00 AM EST (London killzone on Tue/Wed only)
  * ❌ 8:00 PM - 2:00 AM EST (Asian dead zone)
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // MONTREAL FAST MATRIX: Check if we should run during this session
+  // MONTREAL TRADING: Check if we should run during this session
   // ═══════════════════════════════════════════════════════════════════
   const cronCheck = shouldRunCron()
   const montrealTime = getMontrealTime()

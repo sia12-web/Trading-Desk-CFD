@@ -71,8 +71,6 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
 
         { label: 'Correlation Scenarios', href: '/correlation-scenarios', icon: TrendingUp },
         { label: 'Trade', href: '/trade', icon: Zap },
-        { label: 'The Matrix', href: '/matrix', icon: Crosshair },
-        { label: 'War Room', href: '/war-room', icon: Swords },
         { label: 'Journal', href: '/journal', icon: BookOpen },
         { label: 'Positions', href: '/positions', icon: Activity },
         { label: 'Analytics', href: '/pnl', icon: TrendingUp },

@@ -1,5 +1,5 @@
 /**
- * M1 Detectors — Fast Matrix execution-layer detection on 1-minute candles.
+ * M1 Detectors — Advanced execution-layer detection on 1-minute candles.
  * CHoCH (Change of Character), Volume Climax, and Diamond Box (1/Price equilibrium).
  */
 import type { OandaCandle } from '@/lib/types/oanda'

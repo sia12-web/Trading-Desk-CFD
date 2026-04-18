@@ -167,7 +167,7 @@ export function detectOperator(
         return { ...EMPTY_SETUP, narrative: 'Donchian Channel not yet established (need 20+ candles).' }
     }
 
-    // ── Step 2: Calculate CVD (Matrix Rule: Rolling Anchor matches Donchian Window) ──
+    // ── Step 2: Calculate CVD (Alignment Rule: Rolling Anchor matches Donchian Window) ──
     const cvdResult = calculateCVD(candles, donchianPeriod)
 
     // ── Step 3: Build Volume Profile (Left Page vs Right Page) ──

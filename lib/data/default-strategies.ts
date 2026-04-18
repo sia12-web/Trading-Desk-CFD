@@ -1,8 +1,8 @@
 import { ChecklistItem } from '@/lib/types/database'
 
 export const TRUE_FRACTAL_STRATEGY = {
-    name: "The Fast Matrix",
-    description: "H1 Macro Direction → 4 Scenario Matrix (A/B/C/D) → M1 Precision Entry. Scenario A: Bullish Wave 2 (Crash Trap — Golden Pocket on M15). Scenario B: Bullish Wave 4 (Diamond Chop — 1/Price equilibrium box on M15). Scenario C: Bearish Wave 2 (Relief Trap). Scenario D: Bearish Wave 4 (Diamond Chop). Universal execution: M1 CHoCH + Stochastic reload. SL: 1 pip below Spring/above Upthrust. TP1: 100% ext (50% close). TP2: 161.8% ext (50% close). 1% risk.",
+    name: "The Fractal Framework",
+    description: "H1 Macro Direction → 4 Scenario Framework (A/B/C/D) → M1 Precision Entry. Scenario A: Bullish Wave 2 (Crash Trap — Golden Pocket on M15). Scenario B: Bullish Wave 4 (Diamond Chop — 1/Price equilibrium box on M15). Scenario C: Bearish Wave 2 (Relief Trap). Scenario D: Bearish Wave 4 (Diamond Chop). Universal execution: M1 CHoCH + Stochastic reload. SL: 1 pip below Spring/above Upthrust. TP1: 100% ext (50% close). TP2: 161.8% ext (50% close). 1% risk.",
     checklist_items: [
         {
             id: "fm-1",

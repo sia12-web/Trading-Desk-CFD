@@ -533,12 +533,12 @@ function VolumeSection() {
         </div>
       </div>
 
-      {/* CVD Anchoring Matrix */}
+      {/* CVD Anchoring Framework */}
       <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[2.5rem] space-y-6">
         <div>
           <h4 className="text-xl font-bold text-neutral-100 flex items-center gap-2 mb-2">
             <Activity className="text-blue-500" size={24} />
-            Institutional Matrix: Cumulative Volume Delta (CVD) Anchoring
+            Institutional Framework: Cumulative Volume Delta (CVD) Anchoring
           </h4>
           <p className="text-sm text-neutral-400 leading-relaxed">
             To master CVD, you must understand that the anchor is your lens. Your anchor must mathematically scale with your timeframe. A macro lens looking at a microscopic battlefield shows nothing but blur.
@@ -1894,7 +1894,7 @@ function OperatorSection() {
               <Gauge size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Phase 2: The Matrix HUD</h3>
+              <h3 className="text-xl font-bold text-white uppercase tracking-tight">Phase 2: The Analysis HUD</h3>
               <p className="text-xs text-purple-500/70 font-black uppercase tracking-widest">Mathematical Reality</p>
             </div>
           </div>
@@ -1949,7 +1949,7 @@ function OperatorSection() {
             </div>
             <div>
               <h3 className="text-xl font-bold text-white uppercase tracking-tight">Phase 3: Institutional Mechanics</h3>
-              <p className="text-xs text-emerald-500/70 font-black uppercase tracking-widest">Decoding the Matrix</p>
+              <p className="text-xs text-emerald-500/70 font-black uppercase tracking-widest">Institutional Narrative</p>
             </div>
           </div>
           <p className="text-sm text-neutral-400 max-w-2xl">
@@ -2136,7 +2136,7 @@ function StrategySection() {
             </button>
           </div>
           <h2 className="text-5xl font-black text-white tracking-tight leading-none print:text-black print:text-3xl">
-            Hedge Fund Master <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 print:text-black print:bg-none">Matrix Playbook</span>
+            Hedge Fund Master <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 print:text-black print:bg-none">Execution Playbook</span>
           </h2>
           <p className="text-xl text-neutral-400 font-medium leading-relaxed print:text-black print:text-sm">
             This is the complete, unified mathematical blueprint for all four states of the market. 
@@ -2218,7 +2218,7 @@ function StrategySection() {
         </div>
       </div>
 
-      {/* Matrix Sections */}
+      {/* Analysis Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Bullish Matrix */}
         <div className="space-y-8">
@@ -2227,7 +2227,7 @@ function StrategySection() {
               <TrendingUp className="text-green-500" size={24} />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-white">The Bullish Matrix</h3>
+              <h3 className="text-2xl font-black text-white">The Bullish Framework</h3>
               <p className="text-xs text-green-500/70 font-bold uppercase tracking-widest">1-Hour making HH and HL</p>
             </div>
           </div>
@@ -2266,7 +2266,7 @@ function StrategySection() {
               <TrendingDown className="text-red-500" size={24} />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-white">The Bearish Matrix</h3>
+              <h3 className="text-2xl font-black text-white">The Bearish Framework</h3>
               <p className="text-xs text-red-500/70 font-bold uppercase tracking-widest">1-Hour making LL and LH</p>
             </div>
           </div>
@@ -2474,7 +2474,7 @@ function StrategySection() {
               />
               <ExecutionStep 
                 num="3" 
-                title="Read the Matrix" 
+                title="Analysis Framework" 
                 subtitle="Algorithmic Alarm"
                 desc="Watch the vertical lines pointing to the future labeled 1.618 and 2.618. Wait for price to touch them." 
               />
@@ -2505,7 +2505,7 @@ function BehaviorsSection() {
               <Building2 size={24} />
             </div>
             <div>
-              <h4 className="text-xl font-black text-white italic uppercase">1. THE US INDICES (The "Infinite Bid" Matrix)</h4>
+              <h4 className="text-xl font-black text-white italic uppercase">1. THE US INDICES (The "Infinite Bid" Flow)</h4>
               <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mt-0.5">Focus: Nasdaq 100, S&P 500, Dow Jones 30</p>
             </div>
           </div>
@@ -2597,14 +2597,14 @@ function BehaviorsSection() {
           </div>
         </div>
 
-        {/* 4. THE FOREX MATRIX */}
+        {/* 4. THE FOREX FRAMEWORK */}
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-emerald-600/10 border border-emerald-600/20 flex items-center justify-center text-emerald-500">
               <RefreshCw size={24} />
             </div>
             <div>
-              <h4 className="text-xl font-black text-white italic uppercase">4. THE FOREX MATRIX (Mean-Reversion Meat Grinders)</h4>
+              <h4 className="text-xl font-black text-white italic uppercase">4. THE FOREX FRAMEWORK (Mean-Reversion Meat Grinders)</h4>
               <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mt-0.5">Focus: USD/CHF, AUD/USD, NZD/USD</p>
             </div>
           </div>
